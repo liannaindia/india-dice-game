@@ -2,217 +2,125 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>India Dice Game</title>
   <script type="module" src="./supabase-config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f2f2f2; padding: 20px; }
-    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
-    h2 { text-align: center; }
-    input, select, button { width: 100%; padding: 10px; margin: 5px 0; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom right, #fff7e6, #f0f8ff);
+      color: #222;
+    }
+    .container {
+      max-width: 480px;
+      margin: auto;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      color: #ff6f00;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
     .hidden { display: none; }
-    .result-box { background: #eee; padding: 10px; margin-top: 20px; border-radius: 6px; }
+    .balance-display {
+      font-weight: bold;
+      font-size: 18px;
+      color: #2e7d32;
+    }
+    .section-title {
+      margin-top: 0;
+      font-weight: 600;
+      color: #444;
+    }
+    .result-box {
+      background: #e3f2fd;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>India Dice Game 🎲</h2>
+    <h2>🎲 India Dice Game</h2>
 
-    <!-- 注册 / 登录区域 -->
-    <div id="auth-section">
+    <div class="card" id="auth-section">
+      <h3 class="section-title">🔐 Login / Signup</h3>
       <input type="email" id="email" placeholder="Email" />
       <input type="password" id="password" placeholder="Password" />
       <button id="signup-btn">Sign Up</button>
       <button id="login-btn">Log In</button>
     </div>
 
-    <!-- 登录后显示 -->
     <div id="user-section" class="hidden">
-      <p>👤 <span id="user-email"></span> | 💰 Balance: ₹<span id="balance">0</span></p>
-      <button id="logout-btn">Logout</button>
+      <div class="card">
+        <p>👋 Welcome, <span id="user-email"></span></p>
+        <p class="balance-display">💰 Balance: ₹<span id="balance">0</span></p>
+        <button id="logout-btn">Logout</button>
+      </div>
 
-      <hr/>
+      <div class="card">
+        <h3 class="section-title">🎯 Place Your Bet</h3>
+        <select id="bet-type">
+          <option value="big">Big (4-6)</option>
+          <option value="small">Small (1-3)</option>
+          <option value="1">Point 1</option>
+          <option value="2">Point 2</option>
+          <option value="3">Point 3</option>
+          <option value="4">Point 4</option>
+          <option value="5">Point 5</option>
+          <option value="6">Point 6</option>
+        </select>
+        <input type="number" id="bet-amount" placeholder="Bet Amount ₹" />
+        <button id="bet-btn">Submit Bet</button>
+      </div>
 
-      <!-- 下注 -->
-      <h3>🎯 Place Your Bet</h3>
-      <select id="bet-type">
-        <option value="big">Big (4-6)</option>
-        <option value="small">Small (1-3)</option>
-        <option value="1">Point 1</option>
-        <option value="2">Point 2</option>
-        <option value="3">Point 3</option>
-        <option value="4">Point 4</option>
-        <option value="5">Point 5</option>
-        <option value="6">Point 6</option>
-      </select>
-      <input type="number" id="bet-amount" placeholder="Bet Amount ₹" />
-      <button id="bet-btn">Submit Bet</button>
-
-      <!-- 开奖结果 -->
-      <div class="result-box">
+      <div class="card result-box">
         <p>🎲 Result: <span id="dice-result">Waiting...</span></p>
         <p>⏱️ Round: <span id="round-number">...</span></p>
       </div>
 
-      <hr/>
+      <div class="card">
+        <h3 class="section-title">💰 Recharge</h3>
+        <div id="bank-info">Loading bank info...</div>
+        <input type="text" id="utr" placeholder="UTR / Reference Number" />
+        <input type="number" id="recharge-amount" placeholder="Amount ₹" />
+        <button id="recharge-btn">Submit Recharge</button>
+      </div>
 
-      <!-- 充值 -->
-      <h3>💰 Recharge</h3>
-      <div id="bank-info">Loading bank info...</div>
-      <input type="text" id="utr" placeholder="UTR / Reference Number" />
-      <input type="number" id="recharge-amount" placeholder="Amount ₹" />
-      <button id="recharge-btn">Submit Recharge</button>
-
-      <!-- 提款 -->
-      <h3>🏦 Withdraw</h3>
-      <div id="withdraw-section"></div>
-      <input type="number" id="withdraw-amount" placeholder="Amount ₹" />
-      <button id="withdraw-btn">Submit Withdrawal</button>
+      <div class="card">
+        <h3 class="section-title">🏦 Withdraw</h3>
+        <div id="withdraw-section"></div>
+        <input type="number" id="withdraw-amount" placeholder="Amount ₹" />
+        <button id="withdraw-btn">Submit Withdrawal</button>
+      </div>
     </div>
   </div>
-
-  <script type="module">
-    import { supabase } from './supabase-config.js'
-
-    const authSec = document.getElementById('auth-section')
-    const userSec = document.getElementById('user-section')
-    const emailEl = document.getElementById('email')
-    const passwordEl = document.getElementById('password')
-    const userEmail = document.getElementById('user-email')
-    const balanceEl = document.getElementById('balance')
-    const diceResult = document.getElementById('dice-result')
-    const roundNumber = document.getElementById('round-number')
-    const bankInfo = document.getElementById('bank-info')
-    const withdrawSec = document.getElementById('withdraw-section')
-
-    let currentUser = null
-
-    document.getElementById('signup-btn').onclick = async () => {
-      const { user, error } = await supabase.auth.signUp({
-        email: emailEl.value,
-        password: passwordEl.value
-      })
-      if (error) alert(error.message)
-      else alert('Signup successful!')
-    }
-
-    document.getElementById('login-btn').onclick = async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailEl.value,
-        password: passwordEl.value
-      })
-      if (error) return alert('Login failed: ' + error.message)
-      currentUser = data.user
-      afterLogin()
-    }
-
-    document.getElementById('logout-btn').onclick = async () => {
-      await supabase.auth.signOut()
-      location.reload()
-    }
-
-    async function afterLogin() {
-      authSec.classList.add('hidden')
-      userSec.classList.remove('hidden')
-      userEmail.textContent = currentUser.email
-
-      // 创建用户扩展表信息
-      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }])
-
-      loadBalance()
-      loadBankInfo()
-      loadWithdrawInfo()
-    }
-
-    async function loadBalance() {
-      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single()
-      balanceEl.textContent = data?.balance || 0
-    }
-
-    async function loadBankInfo() {
-      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single()
-      bankInfo.innerHTML = `
-        Name: ${data.name || 'N/A'}<br/>
-        AC: ${data.ac || 'N/A'}<br/>
-        IFSC: ${data.ifsc || 'N/A'}<br/>
-        UPI: ${data.upi || 'N/A'}<br/>
-        Crypto: ${data.crypto_address || 'N/A'}<br/>
-      `
-    }
-
-    async function loadWithdrawInfo() {
-      const { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single()
-      if (!data.name) {
-        withdrawSec.innerHTML = `
-          <input type="text" id="w-name" placeholder="Your Name"/>
-          <input type="text" id="w-ac" placeholder="AC Number"/>
-          <input type="text" id="w-ifsc" placeholder="IFSC Code"/>
-          <input type="text" id="w-upi" placeholder="UPI ID"/>
-          <button onclick="saveWithdrawInfo()">Save Withdrawal Info</button>
-        `
-      } else {
-        withdrawSec.innerHTML = `
-          Name: ${data.name}<br/>
-          AC: ${data.ac}<br/>
-          IFSC: ${data.ifsc}<br/>
-          UPI: ${data.upi}
-        `
-      }
-    }
-
-    window.saveWithdrawInfo = async () => {
-      const name = document.getElementById('w-name').value
-      const ac = document.getElementById('w-ac').value
-      const ifsc = document.getElementById('w-ifsc').value
-      const upi = document.getElementById('w-upi').value
-      await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id)
-      loadWithdrawInfo()
-    }
-
-    document.getElementById('recharge-btn').onclick = async () => {
-      const utr = document.getElementById('utr').value
-      const amount = parseFloat(document.getElementById('recharge-amount').value)
-      if (!utr || !amount) return alert('Fill UTR and amount')
-      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, utr, amount }])
-      alert('Recharge request submitted.')
-    }
-
-    document.getElementById('withdraw-btn').onclick = async () => {
-      const amount = parseFloat(document.getElementById('withdraw-amount').value)
-      if (!amount) return alert('Enter amount')
-      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, amount }])
-      alert('Withdraw request submitted.')
-    }
-
-    document.getElementById('bet-btn').onclick = async () => {
-      const type = document.getElementById('bet-type').value
-      const amount = parseFloat(document.getElementById('bet-amount').value)
-      alert(`Bet submitted: ${type}, ₹${amount}. (下注逻辑将在下一步完成)`)
-
-      // 后续版本：写入 bet_requests 表 + 后台开奖后分发奖励
-    }
-
-    // 每15秒读取一次开奖结果
-    setInterval(async () => {
-      const { data } = await supabase
-        .from('game_rounds')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-      if (data) {
-        diceResult.textContent = data.result_dice.join(' + ') + ' = ' + data.total
-        roundNumber.textContent = data.round_number
-      }
-    }, 15000)
-
-    // 自动登录
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        currentUser = data.user
-        afterLogin()
-      }
-    })
-  </script>
 </body>
 </html>
