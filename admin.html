@@ -2,172 +2,113 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel - Dice Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script type="module" src="./supabase-config.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f8f8f8; padding: 20px; }
-    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
-    h2 { text-align: center; }
-    input, textarea, button { width: 100%; padding: 10px; margin: 6px 0; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom right, #fdfbfb, #ebedee);
+      color: #222;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    h2 {
+      text-align: center;
+      color: #ff6f00;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    input, button, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
     .hidden { display: none; }
-    .card { background: #f0f0f0; padding: 10px; border-radius: 6px; margin: 8px 0; }
+    .admin-label {
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .card-header {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    .request-card {
+      background: #f1f8ff;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>🎛️ Admin Panel</h2>
 
-    <div id="login-section">
+    <div class="card" id="login-section">
+      <h3 class="card-header">🔐 Admin Login</h3>
       <input type="email" id="email" placeholder="Admin Email" />
       <input type="password" id="password" placeholder="Password" />
-      <button id="login-btn">Admin Login</button>
+      <button id="login-btn">Log In</button>
     </div>
 
     <div id="admin-section" class="hidden">
-      <p>Logged in as: <span id="admin-email"></span></p>
-      <button id="logout-btn">Logout</button>
+      <div class="card">
+        <p>✅ Logged in as: <span id="admin-email"></span></p>
+        <button id="logout-btn">Logout</button>
+      </div>
 
-      <hr/>
+      <div class="card">
+        <h3 class="card-header">💳 Set Bank Info</h3>
+        <input type="text" id="b-name" placeholder="Account Name" />
+        <input type="text" id="b-ac" placeholder="Account Number" />
+        <input type="text" id="b-ifsc" placeholder="IFSC Code" />
+        <input type="text" id="b-upi" placeholder="UPI ID" />
+        <input type="text" id="b-crypto" placeholder="Crypto Address" />
+        <button id="save-bank-btn">Save Bank Info</button>
+      </div>
 
-      <h3>💳 Set Bank Info</h3>
-      <input type="text" id="b-name" placeholder="Account Name" />
-      <input type="text" id="b-ac" placeholder="Account Number" />
-      <input type="text" id="b-ifsc" placeholder="IFSC Code" />
-      <input type="text" id="b-upi" placeholder="UPI ID" />
-      <input type="text" id="b-crypto" placeholder="Crypto Address" />
-      <button id="save-bank-btn">Save Bank Info</button>
+      <div class="card">
+        <h3 class="card-header">🎲 Draw Result</h3>
+        <input type="text" id="dice-values" placeholder="Enter 3 dice values, e.g. 2,4,6" />
+        <button id="draw-btn">Publish Result</button>
+      </div>
 
-      <hr/>
+      <div class="card">
+        <h3 class="card-header">📥 Recharge Requests</h3>
+        <div id="recharge-list">Loading...</div>
+      </div>
 
-      <h3>🎲 Draw New Result</h3>
-      <input type="text" id="dice-values" placeholder="Enter 3 dice values (e.g. 2,3,6)" />
-      <button id="draw-btn">Publish Result</button>
-
-      <hr/>
-
-      <h3>📥 Recharge Requests</h3>
-      <div id="recharge-list">Loading...</div>
-
-      <h3>📤 Withdraw Requests</h3>
-      <div id="withdraw-list">Loading...</div>
+      <div class="card">
+        <h3 class="card-header">📤 Withdraw Requests</h3>
+        <div id="withdraw-list">Loading...</div>
+      </div>
     </div>
   </div>
-
-  <script type="module">
-    import { supabase } from './supabase-config.js'
-
-    const loginSec = document.getElementById('login-section')
-    const adminSec = document.getElementById('admin-section')
-    const emailEl = document.getElementById('email')
-    const passwordEl = document.getElementById('password')
-    const adminEmailEl = document.getElementById('admin-email')
-    const rechargeList = document.getElementById('recharge-list')
-    const withdrawList = document.getElementById('withdraw-list')
-
-    let currentUser = null
-
-    document.getElementById('login-btn').onclick = async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailEl.value,
-        password: passwordEl.value
-      })
-      if (error) return alert('Login failed: ' + error.message)
-      if (data.user.email !== 'admin@gmail.com') return alert('Not authorized')
-      currentUser = data.user
-      afterLogin()
-    }
-
-    document.getElementById('logout-btn').onclick = async () => {
-      await supabase.auth.signOut()
-      location.reload()
-    }
-
-    function afterLogin() {
-      loginSec.classList.add('hidden')
-      adminSec.classList.remove('hidden')
-      adminEmailEl.textContent = currentUser.email
-      loadRequests()
-    }
-
-    document.getElementById('save-bank-btn').onclick = async () => {
-      const payload = {
-        id: 1,
-        name: document.getElementById('b-name').value,
-        ac: document.getElementById('b-ac').value,
-        ifsc: document.getElementById('b-ifsc').value,
-        upi: document.getElementById('b-upi').value,
-        crypto_address: document.getElementById('b-crypto').value,
-      }
-      await supabase.from('bank_info').upsert([payload])
-      alert('Bank info saved.')
-    }
-
-    document.getElementById('draw-btn').onclick = async () => {
-      const str = document.getElementById('dice-values').value
-      const values = str.split(',').map(v => parseInt(v.trim())).slice(0, 3)
-      if (values.length !== 3 || values.some(isNaN)) return alert('Please enter 3 valid numbers.')
-      const total = values.reduce((a, b) => a + b, 0)
-
-      // 自动设置期号（每分钟1期）
-      const now = new Date()
-      const ist = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }))
-      const roundNumber = ist.getHours() * 60 + ist.getMinutes()  // 每天最多 1440 期
-
-      await supabase.from('game_rounds').insert([{ round_number: roundNumber, result_dice: values, total }])
-      alert('Result published for round ' + roundNumber)
-    }
-
-    async function loadRequests() {
-      const { data: recharges } = await supabase.from('recharge_requests').select('*').eq('status', 'pending')
-      rechargeList.innerHTML = recharges.map(r => `
-        <div class="card">
-          ₹${r.amount} | UTR: ${r.utr}<br/>
-          <button onclick="approveRecharge('${r.id}', '${r.user_id}', ${r.amount})">Approve</button>
-          <button onclick="rejectRecharge('${r.id}')">Reject</button>
-        </div>
-      `).join('')
-
-      const { data: withdraws } = await supabase.from('withdraw_requests').select('*').eq('status', 'pending')
-      withdrawList.innerHTML = withdraws.map(w => `
-        <div class="card">
-          ₹${w.amount} from ${w.user_id}<br/>
-          <button onclick="approveWithdraw('${w.id}', '${w.user_id}', ${w.amount})">Approve</button>
-          <button onclick="rejectWithdraw('${w.id}')">Reject</button>
-        </div>
-      `).join('')
-    }
-
-    window.approveRecharge = async (id, userId, amount) => {
-      await supabase.from('recharge_requests').update({ status: 'approved' }).eq('id', id)
-      await supabase.rpc('increase_balance', { uid: userId, amt: amount })  // 如果不支持 rpc, 则手动 update
-      await supabase.from('users').update({ balance: supabase.literal(`balance + ${amount}`) }).eq('id', userId)
-      loadRequests()
-    }
-
-    window.rejectRecharge = async (id) => {
-      await supabase.from('recharge_requests').update({ status: 'rejected' }).eq('id', id)
-      loadRequests()
-    }
-
-    window.approveWithdraw = async (id, userId, amount) => {
-      await supabase.from('withdraw_requests').update({ status: 'approved' }).eq('id', id)
-      await supabase.from('users').update({ balance: supabase.literal(`balance - ${amount}`) }).eq('id', userId)
-      loadRequests()
-    }
-
-    window.rejectWithdraw = async (id) => {
-      await supabase.from('withdraw_requests').update({ status: 'rejected' }).eq('id', id)
-      loadRequests()
-    }
-
-    // 自动登录
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user && data.user.email === 'admin@gmail.com') {
-        currentUser = data.user
-        afterLogin()
-      }
-    })
-  </script>
 </body>
 </html>
