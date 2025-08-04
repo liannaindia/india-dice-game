@@ -1,4 +1,4 @@
-name: Deploy Supabase Edge Functions
+name: Deploy Supabase Edge Function
 
 on:
   push:
@@ -6,21 +6,19 @@ on:
       - main
 
 jobs:
-  deploy-functions:
+  deploy:
     runs-on: ubuntu-latest
-    name: Deploy Functions
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v1
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
         with:
-          deno-version: v1.x
+          version: 1.153.0
 
-      - name: Deploy dice-auto-draw
-        run: |
-          deno run -A https://deno.land/x/supabase@1.17.3/functions/deploy.ts dice-auto-draw
-        working-directory: ./supabase/functions
+      - name: Deploy Edge Function
+        run: supabase functions deploy dice-auto-draw --project-ref gtoofdphwneqpwsmjcwl
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: gtoofdphwneqpwsmjcwl
