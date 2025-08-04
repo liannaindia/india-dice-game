@@ -1,6 +1,6 @@
 [project]
-name = "dice-auto-draw"
+name = "diceautodraw"
 id = "gtoofdphwneqpwsmjcwl"
 
-[functions."dice-auto-draw"]
-slug = "dice-auto-draw"
+[functions.diceautodraw]
+slug = "diceautodraw"
