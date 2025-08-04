@@ -1,2 +1,6 @@
 [project]
-ref = "gtoofdphwneqpwsmjcwl"
+name = "dice-auto-draw"
+id = "gtoofdphwneqpwsmjcwl"
+
+[functions.dice-auto-draw]
+slug = "dice-auto-draw"
