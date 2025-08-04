@@ -2,5 +2,5 @@
 name = "diceautodraw"
 id = "gtoofdphwneqpwsmjcwl"
 
-[functions."diceautodraw"]
+[functions."dice-autodraw"]
 slug = "diceautodraw"
