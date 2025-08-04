@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lucky Dice Game</title>
+  <script type="module" src="./supabase-config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #fff3e0, #e1f5fe);
+      padding: 20px;
+      color: #222;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+    }
+    h2 {
+      text-align: center;
+      color: #ff6f00;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .balance {
+      font-weight: bold;
+      font-size: 18px;
+      color: #388e3c;
+    }
+    .result-box {
+      background: #e3f2fd;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🎲 Lucky Dice</h2>
+
+    <div class="card">
+      <p>👤 Logged in as: <span id="user-email"></span></p>
+      <p class="balance">💰 Balance: ₹<span id="balance">0</span></p>
+      <button id="logout-btn">Logout</button>
+    </div>
+
+    <div class="card">
+      <h3>🎯 Place Your Bet</h3>
+      <select id="bet-type">
+        <option value="big">Big (4-6)</option>
+        <option value="small">Small (1-3)</option>
+        <option value="1">Point 1</option>
+        <option value="2">Point 2</option>
+        <option value="3">Point 3</option>
+        <option value="4">Point 4</option>
+        <option value="5">Point 5</option>
+        <option value="6">Point 6</option>
+      </select>
+      <input type="number" id="bet-amount" placeholder="Bet Amount ₹" />
+      <button id="bet-btn">Submit Bet</button>
+    </div>
+
+    <div class="card result-box">
+      <p>🎲 Result: <span id="dice-result">Waiting...</span></p>
+      <p>⏱️ Round: <span id="round-number">...</span></p>
+    </div>
+
+    <div class="card">
+      <h3>💰 Recharge</h3>
+      <div id="bank-info">Loading bank info...</div>
+      <input type="text" id="utr" placeholder="UTR / Reference Number" />
+      <input type="number" id="recharge-amount" placeholder="Amount ₹" />
+      <button id="recharge-btn">Submit Recharge</button>
+    </div>
+
+    <div class="card">
+      <h3>🏦 Withdraw</h3>
+      <div id="withdraw-section"></div>
+      <input type="number" id="withdraw-amount" placeholder="Amount ₹" />
+      <button id="withdraw-btn">Submit Withdrawal</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from './supabase-config.js';
+
+    let currentUser = null;
+    const emailEl = document.getElementById('user-email');
+    const balanceEl = document.getElementById('balance');
+    const diceResult = document.getElementById('dice-result');
+    const roundNumber = document.getElementById('round-number');
+
+    document.getElementById('logout-btn').onclick = async () => {
+      await supabase.auth.signOut();
+      location.href = './index.html';
+    };
+
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data?.user) {
+        alert('Please login first.');
+        location.href = './index.html';
+      } else {
+        currentUser = data.user;
+        emailEl.textContent = currentUser.email;
+        await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+        loadBalance();
+        loadBankInfo();
+        loadWithdrawInfo();
+      }
+    });
+
+    async function loadBalance() {
+      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+      balanceEl.textContent = data?.balance || 0;
+    }
+
+    async function loadBankInfo() {
+      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single();
+      document.getElementById('bank-info').innerHTML = `
+        Name: ${data.name || 'N/A'}<br/>
+        AC: ${data.ac || 'N/A'}<br/>
+        IFSC: ${data.ifsc || 'N/A'}<br/>
+        UPI: ${data.upi || 'N/A'}<br/>
+        Crypto: ${data.crypto_address || 'N/A'}<br/>
+      `;
+    }
+
+    async function loadWithdrawInfo() {
+      const { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      if (!data.name) {
+        document.getElementById('withdraw-section').innerHTML = `
+          <input type="text" id="w-name" placeholder="Your Name"/>
+          <input type="text" id="w-ac" placeholder="AC Number"/>
+          <input type="text" id="w-ifsc" placeholder="IFSC Code"/>
+          <input type="text" id="w-upi" placeholder="UPI ID"/>
+          <button onclick="saveWithdrawInfo()">Save Withdrawal Info</button>
+        `;
+      } else {
+        document.getElementById('withdraw-section').innerHTML = `
+          Name: ${data.name}<br/>
+          AC: ${data.ac}<br/>
+          IFSC: ${data.ifsc}<br/>
+          UPI: ${data.upi}
+        `;
+      }
+    }
+
+    window.saveWithdrawInfo = async () => {
+      const name = document.getElementById('w-name').value;
+      const ac = document.getElementById('w-ac').value;
+      const ifsc = document.getElementById('w-ifsc').value;
+      const upi = document.getElementById('w-upi').value;
+      await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id);
+      loadWithdrawInfo();
+    };
+
+    document.getElementById('recharge-btn').onclick = async () => {
+      const utr = document.getElementById('utr').value;
+      const amount = parseFloat(document.getElementById('recharge-amount').value);
+      if (!utr || !amount) return alert('Fill UTR and amount');
+      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, utr, amount }]);
+      alert('Recharge request submitted.');
+    };
+
+    document.getElementById('withdraw-btn').onclick = async () => {
+      const amount = parseFloat(document.getElementById('withdraw-amount').value);
+      if (!amount) return alert('Enter amount');
+      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, amount }]);
+      alert('Withdraw request submitted.');
+    };
+
+    document.getElementById('bet-btn').onclick = async () => {
+      const type = document.getElementById('bet-type').value;
+      const amount = parseFloat(document.getElementById('bet-amount').value);
+      alert(`Bet submitted: ${type}, ₹${amount}. (下注逻辑将在下一步完成)`);
+    };
+
+    setInterval(async () => {
+      const { data } = await supabase.from('game_rounds').select('*').order('created_at', { ascending: false }).limit(1).single();
+      if (data) {
+        diceResult.textContent = data.result_dice.join(' + ') + ' = ' + data.total;
+        roundNumber.textContent = data.round_number;
+      }
+    }, 15000);
+  </script>
+</body>
+</html>
