@@ -23,7 +23,6 @@ jobs:
           supabase functions deploy diceautodraw \
             --project-ref gtoofdphwneqpwsmjcwl \
             --no-verify-jwt \
-            --config supabase/config.toml
+            --workdir supabase
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_ENV: "ci"
