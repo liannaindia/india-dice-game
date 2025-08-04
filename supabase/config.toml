@@ -1,5 +1,5 @@
 [project]
-name = "diceautodraw"
+name = "dice-auto-draw"
 id = "gtoofdphwneqpwsmjcwl"
 
 [functions."dice-auto-draw"]
