@@ -20,7 +20,6 @@ jobs:
 
       - name: Deploy diceautodraw function
         run: |
-          cd supabase/functions/diceautodraw
           supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
