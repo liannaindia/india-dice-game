@@ -69,6 +69,10 @@
       object-fit: contain;
       margin-bottom: 10px;
     }
+    .balance {
+      font-weight: bold;
+      color: #2e7d32;
+    }
   </style>
 </head>
 <body>
@@ -86,6 +90,7 @@
     <div id="lobby-section" class="hidden">
       <div class="card">
         <p>👋 Welcome, <span id="user-email"></span></p>
+        <p class="balance">💰 Balance: ₹<span id="balance">0</span></p>
         <button id="logout-btn">Logout</button>
       </div>
 
@@ -102,6 +107,21 @@
           </div>
         </div>
       </div>
+
+      <div class="card">
+        <h3>💰 Recharge</h3>
+        <div id="bank-info">Loading bank info...</div>
+        <input type="text" id="utr" placeholder="UTR / Reference Number" />
+        <input type="number" id="recharge-amount" placeholder="Amount ₹" />
+        <button id="recharge-btn">Submit Recharge</button>
+      </div>
+
+      <div class="card">
+        <h3>🏦 Withdraw</h3>
+        <div id="withdraw-section"></div>
+        <input type="number" id="withdraw-amount" placeholder="Amount ₹" />
+        <button id="withdraw-btn">Submit Withdrawal</button>
+      </div>
     </div>
   </div>
 
@@ -113,6 +133,9 @@
     const emailEl = document.getElementById('email')
     const passwordEl = document.getElementById('password')
     const userEmail = document.getElementById('user-email')
+    const balanceEl = document.getElementById('balance')
+    const bankInfo = document.getElementById('bank-info')
+    const withdrawSec = document.getElementById('withdraw-section')
 
     let currentUser = null
 
@@ -140,10 +163,74 @@
       location.reload()
     }
 
-    function afterLogin() {
+    async function afterLogin() {
       authSec.classList.add('hidden')
       lobbySec.classList.remove('hidden')
       userEmail.textContent = currentUser.email
+      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }])
+      loadBalance()
+      loadBankInfo()
+      loadWithdrawInfo()
+    }
+
+    async function loadBalance() {
+      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single()
+      balanceEl.textContent = data?.balance || 0
+    }
+
+    async function loadBankInfo() {
+      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single()
+      bankInfo.innerHTML = `
+        Name: ${data.name || 'N/A'}<br/>
+        AC: ${data.ac || 'N/A'}<br/>
+        IFSC: ${data.ifsc || 'N/A'}<br/>
+        UPI: ${data.upi || 'N/A'}<br/>
+        Crypto: ${data.crypto_address || 'N/A'}<br/>
+      `
+    }
+
+    async function loadWithdrawInfo() {
+      const { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single()
+      if (!data.name) {
+        withdrawSec.innerHTML = `
+          <input type="text" id="w-name" placeholder="Your Name"/>
+          <input type="text" id="w-ac" placeholder="AC Number"/>
+          <input type="text" id="w-ifsc" placeholder="IFSC Code"/>
+          <input type="text" id="w-upi" placeholder="UPI ID"/>
+          <button onclick="saveWithdrawInfo()">Save Withdrawal Info</button>
+        `
+      } else {
+        withdrawSec.innerHTML = `
+          Name: ${data.name}<br/>
+          AC: ${data.ac}<br/>
+          IFSC: ${data.ifsc}<br/>
+          UPI: ${data.upi}
+        `
+      }
+    }
+
+    window.saveWithdrawInfo = async () => {
+      const name = document.getElementById('w-name').value
+      const ac = document.getElementById('w-ac').value
+      const ifsc = document.getElementById('w-ifsc').value
+      const upi = document.getElementById('w-upi').value
+      await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id)
+      loadWithdrawInfo()
+    }
+
+    document.getElementById('recharge-btn').onclick = async () => {
+      const utr = document.getElementById('utr').value
+      const amount = parseFloat(document.getElementById('recharge-amount').value)
+      if (!utr || !amount) return alert('Fill UTR and amount')
+      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, utr, amount }])
+      alert('Recharge request submitted.')
+    }
+
+    document.getElementById('withdraw-btn').onclick = async () => {
+      const amount = parseFloat(document.getElementById('withdraw-amount').value)
+      if (!amount) return alert('Enter amount')
+      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, amount }])
+      alert('Withdraw request submitted.')
     }
 
     supabase.auth.getUser().then(({ data }) => {
