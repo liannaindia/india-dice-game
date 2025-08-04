@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel - Dice Game</title>
+  <title>Admin Panel</title>
+  <script type="module" src="./supabase-config-admin.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <script type="module" src="./supabase-config.js"></script>
   <style>
     body {
-      margin: 0;
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to bottom right, #fdfbfb, #ebedee);
-      color: #222;
+      margin: 0;
+      background: linear-gradient(to right, #f8f9fa, #e3f2fd);
       padding: 20px;
     }
     .container {
@@ -20,95 +19,142 @@
     }
     h2 {
       text-align: center;
-      color: #ff6f00;
+      color: #007bff;
     }
     .card {
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       margin-bottom: 20px;
     }
     input, button, textarea {
       width: 100%;
       padding: 12px;
+      font-size: 16px;
       margin-top: 10px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      font-size: 15px;
     }
     button {
       background: #007bff;
       color: white;
-      font-weight: 600;
+      font-weight: bold;
       cursor: pointer;
-      transition: background 0.3s;
     }
     button:hover {
       background: #0056b3;
     }
     .hidden { display: none; }
-    .admin-label {
-      font-weight: 600;
-      margin-bottom: 6px;
-      display: block;
-    }
-    .card-header {
-      font-weight: bold;
-      margin-bottom: 8px;
-      color: #333;
-    }
-    .request-card {
-      background: #f1f8ff;
-      padding: 10px;
+    .request-box {
+      background: #f1f8e9;
+      padding: 12px;
+      margin-top: 12px;
       border-radius: 8px;
-      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>🎛️ Admin Panel</h2>
-
+    <h2>🔐 Admin Login</h2>
     <div class="card" id="login-section">
-      <h3 class="card-header">🔐 Admin Login</h3>
       <input type="email" id="email" placeholder="Admin Email" />
       <input type="password" id="password" placeholder="Password" />
-      <button id="login-btn">Log In</button>
+      <button id="login-btn">Login</button>
     </div>
 
-    <div id="admin-section" class="hidden">
+    <div id="admin-panel" class="hidden">
       <div class="card">
-        <p>✅ Logged in as: <span id="admin-email"></span></p>
-        <button id="logout-btn">Logout</button>
+        <h3>🏦 Bank Info</h3>
+        <input id="name" placeholder="Name" />
+        <input id="ac" placeholder="Account Number" />
+        <input id="ifsc" placeholder="IFSC Code" />
+        <input id="upi" placeholder="UPI ID" />
+        <input id="crypto" placeholder="Crypto Address" />
+        <button id="save-bank-btn">Save</button>
       </div>
 
       <div class="card">
-        <h3 class="card-header">💳 Set Bank Info</h3>
-        <input type="text" id="b-name" placeholder="Account Name" />
-        <input type="text" id="b-ac" placeholder="Account Number" />
-        <input type="text" id="b-ifsc" placeholder="IFSC Code" />
-        <input type="text" id="b-upi" placeholder="UPI ID" />
-        <input type="text" id="b-crypto" placeholder="Crypto Address" />
-        <button id="save-bank-btn">Save Bank Info</button>
+        <h3>💳 Recharge Requests</h3>
+        <div id="recharge-requests">Loading...</div>
       </div>
 
       <div class="card">
-        <h3 class="card-header">🎲 Draw Result</h3>
-        <input type="text" id="dice-values" placeholder="Enter 3 dice values, e.g. 2,4,6" />
-        <button id="draw-btn">Publish Result</button>
-      </div>
-
-      <div class="card">
-        <h3 class="card-header">📥 Recharge Requests</h3>
-        <div id="recharge-list">Loading...</div>
-      </div>
-
-      <div class="card">
-        <h3 class="card-header">📤 Withdraw Requests</h3>
-        <div id="withdraw-list">Loading...</div>
+        <h3>💸 Withdraw Requests</h3>
+        <div id="withdraw-requests">Loading...</div>
       </div>
     </div>
   </div>
+
+  <script type="module">
+    import { supabase } from './supabase-config-admin.js';
+
+    const loginSection = document.getElementById('login-section')
+    const adminPanel = document.getElementById('admin-panel')
+
+    document.getElementById('login-btn').onclick = async () => {
+      const email = document.getElementById('email').value
+      const password = document.getElementById('password').value
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) return alert('Login failed: ' + error.message)
+      if (data.user.email !== 'admin@gmail.com') {
+        alert('Not authorized')
+        return
+      }
+      loginSection.classList.add('hidden')
+      adminPanel.classList.remove('hidden')
+      loadAll()
+    }
+
+    async function loadAll() {
+      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single()
+      if (data) {
+        document.getElementById('name').value = data.name || ''
+        document.getElementById('ac').value = data.ac || ''
+        document.getElementById('ifsc').value = data.ifsc || ''
+        document.getElementById('upi').value = data.upi || ''
+        document.getElementById('crypto').value = data.crypto_address || ''
+      }
+      loadRechargeRequests()
+      loadWithdrawRequests()
+    }
+
+    document.getElementById('save-bank-btn').onclick = async () => {
+      const update = {
+        id: 1,
+        name: document.getElementById('name').value,
+        ac: document.getElementById('ac').value,
+        ifsc: document.getElementById('ifsc').value,
+        upi: document.getElementById('upi').value,
+        crypto_address: document.getElementById('crypto').value
+      }
+      await supabase.from('bank_info').upsert(update)
+      alert('Saved!')
+    }
+
+    async function loadRechargeRequests() {
+      const container = document.getElementById('recharge-requests')
+      const { data } = await supabase.from('recharge_requests').select('*').order('created_at', { ascending: false })
+      container.innerHTML = ''
+      for (const item of data) {
+        const el = document.createElement('div')
+        el.className = 'request-box'
+        el.innerHTML = `User: ${item.user_id}<br/>UTR: ${item.utr}<br/>Amount: ₹${item.amount}`
+        container.appendChild(el)
+      }
+    }
+
+    async function loadWithdrawRequests() {
+      const container = document.getElementById('withdraw-requests')
+      const { data } = await supabase.from('withdraw_requests').select('*').order('created_at', { ascending: false })
+      container.innerHTML = ''
+      for (const item of data) {
+        const el = document.createElement('div')
+        el.className = 'request-box'
+        el.innerHTML = `User: ${item.user_id}<br/>Amount: ₹${item.amount}`
+        container.appendChild(el)
+      }
+    }
+  </script>
 </body>
 </html>
