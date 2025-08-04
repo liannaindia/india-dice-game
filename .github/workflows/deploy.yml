@@ -16,7 +16,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: 1.152.2   # 👈 降级版本
+          version: 1.152.2
 
       - name: Deploy diceautodraw function
         run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt
