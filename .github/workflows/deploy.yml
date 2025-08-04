@@ -8,8 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      DOCKER_BUILDKIT: 1
 
     steps:
       - name: Checkout repository
@@ -19,8 +17,9 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: 1.153.0
-          
-     - name: Clear Docker volumes
+
+      # ✅ 清理 GitHub Actions 运行环境中的 Docker 缓存
+      - name: Clear Docker volumes (cleanup workaround)
         run: docker system prune -af || true
 
       - name: Deploy Edge Function
