@@ -18,11 +18,7 @@ jobs:
         with:
           version: 1.153.0
 
-      # ✅ 清理 GitHub Actions 运行环境中的 Docker 缓存
-      - name: Clear Docker volumes (cleanup workaround)
-        run: docker system prune -af || true
-
       - name: Deploy Edge Function
-        run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl
+        run: supabase functions deploy dice-autodraw --project-ref gtoofdphwneqpwsmjcwl
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
