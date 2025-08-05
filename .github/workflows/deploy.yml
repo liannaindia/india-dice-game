@@ -19,7 +19,10 @@ jobs:
           node-version: '18'
 
       - name: Install Supabase CLI
-        run: npm install -g supabase
+        run: |
+          curl -sL https://github.com/supabase/cli/releases/download/v1.174.8/supabase-cli-linux-x64.tar.gz | tar -xz
+          chmod +x supabase
+          sudo mv supabase /usr/local/bin/supabase
 
       - name: Deploy function
         run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
