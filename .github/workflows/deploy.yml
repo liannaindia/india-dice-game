@@ -13,9 +13,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Supabase CLI manually
+      - name: Install Supabase CLI
         run: |
-          curl -L https://github.com/supabase/cli/releases/download/v1.174.8/supabase-cli_1.174.8_linux_x86_64.tar.gz -o supabase.tar.gz
+          curl -L https://github.com/supabase/cli/releases/download/v1.174.8/supabase_1.174.8_linux_x86_64.tar.gz -o supabase.tar.gz
           tar -xzf supabase.tar.gz
           chmod +x supabase
           sudo mv supabase /usr/local/bin/supabase
