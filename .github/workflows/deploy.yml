@@ -14,9 +14,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase-community/setup-cli@v1
         with:
-          version: 1.174.8  # 使用稳定版本
+          version: 1.174.8
 
       - name: Deploy Supabase Function
         run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
