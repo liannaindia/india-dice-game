@@ -20,9 +20,8 @@ jobs:
 
       - name: Install Supabase CLI
         run: |
-          curl -sL https://github.com/supabase/cli/releases/download/v1.174.8/supabase-cli-linux-x64.tar.gz | tar -xz
-          chmod +x supabase
-          sudo mv supabase /usr/local/bin/supabase
+          curl -L -o supabase-cli.deb https://github.com/supabase/cli/releases/download/v1.174.8/supabase-cli_1.174.8_amd64.deb
+          sudo dpkg -i supabase-cli.deb
 
       - name: Deploy function
         run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
