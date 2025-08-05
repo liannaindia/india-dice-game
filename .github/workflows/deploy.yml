@@ -13,10 +13,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 1.174.8
+      - name: Install Supabase CLI manually
+        run: |
+          curl -L https://github.com/supabase/cli/releases/download/v1.174.8/supabase-cli_1.174.8_linux_x86_64.tar.gz -o supabase.tar.gz
+          tar -xzf supabase.tar.gz
+          chmod +x supabase
+          sudo mv supabase /usr/local/bin/supabase
 
       - name: Deploy Supabase Function
         run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
