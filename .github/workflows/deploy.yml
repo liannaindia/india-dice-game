@@ -1,4 +1,4 @@
-name: Deploy Supabase Edge Function
+name: Deploy diceautodraw to Supabase
 
 on:
   push:
@@ -10,15 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          version: 1.153.0
+          node-version: '18'
 
-      - name: Deploy diceautodraw function
-        run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir supabase
+      - name: Install Supabase CLI
+        run: npm install -g supabase
+
+      - name: Deploy function
+        run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
+        working-directory: ./
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
