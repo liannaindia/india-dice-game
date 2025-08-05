@@ -13,18 +13,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
         with:
-          node-version: '18'
+          version: 1.174.8  # 使用稳定版本
 
-      - name: Install Supabase CLI
-        run: |
-          curl -L -o supabase-cli.deb https://github.com/supabase/cli/releases/download/v1.174.8/supabase-cli_1.174.8_amd64.deb
-          sudo dpkg -i supabase-cli.deb
-
-      - name: Deploy function
+      - name: Deploy Supabase Function
         run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
-        working-directory: ./
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
