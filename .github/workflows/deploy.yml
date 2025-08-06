@@ -18,9 +18,9 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Supabase CLI (npm - working)
+      - name: Install Supabase CLI (correct package)
         run: |
-          npm install -g supabase@1.0.4
+          npm install -g @supabase/cli
           supabase --version
 
       - name: Deploy Supabase Function
