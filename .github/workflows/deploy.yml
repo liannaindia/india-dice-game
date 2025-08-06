@@ -28,4 +28,4 @@ jobs:
           supabase functions deploy diceautodraw \
             --project-ref gtoofdphwneqpwsmjcwl \
             --no-verify-jwt \
-    
+            --workdir ./supabase
