@@ -19,5 +19,8 @@ jobs:
         with:
           version: latest
 
+      - name: Debug: list supabase/functions
+        run: ls -R ./supabase/functions
+
       - name: Deploy Supabase Function
-        run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase/functions
+        run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
