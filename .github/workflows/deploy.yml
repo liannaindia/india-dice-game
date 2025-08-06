@@ -12,7 +12,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -23,4 +24,8 @@ jobs:
         run: ls -R ./supabase/functions
 
       - name: Deploy Supabase Function
-        run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
+        run: |
+          supabase functions deploy diceautodraw \
+            --project-ref gtoofdphwneqpwsmjcwl \
+            --no-verify-jwt \
+            --workdir ./supabase
