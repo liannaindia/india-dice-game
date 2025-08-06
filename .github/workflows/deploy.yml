@@ -20,4 +20,5 @@ jobs:
           version: latest
 
       - name: Deploy Supabase Function
+        working-directory: india-dice-game
         run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
