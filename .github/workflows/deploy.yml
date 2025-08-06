@@ -13,13 +13,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Supabase CLI (Final Final Fix)
+      - name: Install Supabase CLI using .deb
         run: |
-          curl -L https://github.com/supabase/cli/releases/download/v1.174.8/supabase_1.174.8_linux_x86_64.tar.gz -o supabase.tar.gz
-          mkdir -p supabase-cli
-          tar -xzf supabase.tar.gz -C supabase-cli
-          chmod +x supabase-cli/supabase
-          sudo mv supabase-cli/supabase /usr/local/bin/supabase
+          curl -L https://github.com/supabase/cli/releases/download/v1.174.8/supabase_1.174.8_amd64.deb -o supabase.deb
+          sudo dpkg -i supabase.deb
           supabase --version
 
       - name: Deploy Supabase Function
