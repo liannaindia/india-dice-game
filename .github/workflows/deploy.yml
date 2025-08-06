@@ -20,7 +20,7 @@ jobs:
         with:
           version: latest
 
-      - name: Debug: list supabase/functions
+      - name: Debug - list files in supabase/functions
         run: ls -R ./supabase/functions
 
       - name: Deploy Supabase Function
