@@ -13,11 +13,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Supabase CLI (final fix with correct tar.gz)
+      - name: Install Supabase CLI (real verified tar.gz)
         run: |
           curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
           sudo apt-get install -y nodejs
-          curl -L https://github.com/supabase/cli/releases/download/v1.174.8/supabase_1.174.8_linux_x86_64.tar.gz -o supabase.tar.gz
+          curl -L https://github.com/supabase/cli/releases/download/v1.174.8/supabase_1.174.8_linux_amd64.tar.gz -o supabase.tar.gz
           tar -xzf supabase.tar.gz
           chmod +x supabase
           sudo mv supabase /usr/local/bin/supabase
