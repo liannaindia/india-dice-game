@@ -13,14 +13,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install Supabase CLI from npm (finally fixed)
+      - name: Install Supabase CLI (from latest stable binary)
         run: |
-          npm install -g supabase
+          curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          curl -sSfL https://github.com/supabase/cli/releases/latest/download/supabase_linux_x86_64.tar.gz -o supabase.tar.gz
+          tar -xzf supabase.tar.gz
+          chmod +x supabase
+          sudo mv supabase /usr/local/bin/supabase
           supabase --version
 
       - name: Deploy Supabase Function
