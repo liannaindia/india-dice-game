@@ -1,4 +1,4 @@
 project_id = "gtoofdphwneqpwsmjcwl"
 
-[functions.diceautodraw]
+[functions]
 region = "aws-mumbai"
