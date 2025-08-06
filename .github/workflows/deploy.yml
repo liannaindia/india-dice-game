@@ -20,4 +20,4 @@ jobs:
           version: latest
 
       - name: Deploy Supabase Function
-        run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase
+        run: supabase functions deploy diceautodraw --project-ref gtoofdphwneqpwsmjcwl --no-verify-jwt --workdir ./supabase/functions
