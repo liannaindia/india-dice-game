@@ -1,35 +1,59 @@
-// index.ts - 自动开奖逻辑
-import { createClient } from './supabase.ts'
+// supabase/functions/diceautodraw/index.ts
 
-const supabase = createClient()
+import { serve } from "https://deno.land/std@0.192.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-Deno.serve(async () => {
+serve(async (req) => {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  )
+
+  // 获取印度时间
   const now = new Date()
-  const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
-  const yyyy = ist.getFullYear()
-  const mm = String(ist.getMonth() + 1).padStart(2, '0')
-  const dd = String(ist.getDate()).padStart(2, '0')
-  const hh = String(ist.getHours()).padStart(2, '0')
-  const min = String(ist.getMinutes()).padStart(2, '0')
-  const periodId = `${yyyy}${mm}${dd}${hh}${min}`
+  const istOffset = 5.5 * 60 * 60 * 1000
+  const istTime = new Date(now.getTime() + istOffset)
 
-  const dice = [
-    Math.floor(Math.random() * 6) + 1,
-    Math.floor(Math.random() * 6) + 1,
-    Math.floor(Math.random() * 6) + 1
-  ]
-  const total = dice.reduce((a, b) => a + b, 0)
+  // 生成期号（例如 202508061406）
+  const period = istTime.toISOString().replace(/[-:T.Z]/g, "").slice(0, 12)
 
-  const { error } = await supabase.from('game_rounds').insert({
-    round_number: parseInt(periodId),
-    result_dice: dice,
-    total: total
-  })
+  // 查询当前期是否已存在
+  const { data: existing, error: checkError } = await supabase
+    .from("game_rounds")
+    .select("period")
+    .eq("period", period)
+    .maybeSingle()
 
-  if (error) {
-    console.error('Insert error:', error)
-    return new Response('Error inserting result', { status: 500 })
+  if (checkError) {
+    return new Response(JSON.stringify({ error: checkError.message }), { status: 500 })
   }
 
-  return new Response('Draw success')
+  if (existing) {
+    return new Response(JSON.stringify({ message: "This period already exists." }), { status: 200 })
+  }
+
+  // 生成3个骰子，范围 1~6
+  const dice = [1, 2, 3].map(() => Math.floor(Math.random() * 6) + 1)
+  const total = dice.reduce((a, b) => a + b, 0)
+
+  // 写入 game_rounds 表
+  const { error: insertError } = await supabase.from("game_rounds").insert([{
+    period,
+    dice1: dice[0],
+    dice2: dice[1],
+    dice3: dice[2],
+    total,
+    created_at: istTime.toISOString()
+  }])
+
+  if (insertError) {
+    return new Response(JSON.stringify({ error: insertError.message }), { status: 500 })
+  }
+
+  return new Response(JSON.stringify({
+    message: "Result generated",
+    period,
+    dice,
+    total
+  }), { status: 200 })
 })
