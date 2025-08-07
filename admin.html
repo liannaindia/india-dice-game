@@ -145,7 +145,7 @@
         const el = document.createElement('div')
         el.className = 'request-box'
         el.innerHTML = `
-          User: ${item.user_id}<br/>
+          User: ${item.email || item.user_id}<br/>
           UTR: ${item.utr}<br/>
           Amount: ₹${item.amount}<br/>
           Status: ${item.status || 'pending'}
@@ -166,7 +166,7 @@
         const el = document.createElement('div')
         el.className = 'request-box'
         el.innerHTML = `
-          User: ${item.user_id}<br/>
+        User: ${item.email || item.user_id}<br/>
           Amount: ₹${item.amount}<br/>
           Status: ${item.status || 'pending'}
           <div class="btn-group">
