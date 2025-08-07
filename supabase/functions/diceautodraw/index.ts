@@ -7,10 +7,11 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// 获取印度时间（UTC + 5:30）
 function getIndianTime(): Date {
   const now = new Date();
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utc + 19800000); // +5:30 (印度标准时间)
+  return new Date(utc + 5.5 * 60 * 60 * 1000);
 }
 
 serve(async () => {
@@ -24,24 +25,27 @@ serve(async () => {
 
   const round_number = `${year}${month}${day}${hours}${minutes}`;
 
-  // 查询是否已经存在该期
-  const { data: existing } = await supabase
+  // 检查过去60秒是否已写入任何记录（避免重复开奖）
+  const oneMinuteAgo = new Date(now.getTime() - 60 * 1000).toISOString();
+
+  const { data: recent } = await supabase
     .from("game_rounds")
     .select("id")
-    .eq("round_number", round_number)
+    .gte("created_at", oneMinuteAgo)
     .maybeSingle();
 
-  if (existing) {
-    return new Response("Already drawn", { status: 200 });
+  if (recent) {
+    return new Response("Already drawn (time window)", { status: 200 });
   }
 
-  // 随机生成一个骰子结果（1-6）
+  // 生成一个 1~6 的随机骰子结果
   const result = Math.floor(Math.random() * 6) + 1;
 
   const { error } = await supabase.from("game_rounds").insert([
     {
       round_number,
       result,
+      created_at: now.toISOString(),  // 👈 手动写入印度时间
     },
   ]);
 
@@ -49,5 +53,5 @@ serve(async () => {
     return new Response("Error inserting result: " + error.message, { status: 500 });
   }
 
-  return new Response(`Drawn round ${round_number} with result ${result}`, { status: 200 });
+  return new Response(`✅ Drawn round ${round_number} with result ${result}`, { status: 200 });
 });
