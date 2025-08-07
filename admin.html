@@ -149,10 +149,21 @@
           UTR: ${item.utr}<br/>
           Amount: ₹${item.amount}<br/>
           Status: ${item.status || 'pending'}
-          <div class="btn-group">
-            <button onclick="handleApproveRecharge('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
-            <button onclick="handleRejectRecharge('${item.id}')">❌ Reject</button>
-          </div>
+          el.innerHTML = `
+  User: ${item.email || item.user_id}<br/>
+  UTR: ${item.utr}<br/>
+  Amount: ₹${item.amount}<br/>
+  Status: ${item.status || 'pending'}
+  ${
+    item.status === 'pending'
+      ? `<div class="btn-group">
+           <button onclick="handleApproveRecharge('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
+           <button onclick="handleRejectRecharge('${item.id}')">❌ Reject</button>
+         </div>`
+      : ''
+  }
+`;
+
         `;
         container.appendChild(el)
       }
@@ -169,10 +180,20 @@
         User: ${item.email || item.user_id}<br/>
           Amount: ₹${item.amount}<br/>
           Status: ${item.status || 'pending'}
-          <div class="btn-group">
-            <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
-            <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
-          </div>
+          el.innerHTML = `
+  User: ${item.email || item.user_id}<br/>
+  Amount: ₹${item.amount}<br/>
+  Status: ${item.status || 'pending'}
+  ${
+    item.status === 'pending'
+      ? `<div class="btn-group">
+           <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
+           <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
+         </div>`
+      : ''
+  }
+`;
+
         `;
         container.appendChild(el)
       }
