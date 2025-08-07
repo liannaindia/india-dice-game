@@ -2,14 +2,15 @@ name: Auto Trigger Dice Draw
 
 on:
   schedule:
-    - cron: '*/1 * * * *' # 每分钟运行一次
-  workflow_dispatch:
+    - cron: '*/5 * * * *'  # 每分钟执行一次
+  workflow_dispatch:       # 允许手动执行
 
 jobs:
   trigger:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Curl Edge Function
+      - name: Call diceautodraw edge function
         run: |
           curl -X POST "https://gtoofdphwneqpwsmjcwl.supabase.co/functions/v1/diceautodraw" \
-            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDI5NjA4MSwiZXhwIjoyMDY5ODcyMDgxfQ.FeSWIwT8kAdX6jfYK5LHridORHJXg0VGeqEQOFE1WSQ"
+          -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDI5NjA4MSwiZXhwIjoyMDY5ODcyMDgxfQ.FeSWIwT8kAdX6jfYK5LHridORHJXg0VGeqEQOFE1WSQ"
