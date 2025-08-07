@@ -2,56 +2,58 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// 初始化 Supabase
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-// 获取印度时间（UTC + 5:30）
-function getIndianTime(): Date {
+// 获取印度时间（UTC+5:30）
+function getIndianTime(offset = 0): Date {
   const now = new Date();
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utc + 5.5 * 60 * 60 * 1000);
+  return new Date(utc + (5.5 + offset) * 60 * 60 * 1000);
 }
 
+// 生成格式化期号（YYYYMMDDHHmm）
+function getRoundNumber(time: Date): string {
+  const year = time.getFullYear();
+  const month = String(time.getMonth() + 1).padStart(2, "0");
+  const day = String(time.getDate()).padStart(2, "0");
+  const hour = String(time.getHours()).padStart(2, "0");
+  const minute = String(time.getMinutes()).padStart(2, "0");
+  return `${year}${month}${day}${hour}${minute}`;
+}
+
+// 主函数
 serve(async () => {
   const now = getIndianTime();
 
-  const minutes = now.getMinutes().toString().padStart(2, "0");
-  const hours = now.getHours().toString().padStart(2, "0");
-  const day = now.getDate().toString().padStart(2, "0");
-  const month = (now.getMonth() + 1).toString().padStart(2, "0");
-  const year = now.getFullYear();
+  let insertCount = 0;
+  for (let i = 0; i < 5; i++) {
+    const roundTime = new Date(now.getTime() + i * 60 * 1000); // 每分钟递增
+    const round_number = getRoundNumber(roundTime);
 
-  const round_number = `${year}${month}${day}${hours}${minutes}`;
+    const { data: existing } = await supabase
+      .from("game_rounds")
+      .select("id")
+      .eq("round_number", round_number)
+      .maybeSingle();
 
-  // 检查过去60秒是否已写入任何记录（避免重复开奖）
-  const oneMinuteAgo = new Date(now.getTime() - 60 * 1000).toISOString();
+    if (!existing) {
+      const result = Math.floor(Math.random() * 6) + 1;
 
-  const { data: recent } = await supabase
-    .from("game_rounds")
-    .select("id")
-    .gte("created_at", oneMinuteAgo)
-    .maybeSingle();
+      const { error } = await supabase.from("game_rounds").insert([
+        {
+          round_number,
+          result,
+          created_at: roundTime.toISOString(), // 写入印度时间
+        },
+      ]);
 
-  if (recent) {
-    return new Response("Already drawn (time window)", { status: 200 });
+      if (!error) insertCount++;
+    }
   }
 
-  // 生成一个 1~6 的随机骰子结果
-  const result = Math.floor(Math.random() * 6) + 1;
-
-  const { error } = await supabase.from("game_rounds").insert([
-    {
-      round_number,
-      result,
-      created_at: now.toISOString(),  // 👈 手动写入印度时间
-    },
-  ]);
-
-  if (error) {
-    return new Response("Error inserting result: " + error.message, { status: 500 });
-  }
-
-  return new Response(`✅ Drawn round ${round_number} with result ${result}`, { status: 200 });
+  return new Response(`✅ Generated ${insertCount} new rounds`, { status: 200 });
 });
