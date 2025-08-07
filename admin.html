@@ -138,66 +138,55 @@
     }
 
     async function loadRechargeRequests() {
-      const container = document.getElementById('recharge-requests')
-      const { data } = await supabase.from('recharge_requests').select('*').order('created_at', { ascending: false })
-      container.innerHTML = ''
-      for (const item of data) {
-        const el = document.createElement('div')
-        el.className = 'request-box'
-        el.innerHTML = `
-          User: ${item.email || item.user_id}<br/>
-          UTR: ${item.utr}<br/>
-          Amount: ₹${item.amount}<br/>
-          Status: ${item.status || 'pending'}
-          el.innerHTML = `
-  User: ${item.email || item.user_id}<br/>
-  UTR: ${item.utr}<br/>
-  Amount: ₹${item.amount}<br/>
-  Status: ${item.status || 'pending'}
-  ${
-    item.status === 'pending'
-      ? `<div class="btn-group">
-           <button onclick="handleApproveRecharge('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
-           <button onclick="handleRejectRecharge('${item.id}')">❌ Reject</button>
-         </div>`
-      : ''
-  }
-`;
-
-        `;
-        container.appendChild(el)
+  const container = document.getElementById('recharge-requests')
+  const { data } = await supabase.from('recharge_requests').select('*').order('created_at', { ascending: false })
+  container.innerHTML = ''
+  for (const item of data) {
+    const el = document.createElement('div')
+    el.className = 'request-box'
+    el.innerHTML = `
+      User: ${item.email || item.user_id}<br/>
+      UTR: ${item.utr}<br/>
+      Amount: ₹${item.amount}<br/>
+      Status: ${item.status || 'pending'}
+      ${
+        item.status === 'pending'
+          ? `<div class="btn-group">
+               <button onclick="handleApproveRecharge('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
+               <button onclick="handleRejectRecharge('${item.id}')">❌ Reject</button>
+             </div>`
+          : ''
       }
-    }
-
-    async function loadWithdrawRequests() {
-      const container = document.getElementById('withdraw-requests')
-      const { data } = await supabase.from('withdraw_requests').select('*').order('created_at', { ascending: false })
-      container.innerHTML = ''
-      for (const item of data) {
-        const el = document.createElement('div')
-        el.className = 'request-box'
-        el.innerHTML = `
-        User: ${item.email || item.user_id}<br/>
-          Amount: ₹${item.amount}<br/>
-          Status: ${item.status || 'pending'}
-          el.innerHTML = `
-  User: ${item.email || item.user_id}<br/>
-  Amount: ₹${item.amount}<br/>
-  Status: ${item.status || 'pending'}
-  ${
-    item.status === 'pending'
-      ? `<div class="btn-group">
-           <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
-           <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
-         </div>`
-      : ''
+    `;
+    container.appendChild(el)
   }
-`;
+}
 
-        `;
-        container.appendChild(el)
+
+async function loadWithdrawRequests() {
+  const container = document.getElementById('withdraw-requests')
+  const { data } = await supabase.from('withdraw_requests').select('*').order('created_at', { ascending: false })
+  container.innerHTML = ''
+  for (const item of data) {
+    const el = document.createElement('div')
+    el.className = 'request-box'
+    el.innerHTML = `
+      User: ${item.email || item.user_id}<br/>
+      Amount: ₹${item.amount}<br/>
+      Status: ${item.status || 'pending'}
+      ${
+        item.status === 'pending'
+          ? `<div class="btn-group">
+               <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
+               <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
+             </div>`
+          : ''
       }
-    }
+    `;
+    container.appendChild(el)
+  }
+}
+
 
     // Recharge functions
     window.handleApproveRecharge = async (id, email, amount) => {
