@@ -145,29 +145,54 @@
     }
 
     document.getElementById('set-result-btn').onclick = async () => {
-      const round = document.getElementById('manual-round').value.trim()
-      const result = parseInt(document.getElementById('manual-result').value)
+  const round = document.getElementById('manual-round').value.trim()
+  const result = parseInt(document.getElementById('manual-result').value)
 
-      if (!round || isNaN(result) || result < 1 || result > 6) {
-        alert('Invalid input')
-        return
-      }
+  if (!round || isNaN(result) || result < 1 || result > 6) {
+    alert('Invalid input')
+    return
+  }
 
-      const { error } = await supabase.from('game_rounds').upsert([
-        {
-          round_number: round,
-          result: result,
-          is_manual: true,
-          created_at: new Date().toISOString()
-        }
-      ])
+  // 查询是否存在该期号
+  const { data: existing, error: fetchError } = await supabase
+    .from('game_rounds')
+    .select('id')
+    .eq('round_number', round)
+    .maybeSingle()
 
-      if (error) {
-        alert('Failed to set result: ' + error.message)
-      } else {
-        alert(`✅ Result set for round ${round} = ${result}`)
-      }
+  if (fetchError) return alert('Query failed: ' + fetchError.message)
+
+  if (existing) {
+    // 如果已存在，则更新该期结果
+    const { error: updateError } = await supabase
+      .from('game_rounds')
+      .update({ result, is_manual: true })
+      .eq('round_number', round)
+
+    if (updateError) {
+      alert('Update failed: ' + updateError.message)
+    } else {
+      alert(`✅ Updated result for round ${round} = ${result}`)
     }
+  } else {
+    // 不存在则插入
+    const { error: insertError } = await supabase.from('game_rounds').insert([
+      {
+        round_number: round,
+        result,
+        is_manual: true,
+        created_at: new Date().toISOString()
+      }
+    ])
+
+    if (insertError) {
+      alert('Insert failed: ' + insertError.message)
+    } else {
+      alert(`✅ Inserted result for round ${round} = ${result}`)
+    }
+  }
+}
+
 
     async function loadRechargeRequests() {
       const container = document.getElementById('recharge-requests')
