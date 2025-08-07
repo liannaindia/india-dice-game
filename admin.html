@@ -52,6 +52,11 @@
       margin-top: 12px;
       border-radius: 8px;
     }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -139,7 +144,16 @@
       for (const item of data) {
         const el = document.createElement('div')
         el.className = 'request-box'
-        el.innerHTML = `User: ${item.user_id}<br/>UTR: ${item.utr}<br/>Amount: ₹${item.amount}`
+        el.innerHTML = `
+          User: ${item.user_id}<br/>
+          UTR: ${item.utr}<br/>
+          Amount: ₹${item.amount}<br/>
+          Status: ${item.status || 'pending'}
+          <div class="btn-group">
+            <button onclick="handleApproveRecharge('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
+            <button onclick="handleRejectRecharge('${item.id}')">❌ Reject</button>
+          </div>
+        `;
         container.appendChild(el)
       }
     }
@@ -151,9 +165,62 @@
       for (const item of data) {
         const el = document.createElement('div')
         el.className = 'request-box'
-        el.innerHTML = `User: ${item.user_id}<br/>Amount: ₹${item.amount}`
+        el.innerHTML = `
+          User: ${item.user_id}<br/>
+          Amount: ₹${item.amount}<br/>
+          Status: ${item.status || 'pending'}
+          <div class="btn-group">
+            <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
+            <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
+          </div>
+        `;
         container.appendChild(el)
       }
+    }
+
+    // ⬇️ Recharge functions
+    window.handleApproveRecharge = async (id, email, amount) => {
+      try {
+        await supabase.from('recharge_requests').update({ status: 'approved' }).eq('id', id)
+        const { data: userData, error: userError } = await supabase.from('users').select('balance').eq('email', email).single()
+        if (userError) throw userError
+        const currentBalance = userData.balance || 0
+        const newBalance = currentBalance + amount
+        await supabase.from('users').update({ balance: newBalance }).eq('email', email)
+        alert('Recharge approved and balance updated!')
+        loadRechargeRequests()
+      } catch (err) {
+        alert('Failed: ' + err.message)
+      }
+    }
+
+    window.handleRejectRecharge = async (id) => {
+      await supabase.from('recharge_requests').update({ status: 'rejected' }).eq('id', id)
+      alert('Recharge rejected.')
+      loadRechargeRequests()
+    }
+
+    // ⬇️ Withdraw functions
+    window.handleApproveWithdraw = async (id, email, amount) => {
+      try {
+        await supabase.from('withdraw_requests').update({ status: 'approved' }).eq('id', id)
+        const { data: userData, error: userError } = await supabase.from('users').select('balance').eq('email', email).single()
+        if (userError) throw userError
+        const currentBalance = userData.balance || 0
+        if (currentBalance < amount) throw new Error('Insufficient balance')
+        const newBalance = currentBalance - amount
+        await supabase.from('users').update({ balance: newBalance }).eq('email', email)
+        alert('Withdrawal approved and balance deducted!')
+        loadWithdrawRequests()
+      } catch (err) {
+        alert('Failed: ' + err.message)
+      }
+    }
+
+    window.handleRejectWithdraw = async (id) => {
+      await supabase.from('withdraw_requests').update({ status: 'rejected' }).eq('id', id)
+      alert('Withdraw rejected.')
+      loadWithdrawRequests()
     }
   </script>
 </body>
