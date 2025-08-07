@@ -186,7 +186,7 @@
         const { data: userDataArray, error: userError } = await supabase
           .from('users')
           .select('balance')
-          .eq('email', email)
+          .eq('id', email)
           .limit(1)
 
         if (userError) throw userError
@@ -196,7 +196,7 @@
         const currentBalance = userData.balance || 0
         const newBalance = currentBalance + amount
 
-        await supabase.from('users').update({ balance: newBalance }).eq('email', email)
+        await supabase.from('users').update({ balance: newBalance }).eq('id', email)
 
         alert('Recharge approved and balance updated!')
         loadRechargeRequests()
@@ -219,7 +219,7 @@
         const { data: userDataArray, error: userError } = await supabase
           .from('users')
           .select('balance')
-          .eq('email', email)
+          .eq('id', email)
           .limit(1)
 
         if (userError) throw userError
@@ -230,7 +230,7 @@
         if (currentBalance < amount) throw new Error('Insufficient balance')
 
         const newBalance = currentBalance - amount
-        await supabase.from('users').update({ balance: newBalance }).eq('email', email)
+        await supabase.from('users').update({ balance: newBalance }).eq('id', email)
 
         alert('Withdrawal approved and balance deducted!')
         loadWithdrawRequests()
