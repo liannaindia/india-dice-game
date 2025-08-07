@@ -35,10 +35,15 @@ serve(async () => {
     const round_number = getRoundNumber(roundTime);
 
     const { data: existing } = await supabase
-      .from("game_rounds")
-      .select("id")
-      .eq("round_number", round_number)
-      .maybeSingle();
+  .from("game_rounds")
+  .select("id, is_manual")
+  .eq("round_number", round_number)
+  .maybeSingle();
+
+if (!existing || !existing.is_manual) {
+  // 写入结果
+}
+
 
     if (!existing) {
       const result = Math.floor(Math.random() * 6) + 1;
@@ -68,3 +73,4 @@ serve(async () => {
 
   return new Response(`✅ Generated ${insertCount} new rounds & cleaned old`, { status: 200 });
 });
+
