@@ -55,18 +55,16 @@ serve(async () => {
     }
   }
 
-  return new Response(`✅ Generated ${insertCount} new rounds`, { status: 200 });
+  // ✅ 删除 1 天前的开奖数据
+  const cleanTime = new Date(now);
+  cleanTime.setMinutes(0, 0, 0);
+  cleanTime.setDate(cleanTime.getDate() - 1);
+  const threshold = getRoundNumber(cleanTime);
+
+  await supabase
+    .from("game_rounds")
+    .delete()
+    .lt("round_number", threshold);
+
+  return new Response(`✅ Generated ${insertCount} new rounds & cleaned old`, { status: 200 });
 });
-// 删除 1 天前的开奖数据
-const now = new Date();
-now.setMinutes(0);
-now.setSeconds(0);
-now.setMilliseconds(0);
-now.setDate(now.getDate() - 1);  // 向前推1天
-const thresholdPeriod = formatISTDateToPeriod(now);  // 生成 "YYYYMMDDHHmm" 格式
-
-await supabase
-  .from("dice_results")
-  .delete()
-  .lt("period", thresholdPeriod);
-
