@@ -91,44 +91,63 @@
   </div>
 
   <script type="module">
-    import { supabase } from './supabase-config.js';
+import { supabase } from './supabase-config.js';
 
-    let currentUser = null;
-    const emailEl = document.getElementById('user-email');
-    const balanceEl = document.getElementById('balance');
-    const diceResult = document.getElementById('dice-result');
-    const roundNumber = document.getElementById('round-number');
+let currentUser = null;
+const emailEl = document.getElementById('user-email');
+const balanceEl = document.getElementById('balance');
+const diceResult = document.getElementById('dice-result');
+const roundNumber = document.getElementById('round-number');
 
-    document.getElementById('logout-btn').onclick = async () => {
-      await supabase.auth.signOut();
-      location.href = './index.html';
-    };
+const logoutBtn = document.getElementById('logout-btn');
+logoutBtn.onclick = async () => {
+  await supabase.auth.signOut();
+  location.href = './index.html';
+};
 
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data?.user) {
-        alert('Please login first.');
-        location.href = './index.html';
-      } else {
-        currentUser = data.user;
-        emailEl.textContent = currentUser.email;
-        await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
-        loadBalance();
-      }
-    });
+supabase.auth.getUser().then(async ({ data }) => {
+  if (!data?.user) {
+    alert('Please login first.');
+    location.href = './index.html';
+  } else {
+    currentUser = data.user;
+    emailEl.textContent = currentUser.email;
+    await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+    loadBalance();
+  }
+});
 
-    async function loadBalance() {
-      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
-      balanceEl.textContent = data?.balance || 0;
-    }
+async function loadBalance() {
+  const { data } = await supabase
+    .from('users')
+    .select('balance')
+    .eq('id', currentUser.id)
+    .single();
+  balanceEl.textContent = data?.balance || 0;
+}
 
-    document.getElementById('bet-btn').onclick = async () => {
-      const type = document.getElementById('bet-type').value;
-      const amount = parseFloat(document.getElementById('bet-amount').value);
-      alert(`Bet submitted: ${type}, ₹${amount}. (下注逻辑将在下一步完成)`);
-    };
+// 🔁 倒计时与开奖逻辑
+function getIndianTime() {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + 5.5 * 60 * 60 * 1000); // 印度时间 UTC+5:30
+}
 
-    setInterval(async () => {
-  const res = await fetch('https://gtoofdphwneqpwsmjcwl.supabase.co/rest/v1/game_rounds?select=*&order=created_at.desc&limit=1', {
+function getCurrentRoundNumber() {
+  const now = getIndianTime();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hour = String(now.getHours()).padStart(2, '0');
+  const minute = String(now.getMinutes()).padStart(2, '0');
+  return `${year}${month}${day}${hour}${minute}`;
+}
+
+async function loadLatestResult() {
+  const round = getCurrentRoundNumber();
+  roundNumber.textContent = round;
+
+  const res = await fetch(`https://gtoofdphwneqpwsmjcwl.supabase.co/rest/v1/game_rounds?select=*&round_number=eq.${round}`, {
     headers: {
       apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyOTYwODEsImV4cCI6MjA2OTg3MjA4MX0.XOlnadAyNTMLy8W-JQLyA7Kmh0dKBRslL3vXvx_ebj4',
       Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyOTYwODEsImV4cCI6MjA2OTg3MjA4MX0.XOlnadAyNTMLy8W-JQLyA7Kmh0dKBRslL3vXvx_ebj4',
@@ -136,13 +155,45 @@
     }
   });
 
-  const dataArr = await res.json();
-  if (dataArr.length > 0) {
-    const data = dataArr[0];
-    diceResult.textContent = data.result;
-    roundNumber.textContent = data.round_number;
+  const data = await res.json();
+  if (data.length > 0) {
+    diceResult.textContent = data[0].result;
+  } else {
+    diceResult.textContent = 'Waiting...';
   }
-}, 15000);
-  </script>
+}
+
+function startCountdown() {
+  const countdown = document.createElement('p');
+  countdown.style.fontWeight = 'bold';
+  countdown.id = 'countdown';
+  document.querySelector('.result-box').appendChild(countdown);
+
+  setInterval(() => {
+    const now = getIndianTime();
+    const seconds = now.getSeconds();
+    const remaining = 60 - seconds;
+    countdown.textContent = `⏳ Time Left: ${remaining}s`;
+
+    if (seconds === 0) {
+      loadLatestResult();
+    }
+
+    roundNumber.textContent = getCurrentRoundNumber();
+  }, 1000);
+}
+
+// 启动
+loadLatestResult();
+startCountdown();
+
+// 下注逻辑按钮保留占位
+document.getElementById('bet-btn').onclick = async () => {
+  const type = document.getElementById('bet-type').value;
+  const amount = parseFloat(document.getElementById('bet-amount').value);
+  alert(`Bet submitted: ${type}, ₹${amount}. (下注逻辑将在下一步完成)`);
+};
+</script>
+
 </body>
 </html>
