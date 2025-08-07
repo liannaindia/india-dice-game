@@ -139,7 +139,7 @@
   const dataArr = await res.json();
   if (dataArr.length > 0) {
     const data = dataArr[0];
-    diceResult.textContent = data.result_dice.join(' + ') + ' = ' + data.total;
+    diceResult.textContent = data.result;
     roundNumber.textContent = data.round_number;
   }
 }, 15000);
