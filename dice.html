@@ -128,12 +128,21 @@
     };
 
     setInterval(async () => {
-      const { data } = await supabase.from('game_rounds').select('*').order('created_at', { ascending: false }).limit(1).single();
-      if (data) {
-        diceResult.textContent = data.result_dice.join(' + ') + ' = ' + data.total;
-        roundNumber.textContent = data.round_number;
-      }
-    }, 15000);
+  const res = await fetch('https://gtoofdphwneqpwsmjcwl.supabase.co/rest/v1/game_rounds?select=*&order=created_at.desc&limit=1', {
+    headers: {
+      apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyOTYwODEsImV4cCI6MjA2OTg3MjA4MX0.XOlnadAyNTMLy8W-JQLyA7Kmh0dKBRslL3vXvx_ebj4',
+      Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyOTYwODEsImV4cCI6MjA2OTg3MjA4MX0.XOlnadAyNTMLy8W-JQLyA7Kmh0dKBRslL3vXvx_ebj4',
+      Accept: 'application/json'
+    }
+  });
+
+  const dataArr = await res.json();
+  if (dataArr.length > 0) {
+    const data = dataArr[0];
+    diceResult.textContent = data.result_dice.join(' + ') + ' = ' + data.total;
+    roundNumber.textContent = data.round_number;
+  }
+}, 15000);
   </script>
 </body>
 </html>
