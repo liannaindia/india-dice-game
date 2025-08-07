@@ -230,7 +230,7 @@
     document.getElementById('withdraw-btn').onclick = async () => {
       const amount = parseFloat(document.getElementById('withdraw-amount').value)
       if (!amount) return alert('Enter amount')
-      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, amount }])
+      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, email: currentUser.email,amount }])
       alert('Withdraw request submitted.')
     }
 
