@@ -178,15 +178,26 @@
       }
     }
 
-    // ⬇️ Recharge functions
+    // Recharge functions
     window.handleApproveRecharge = async (id, email, amount) => {
       try {
         await supabase.from('recharge_requests').update({ status: 'approved' }).eq('id', id)
-        const { data: userData, error: userError } = await supabase.from('users').select('balance').eq('email', email).single()
+
+        const { data: userDataArray, error: userError } = await supabase
+          .from('users')
+          .select('balance')
+          .eq('email', email)
+          .limit(1)
+
         if (userError) throw userError
+        const userData = userDataArray?.[0]
+        if (!userData) throw new Error('User not found')
+
         const currentBalance = userData.balance || 0
         const newBalance = currentBalance + amount
+
         await supabase.from('users').update({ balance: newBalance }).eq('email', email)
+
         alert('Recharge approved and balance updated!')
         loadRechargeRequests()
       } catch (err) {
@@ -200,16 +211,27 @@
       loadRechargeRequests()
     }
 
-    // ⬇️ Withdraw functions
+    // Withdraw functions
     window.handleApproveWithdraw = async (id, email, amount) => {
       try {
         await supabase.from('withdraw_requests').update({ status: 'approved' }).eq('id', id)
-        const { data: userData, error: userError } = await supabase.from('users').select('balance').eq('email', email).single()
+
+        const { data: userDataArray, error: userError } = await supabase
+          .from('users')
+          .select('balance')
+          .eq('email', email)
+          .limit(1)
+
         if (userError) throw userError
+        const userData = userDataArray?.[0]
+        if (!userData) throw new Error('User not found')
+
         const currentBalance = userData.balance || 0
         if (currentBalance < amount) throw new Error('Insufficient balance')
+
         const newBalance = currentBalance - amount
         await supabase.from('users').update({ balance: newBalance }).eq('email', email)
+
         alert('Withdrawal approved and balance deducted!')
         loadWithdrawRequests()
       } catch (err) {
