@@ -223,7 +223,7 @@
       const utr = document.getElementById('utr').value
       const amount = parseFloat(document.getElementById('recharge-amount').value)
       if (!utr || !amount) return alert('Fill UTR and amount')
-      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, utr, amount }])
+      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, email: currentUser.email,utr, amount }])
       alert('Recharge request submitted.')
     }
 
