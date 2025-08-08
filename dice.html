@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Lucky Dice Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- 你现有的 supabase 客户端配置（保持不变） -->
   <script type="module" src="./supabase-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -66,25 +67,17 @@
     .result-big{font-size:28px; font-weight:800}
     .countdown{font-weight:700}
 
-    /* 最近10条 - 移动端卡片；桌面端表格 */
-    #my-bets{display:grid; gap:10px}
-    .betcard{
-      border:1px solid #eef1f6; border-radius:12px; padding:10px 12px; background:#fbfdff;
-      display:grid; grid-template-columns:1fr auto; gap:6px; align-items:center;
-    }
-    .betcard .line{font-size:13px}
-    .betcard .payout.win{color:var(--success); font-weight:700}
-    .betcard .payout.lose{color:var(--danger); font-weight:700}
-    .hidden{display:none}
+    /* 列表：移动端卡片；桌面端表格 */
+    .cardsver{display:block}
+    .tablever{display:none}
 
-    /* 桌面端显示表格版本 */
     @media(min-width:800px){
-      #my-bets.table{display:block}
+      .cardsver{display:none}
+      .tablever{display:table}
       .tablewrap{overflow:auto}
-      table{width:100%; border-collapse:collapse}
+      .tablever{width:100%; border-collapse:collapse}
       th,td{padding:8px 6px; border-bottom:1px solid #eee; font-size:14px; text-align:left}
       th{font-weight:700}
-      .cardsver{display:none}
     }
 
     /* 底部固定下注栏 */
@@ -117,7 +110,7 @@
           <div id="user-email" style="font-weight:700">—</div>
         </div>
         <div class="balance">₹<span id="balance">0</span></div>
-            <button id="lobby-btn" class="btn ghost">Lobby</button>
+        <button id="lobby-btn" class="btn ghost">Lobby</button>
         <button id="logout-btn" class="btn secondary">Logout</button>
       </div>
       <div class="muted" style="margin-top:8px">* Bets close in the last 3 seconds of each minute.</div>
@@ -149,7 +142,7 @@
       </div>
     </div>
 
-    <!-- 结果 -->
+    <!-- 结果与倒计时 -->
     <div class="card">
       <div class="result-box">
         <div>
@@ -172,7 +165,9 @@
       <h3 style="margin:0 0 6px">🧾 My Last 10 Bets</h3>
       <!-- 移动端卡片版 -->
       <div id="my-bets" class="cardsver">Loading…</div>
-        <table>
+      <!-- 桌面表格版 -->
+      <div class="tablewrap">
+        <table class="tablever">
           <thead>
             <tr><th>Round</th><th>Bet</th><th>Amount</th><th>Result</th><th>Status</th><th>Payout</th></tr>
           </thead>
@@ -191,11 +186,11 @@
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    /* ====== 赔率（修改这里即可） ====== */
-    const BIG_ODDS   = 2.00;
-    const SMALL_ODDS = 2.00;
-    const NUMBER_ODDS= 6.00;
-    const CLOSE_BUFFER = 10; // 封盘秒数
+    /* ====== 赔率（可按需调整） ====== */
+    const BIG_ODDS    = 2.00;
+    const SMALL_ODDS  = 2.00;
+    const NUMBER_ODDS = 6.00;
+    const CLOSE_BUFFER = 3; // 封盘秒数（与文案一致，最后3秒）
 
     /* ====== refs ====== */
     let currentUser = null;
@@ -205,15 +200,9 @@
     const roundNumber = document.getElementById('round-number');
     const logoutBtn = document.getElementById('logout-btn');
     const lobbyBtn = document.getElementById('lobby-btn');
-lobbyBtn.onclick = () => {
-  location.href = './index.html'; // 回到游戏大厅主页
-};
     const betBtn = document.getElementById('bet-btn');
     const betAmountEl = document.getElementById('bet-amount');
     const countEl = document.getElementById('countdown');
-    const myBetsCards = document.getElementById('my-bets');
-    const myBetsTableWrap = document.getElementById('my-bets-table');
-    const myBetsTbody = document.getElementById('my-bets-tbody');
 
     // 更新赔率展示
     document.getElementById('odds-big').textContent = BIG_ODDS.toFixed(2);
@@ -221,11 +210,11 @@ lobbyBtn.onclick = () => {
     document.querySelectorAll('#num-grid .o').forEach(el=>el.textContent = NUMBER_ODDS.toFixed(2));
 
     /* ====== 时间工具（IST） ====== */
-   function getIST() {
-  const now = new Date();
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utcMs + 5.5 * 60 * 60 * 1000); // UTC+05:30
-}
+    function getIST() {
+      const now = new Date();
+      const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+      return new Date(utcMs + 5.5 * 60 * 60 * 1000); // UTC+05:30
+    }
     function currentRoundNo(){
       const now = getIST();
       const y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0'),
@@ -233,12 +222,18 @@ lobbyBtn.onclick = () => {
             min=String(now.getMinutes()).padStart(2,'0');
       return `${y}${m}${d}${h}${min}`;
     }
+    function prevRoundNo(){
+      const now = getIST();
+      now.setMinutes(now.getMinutes() - 1);
+      const y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0'),
+            d=String(now.getDate()).padStart(2,'0'), h=String(now.getHours()).padStart(2,'0'),
+            min=String(now.getMinutes()).padStart(2,'0');
+      return `${y}${m}${d}${h}${min}`;
+    }
 
-    /* ====== 登录 ====== */
-    logoutBtn.onclick = async () => {
-      await supabase.auth.signOut();
-      location.href = './index.html';
-    };
+    /* ====== 登录 / 初始化 ====== */
+    lobbyBtn.onclick = () => { location.href = './index.html'; };
+    logoutBtn.onclick = async () => { await supabase.auth.signOut(); location.href = './index.html'; };
 
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data?.user) {
@@ -248,7 +243,7 @@ lobbyBtn.onclick = () => {
         emailEl.textContent = currentUser.email;
         await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
         await loadBalance();
-        await loadLatestResult();
+        await loadLatestResult(); // 只显示上一期的结果
         await loadMyLastBets();
         startTicker();
       }
@@ -256,14 +251,22 @@ lobbyBtn.onclick = () => {
 
     async function loadBalance(){
       const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
-      balanceEl.textContent = data?.balance || 0;
+      balanceEl.textContent = data?.balance ?? 0;
     }
 
-    /* ====== 开奖 ====== */
+    /* ====== 显示“上一期”结果，避免提前泄露 ====== */
     async function loadLatestResult(){
-      const round = currentRoundNo();
-      roundNumber.textContent = round;
-      const { data } = await supabase.from('game_rounds').select('result').eq('round_number', round).maybeSingle();
+      // Round 显示当前投注期
+      roundNumber.textContent = currentRoundNo();
+
+      // 结果只显示上一期
+      const lastFinished = prevRoundNo();
+      const { data } = await supabase
+        .from('game_rounds')
+        .select('result')
+        .eq('round_number', lastFinished)
+        .maybeSingle();
+
       diceResult.textContent = (data && data.result) ? data.result : '—';
     }
 
@@ -281,7 +284,7 @@ lobbyBtn.onclick = () => {
         }
 
         if (sec === 0) {
-          await loadLatestResult();
+          await loadLatestResult(); // 翻分钟时刷新上一期结果
           await loadMyLastBets();
           await loadBalance();
         }
@@ -289,96 +292,80 @@ lobbyBtn.onclick = () => {
       }, 500);
     }
 
-    /* ====== 我的最近10条 ====== */
-  async function loadMyLastBets() {
-  if (!currentUser) return;
-  const wrap = document.getElementById('my-bets');
+    /* ====== 我的最近10条（同步渲染卡片 & 表格） ====== */
+    async function loadMyLastBets() {
+      if (!currentUser) return;
+      const cardsWrap = document.getElementById('my-bets');
+      const tbody = document.getElementById('my-bets-tbody');
 
-  const { data: bets } = await supabase
-    .from('bets')
-    .select('round_number, bet_type, choice, amount, status, payout, created_at')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false })
-    .limit(10);
+      const { data: bets } = await supabase
+        .from('bets')
+        .select('round_number, bet_type, choice, amount, status, payout, created_at')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-  // 批量拿这些期号的开奖结果
-  const rounds = [...new Set((bets || []).map(b => b.round_number))];
-  let resultMap = {};
-  if (rounds.length) {
-    const { data: rs } = await supabase
-      .from('game_rounds')
-      .select('round_number, result')
-      .in('round_number', rounds);
-    (rs || []).forEach(r => { resultMap[r.round_number] = r.result; });
-  }
+      const rounds = [...new Set((bets || []).map(b => b.round_number))];
+      let resultMap = {};
+      if (rounds.length) {
+        const { data: rs } = await supabase
+          .from('game_rounds')
+          .select('round_number, result')
+          .in('round_number', rounds);
+        (rs || []).forEach(r => { resultMap[r.round_number] = r.result; });
+      }
 
-  const rows = (bets || []).map(b => {
-    const betLabel = b.bet_type === 'number' ? `Number ${b.choice}` :
-                     b.bet_type === 'big'    ? 'Big (4–6)'          : 'Small (1–3)';
-    const showRes = b.status !== 'pending';           // 关键：pending 不显示
-    const res = showRes ? (resultMap[b.round_number] ?? '—') : '—';
-    const payout = showRes ? Number(b.payout || 0).toFixed(2) : '0.00';
-    return {
-      round: b.round_number,
-      bet: betLabel,
-      amount: Number(b.amount).toFixed(2),
-      res, status: b.status, payout
-    };
-  });
+      const rows = (bets || []).map(b => {
+        const betLabel = b.bet_type === 'number' ? `Number ${b.choice}` :
+                         b.bet_type === 'big'    ? 'Big (4–6)'          : 'Small (1–3)';
+        const showRes = b.status !== 'pending';     // pending 不显示结果与派彩
+        const res = showRes ? (resultMap[b.round_number] ?? '—') : '—';
+        const payout = showRes ? Number(b.payout || 0).toFixed(2) : '0.00';
+        return {
+          round: b.round_number,
+          bet: betLabel,
+          amount: Number(b.amount).toFixed(2),
+          res, status: b.status, payout
+        };
+      });
 
-  const isDesktop = window.matchMedia('(min-width: 800px)').matches;
-  if (!rows.length) {
-    wrap.innerHTML = `<div class="muted">No recent bets.</div>`;
-    return;
-  }
+      // 渲染移动端卡片
+      if (!rows.length) {
+        cardsWrap.innerHTML = `<div class="muted">No recent bets.</div>`;
+      } else {
+        cardsWrap.innerHTML = rows.map(it => `
+          <div class="betcard" style="border:1px solid #eef1f6;border-radius:12px;padding:10px 12px;background:#fbfdff;display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;margin-bottom:10px">
+            <div>
+              <div style="font-size:13px"><b>Round:</b> ${it.round}</div>
+              <div style="font-size:13px"><b>Bet:</b> ${it.bet} · ₹${it.amount}</div>
+              <div style="font-size:13px"><b>Result:</b> ${it.res} · <b>Status:</b> ${it.status}</div>
+            </div>
+            <div style="font-weight:700;${it.status==='won'?'color:#2e7d32':'color:#d32f2f'}">₹${it.payout}</div>
+          </div>`).join('');
+      }
 
-  if (isDesktop) {
-    // 桌面表格
-    const trs = rows.map(it => `
-      <tr>
-        <td>${it.round}</td>
-        <td>${it.bet}</td>
-        <td>₹${it.amount}</td>
-        <td>${it.res}</td>
-        <td>${it.status}</td>
-        <td>₹${it.payout}</td>
-      </tr>`).join('');
-    wrap.innerHTML = `
-      <div style="overflow:auto">
-        <table style="width:100%;border-collapse:collapse">
-          <thead>
-            <tr>
-              <th>Round</th><th>Bet</th><th>Amount</th>
-              <th>Result</th><th>Status</th><th>Payout</th>
-            </tr>
-          </thead>
-          <tbody>${trs}</tbody>
-        </table>
-      </div>`;
-  } else {
-    // 手机卡片
-    const cards = rows.map(it => `
-      <div style="border:1px solid #eef1f6;border-radius:12px;padding:10px 12px;background:#fbfdff;display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;margin-bottom:10px">
-        <div>
-          <div style="font-size:13px"><b>Round:</b> ${it.round}</div>
-          <div style="font-size:13px"><b>Bet:</b> ${it.bet} · ₹${it.amount}</div>
-          <div style="font-size:13px"><b>Result:</b> ${it.res} · <b>Status:</b> ${it.status}</div>
-        </div>
-        <div style="font-weight:700;${it.status==='won'?'color:#2e7d32':'color:#d32f2f'}">₹${it.payout}</div>
-      </div>`).join('');
-    wrap.innerHTML = cards;
-  }
-}
+      // 渲染桌面表格
+      if (tbody) {
+        tbody.innerHTML = rows.map(it => `
+          <tr>
+            <td>${it.round}</td>
+            <td>${it.bet}</td>
+            <td>₹${it.amount}</td>
+            <td>${it.res}</td>
+            <td>${it.status}</td>
+            <td>₹${it.payout}</td>
+          </tr>`).join('');
+      }
+    }
 
-// 宽度变化时重渲染（同一容器，不会重复）
-window.addEventListener('resize', () => loadMyLastBets());
-
+    // 根据屏幕变化重渲染一次（避免切换设备宽度后布局不一致）
+    window.addEventListener('resize', () => loadMyLastBets());
 
     /* ====== 下注（原子扣款RPC）====== */
-    // 交互：模式与数字选择
     let currentBetType = 'big'; // 'big' | 'small' | 'number'
     let currentChoice = null;
 
+    // 玩法选择
     document.querySelectorAll('#mode-seg .chip').forEach(ch=>{
       ch.onclick = ()=>{
         document.querySelectorAll('#mode-seg .chip').forEach(x=>x.classList.remove('active'));
@@ -416,27 +403,24 @@ window.addEventListener('resize', () => loadMyLastBets());
       if (currentBetType==='number') odds = NUMBER_ODDS;
 
       const { error } = await supabase.rpc('place_bet_now', {
-  _user_id: currentUser.id,
-  _email: currentUser.email,
-  _bet_type: currentBetType,  // 'big' | 'small' | 'number'
-  _choice: currentChoice,     // number or null
-  _amount: amount,
-  _odds: odds                 // 你页面设置的倍率
-});
-if (error) {
-  if (String(error.message).includes('BET_CLOSED')) return alert('Bet closed');
-  if (String(error.message).includes('INSUFFICIENT_BALANCE')) return alert('Insufficient balance');
-  return alert('Bet failed: ' + error.message);
-}
+        _user_id: currentUser.id,
+        _email: currentUser.email,
+        _bet_type: currentBetType,  // 'big' | 'small' | 'number'
+        _choice: currentChoice,     // number or null
+        _amount: amount,
+        _odds: odds                 // 页面设置的倍率
+      });
+      if (error) {
+        if (String(error.message).includes('BET_CLOSED')) return alert('Bet closed');
+        if (String(error.message).includes('INSUFFICIENT_BALANCE')) return alert('Insufficient balance');
+        return alert('Bet failed: ' + error.message);
+      }
 
       betAmountEl.value = '';
       alert('✅ Bet placed!');
       await loadBalance();
       await loadMyLastBets();
     };
-
-    // 窗口改变时切换我的投注视图
-    window.addEventListener('resize', ()=>loadMyLastBets());
   </script>
 </body>
 </html>
