@@ -7,7 +7,6 @@
   <script type="module" src="./supabase-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-
     body {
       margin: 0;
       font-family: 'Poppins', sans-serif;
@@ -23,7 +22,7 @@
       text-align: center;
       color: #ff6f00;
     }
-    .card, .game-card {
+    .card {
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -58,7 +57,9 @@
       text-align: center;
       padding: 16px;
       cursor: pointer;
-      transition: transform 0.2s ease;
+      border-radius: 12px;
+      background: #f9f9f9;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .game-card:hover {
       transform: scale(1.03);
@@ -74,12 +75,32 @@
       font-weight: bold;
       color: #2e7d32;
     }
+    /* 客服按钮 */
+    #customer-service-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #ff6f00;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 50px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      text-decoration: none;
+      z-index: 9999;
+      transition: background 0.3s;
+    }
+    #customer-service-btn:hover {
+      background: #e65c00;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>🎮 India Game Lobby</h2>
 
+    <!-- 登录注册 -->
     <div class="card" id="auth-section">
       <h3>🔐 Login / Signup</h3>
       <input type="email" id="email" placeholder="Email" />
@@ -88,6 +109,7 @@
       <button id="login-btn">Log In</button>
     </div>
 
+    <!-- 游戏大厅 -->
     <div id="lobby-section" class="hidden">
       <div class="card">
         <p>👋 Welcome, <span id="user-email"></span></p>
@@ -109,6 +131,7 @@
         </div>
       </div>
 
+      <!-- 充值 -->
       <div class="card">
         <h3>💰 Recharge</h3>
         <div id="bank-info">Loading bank info...</div>
@@ -117,6 +140,7 @@
         <button id="recharge-btn">Submit Recharge</button>
       </div>
 
+      <!-- 提现 -->
       <div class="card">
         <h3>🏦 Withdraw</h3>
         <div id="withdraw-section"></div>
@@ -126,72 +150,74 @@
     </div>
   </div>
 
+  <!-- 客服按钮 -->
+  <a href="https://your-customer-service-link.com" target="_blank" id="customer-service-btn">💬 客服</a>
+
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    const authSec = document.getElementById('auth-section')
-    const lobbySec = document.getElementById('lobby-section')
-    const emailEl = document.getElementById('email')
-    const passwordEl = document.getElementById('password')
-    const userEmail = document.getElementById('user-email')
-    const balanceEl = document.getElementById('balance')
-    const bankInfo = document.getElementById('bank-info')
-    const withdrawSec = document.getElementById('withdraw-section')
-
-    let currentUser = null
+    const authSec = document.getElementById('auth-section');
+    const lobbySec = document.getElementById('lobby-section');
+    const emailEl = document.getElementById('email');
+    const passwordEl = document.getElementById('password');
+    const userEmail = document.getElementById('user-email');
+    const balanceEl = document.getElementById('balance');
+    const bankInfo = document.getElementById('bank-info');
+    const withdrawSec = document.getElementById('withdraw-section');
+    let currentUser = null;
 
     document.getElementById('signup-btn').onclick = async () => {
       const { error } = await supabase.auth.signUp({
         email: emailEl.value,
         password: passwordEl.value
-      })
-      if (error) alert(error.message)
-      else alert('Signup successful!')
-    }
+      });
+      if (error) alert(error.message);
+      else alert('Signup successful!');
+    };
 
     document.getElementById('login-btn').onclick = async () => {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: emailEl.value,
         password: passwordEl.value
-      })
-      if (error) return alert('Login failed: ' + error.message)
-      currentUser = data.user
-      afterLogin()
-    }
+      });
+      if (error) return alert('Login failed: ' + error.message);
+      currentUser = data.user;
+      afterLogin();
+    };
 
     document.getElementById('logout-btn').onclick = async () => {
-      await supabase.auth.signOut()
-      location.reload()
-    }
+      await supabase.auth.signOut();
+      location.reload();
+    };
 
     async function afterLogin() {
-      authSec.classList.add('hidden')
-      lobbySec.classList.remove('hidden')
-      userEmail.textContent = currentUser.email
-      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }])
-      loadBalance()
-      loadBankInfo()
-      loadWithdrawInfo()
+      authSec.classList.add('hidden');
+      lobbySec.classList.remove('hidden');
+      userEmail.textContent = currentUser.email;
+      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+      loadBalance();
+      loadBankInfo();
+      loadWithdrawInfo();
     }
 
     async function loadBalance() {
-      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single()
-      balanceEl.textContent = data?.balance || 0
+      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+      balanceEl.textContent = data?.balance || 0;
     }
 
     async function loadBankInfo() {
-      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single()
+      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single();
       bankInfo.innerHTML = `
         Name: ${data.name || 'N/A'}<br/>
         AC: ${data.ac || 'N/A'}<br/>
         IFSC: ${data.ifsc || 'N/A'}<br/>
         UPI: ${data.upi || 'N/A'}<br/>
         Crypto: ${data.crypto_address || 'N/A'}<br/>
-      `
+      `;
     }
 
     async function loadWithdrawInfo() {
-      const { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single()
+      const { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
       if (!data.name) {
         withdrawSec.innerHTML = `
           <input type="text" id="w-name" placeholder="Your Name"/>
@@ -199,47 +225,49 @@
           <input type="text" id="w-ifsc" placeholder="IFSC Code"/>
           <input type="text" id="w-upi" placeholder="UPI ID"/>
           <button onclick="saveWithdrawInfo()">Save Withdrawal Info</button>
-        `
+        `;
       } else {
         withdrawSec.innerHTML = `
           Name: ${data.name}<br/>
           AC: ${data.ac}<br/>
           IFSC: ${data.ifsc}<br/>
           UPI: ${data.upi}
-        `
+        `;
       }
     }
 
     window.saveWithdrawInfo = async () => {
-      const name = document.getElementById('w-name').value
-      const ac = document.getElementById('w-ac').value
-      const ifsc = document.getElementById('w-ifsc').value
-      const upi = document.getElementById('w-upi').value
-      await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id)
-      loadWithdrawInfo()
-    }
+      const name = document.getElementById('w-name').value;
+      const ac = document.getElementById('w-ac').value;
+      const ifsc = document.getElementById('w-ifsc').value;
+      const upi = document.getElementById('w-upi').value;
+      await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id);
+      loadWithdrawInfo();
+    };
 
+    // 充值
     document.getElementById('recharge-btn').onclick = async () => {
-      const utr = document.getElementById('utr').value
-      const amount = parseFloat(document.getElementById('recharge-amount').value)
-      if (!utr || !amount) return alert('Fill UTR and amount')
-      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, email: currentUser.email,utr, amount }])
-      alert('Recharge request submitted.')
-    }
+      const utr = document.getElementById('utr').value;
+      const amount = parseFloat(document.getElementById('recharge-amount').value);
+      if (!utr || !amount) return alert('Fill UTR and amount');
+      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, email: currentUser.email, utr, amount }]);
+      alert('Recharge request submitted.');
+    };
 
+    // 提现
     document.getElementById('withdraw-btn').onclick = async () => {
-      const amount = parseFloat(document.getElementById('withdraw-amount').value)
-      if (!amount) return alert('Enter amount')
-      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, email: currentUser.email,amount }])
-      alert('Withdraw request submitted.')
-    }
+      const amount = parseFloat(document.getElementById('withdraw-amount').value);
+      if (!amount) return alert('Enter amount');
+      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, email: currentUser.email, amount }]);
+      alert('Withdraw request submitted.');
+    };
 
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
-        currentUser = data.user
-        afterLogin()
+        currentUser = data.user;
+        afterLogin();
       }
-    })
+    });
   </script>
 </body>
 </html>
