@@ -29,11 +29,10 @@
     button:hover{filter:brightness(.95)}
     .hidden{display:none}
 
-    /* --- 两栏布局，侧边栏不粘屏 --- */
     .layout{display:flex;min-height:100vh}
     .sidebar{
       width:240px;background:var(--sidebar);color:var(--sidebar-text);
-      padding:16px 12px;height:auto; /* 不再 sticky */
+      padding:16px 12px;height:auto;
     }
     .brand{display:flex;gap:10px;align-items:center;color:#fff;font-weight:700;margin:8px 8px 16px}
     .menu{display:flex;flex-direction:column;gap:6px;margin-top:8px}
@@ -45,9 +44,7 @@
     .menu button.active{background:var(--sidebar-active);color:#fff}
 
     .content{flex:1;padding:20px;min-width:0}
-    .card{
-      background:var(--card);padding:18px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.08);margin-bottom:16px;
-    }
+    .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.08);margin-bottom:16px;}
     .request-box{background:#f1f8e9;padding:12px;border-radius:8px;margin-top:10px}
     .btn-group{display:flex;gap:10px;margin-top:10px}
     table{width:100%;border-collapse:collapse;margin-top:10px}
@@ -72,7 +69,6 @@
 
   <!-- 主界面 -->
   <div id="admin-layout" class="layout hidden">
-    <!-- 左侧菜单（不粘屏） -->
     <aside class="sidebar">
       <div class="brand">🛠️ Admin Panel</div>
       <div class="menu">
@@ -81,12 +77,11 @@
         <button data-tab="withdraw">💸 Withdraw Requests</button>
         <button data-tab="bets">📜 Today’s Bets (IST)</button>
         <button data-tab="manual">🎯 Manual Result</button>
-        <!-- 🆕 新增：Users 标签 -->
+        <!-- 新增 Users -->
         <button data-tab="users">👥 Users</button>
       </div>
     </aside>
 
-    <!-- 右侧内容 -->
     <main class="content">
       <!-- Bank -->
       <section id="tab-bank" class="tab">
@@ -113,7 +108,7 @@
         </div>
       </section>
 
-      <!-- Withdraw（含用户保存的提款信息） -->
+      <!-- Withdraw -->
       <section id="tab-withdraw" class="tab hidden">
         <div class="card">
           <h3>💸 Withdraw Requests</h3>
@@ -148,7 +143,7 @@
         </div>
       </section>
 
-      <!-- 🆕 Users -->
+      <!-- Users -->
       <section id="tab-users" class="tab hidden">
         <div class="card">
           <h3>👥 Users</h3>
@@ -194,18 +189,16 @@
           const tab = btn.getAttribute('data-tab');
           document.querySelectorAll('.tab').forEach(sec=>sec.classList.add('hidden'));
           document.getElementById('tab-' + tab).classList.remove('hidden');
-          // 进入某些tab时刷新列表
           if (tab==='recharge') loadRechargeRequests();
           if (tab==='withdraw') loadWithdrawRequests();
           if (tab==='bets')     loadTodayBets();
-          if (tab==='users')    loadUsers();         // 🆕
+          if (tab==='users')    loadUsers(); // 新增
         };
       });
     }
 
     // ---------- 初始化数据 ----------
     async function loadAll() {
-      // bank
       const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single();
       if (data) {
         document.getElementById('name').value   = data.name || '';
@@ -214,11 +207,10 @@
         document.getElementById('upi').value    = data.upi || '';
         document.getElementById('crypto').value = data.crypto_address || '';
       }
-      // 首屏加载
       loadRechargeRequests();
       loadWithdrawRequests();
       loadTodayBets();
-      // Users 不抢首屏（进入 tab 时再加载）
+      // Users 在进入标签时加载
     }
 
     document.getElementById('save-bank-btn').onclick = async () => {
@@ -261,7 +253,7 @@
       }
     }
 
-    // ---------- Withdraw（含用户保存的提款信息） ----------
+    // ---------- Withdraw ----------
     async function loadWithdrawRequests() {
       const container = document.getElementById('withdraw-requests');
       const { data, error } = await supabase
@@ -277,7 +269,6 @@
         return;
       }
 
-      // 批量查对应用户资料（email, name, ac, ifsc, upi）
       const userIds = [...new Set(data.map(r => r.user_id).filter(Boolean))];
       let userMap = {};
       if (userIds.length) {
@@ -431,45 +422,38 @@
     }
     document.getElementById('bets-reload').onclick = loadTodayBets;
 
-    // ---------- 手动设置开奖结果 ----------
+    // ---------- 手动结果 ----------
     document.getElementById('set-result-btn').onclick = async () => {
       const round = document.getElementById('manual-round').value.trim();
       const result = parseInt(document.getElementById('manual-result').value);
       if (!round || isNaN(result) || result < 1 || result > 6) return alert('Invalid input');
 
-      // 查是否存在
       const { data: existing, error: fetchError } = await supabase
-        .from('game_rounds')
-        .select('round_number')
-        .eq('round_number', round)
-        .maybeSingle();
+        .from('game_rounds').select('round_number').eq('round_number', round).maybeSingle();
       if (fetchError) return alert('Query failed: ' + fetchError.message);
 
       if (existing) {
         const { error: updateError } = await supabase
-          .from('game_rounds')
-          .update({ result, is_manual: true })
-          .eq('round_number', round);
+          .from('game_rounds').update({ result, is_manual: true }).eq('round_number', round);
         if (updateError) alert('Update failed: ' + updateError.message);
         else alert(`✅ Updated result for ${round} = ${result}`);
       } else {
         const { error: insertError } = await supabase
-          .from('game_rounds')
-          .insert([{ round_number: round, result, is_manual: true, created_at: new Date().toISOString() }]);
+          .from('game_rounds').insert([{ round_number: round, result, is_manual: true, created_at: new Date().toISOString() }]);
         if (insertError) alert('Insert failed: ' + insertError.message);
         else alert(`✅ Inserted result for ${round} = ${result}`);
       }
     };
 
-    // ---------- 🆕 Users 列表 + 余额增减 ----------
+    // ---------- Users 列表 + 余额/打码量调整 ----------
     async function loadUsers(){
       const container = document.getElementById('users-table');
       const emailFilter = (document.getElementById('users-email-filter').value || '').trim();
 
       let q = supabase.from('users')
-        .select('id, email, balance, turnover_remaining, name, ac, ifsc, upi, created_at')
-        .order('created_at', { ascending: false })
-        .limit(500);
+        .select('id, email, balance, turnover_remaining, name, ac, ifsc, upi')
+        .order('email', { ascending: true })
+        .limit(1000);
 
       if (emailFilter) q = q.ilike('email', `%${emailFilter}%`);
 
@@ -487,11 +471,10 @@
           <td>${u.ac || '-'}</td>
           <td>${u.ifsc || '-'}</td>
           <td>${u.upi || '-'}</td>
-          <td>${new Date(u.created_at).toLocaleString()}</td>
           <td>
             <div class="btn-group" style="display:flex;gap:6px;flex-wrap:wrap">
-              <button style="width:auto" onclick="adjustBalance('${u.id}', ${u.balance||0}, 'add')">➕ Add</button>
-              <button style="width:auto;background:#ef4444" onclick="adjustBalance('${u.id}', ${u.balance||0}, 'sub')">➖ Deduct</button>
+              <button style="width:auto" onclick="adjustBalance('${u.id}', 'add')">➕ Add</button>
+              <button style="width:auto;background:#ef4444" onclick="adjustBalance('${u.id}', 'sub')">➖ Deduct</button>
             </div>
           </td>
         </tr>
@@ -503,7 +486,7 @@
             <thead>
               <tr>
                 <th>ID</th><th>Email</th><th>Balance</th><th>Turnover</th>
-                <th>Name</th><th>AC</th><th>IFSC</th><th>UPI</th><th>Created</th><th>Actions</th>
+                <th>Name</th><th>AC</th><th>IFSC</th><th>UPI</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -514,23 +497,42 @@
 
     document.getElementById('users-reload').onclick = loadUsers;
 
-    // 暴露到 window 以便按钮调用
-    window.adjustBalance = async (user_id, currentBalance, action) => {
+    // 余额调整（可选择是否同步调整打码量）
+    window.adjustBalance = async (user_id, action) => {
       let val = prompt(action === 'add' ? 'Enter amount to ADD:' : 'Enter amount to DEDUCT:');
-      if (val === null) return; // 取消
+      if (val === null) return;
       const amt = Number(val);
       if (!amt || amt <= 0) return alert('Invalid amount');
 
-      let newBalance = Number(currentBalance || 0);
-      if (action === 'add') newBalance += amt;
-      else {
+      const adjustRollover = confirm('Also adjust turnover requirement?');
+
+      // 读取当前余额与打码量
+      const { data: urow, error: rerr } = await supabase
+        .from('users')
+        .select('balance, turnover_remaining')
+        .eq('id', user_id)
+        .single();
+      if (rerr) return alert('Load user failed: ' + rerr.message);
+
+      let newBalance = Number(urow?.balance || 0);
+      let newTurn    = Number(urow?.turnover_remaining || 0);
+
+      if (action === 'add') {
+        newBalance += amt;
+        if (adjustRollover) newTurn += amt;
+      } else {
         if (newBalance < amt) return alert('Balance would go negative');
         newBalance -= amt;
+        if (adjustRollover) newTurn = Math.max(newTurn - amt, 0);
       }
 
-      const { error } = await supabase.from('users').update({ balance: newBalance }).eq('id', user_id);
-      if (error) return alert('Update failed: ' + error.message);
-      alert('Balance updated.');
+      const { error: uperr } = await supabase
+        .from('users')
+        .update({ balance: newBalance, turnover_remaining: newTurn })
+        .eq('id', user_id);
+      if (uperr) return alert('Update failed: ' + uperr.message);
+
+      alert('Updated.');
       loadUsers();
     };
   </script>
