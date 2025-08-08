@@ -22,7 +22,6 @@
         #f6f9fc;
     }
 
-    /* 顶栏 */
     .nav{position:sticky; top:0; z-index:50; backdrop-filter:saturate(160%) blur(12px);
       background:rgba(246,249,252,.85); border-bottom:1px solid var(--line);}
     .nav-inner{max-width:1080px; margin:0 auto; padding:12px 16px;
@@ -38,15 +37,13 @@
     .btn.ghost{background:#fff}
     a.btn{text-decoration:none;color:inherit}
 
-    /* 容器/卡片 */
     .wrap{max-width:1080px;margin:0 auto;padding:16px}
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
     .inner{padding:16px}
 
-    /* 用户卡 & 游戏区 */
     .user{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
     .hello{font-size:13px;color:var(--muted)}
-    .balance{font-weight:800;color:var(--green);font-size:22px}
+    .balance{font-weight:800;color:var(--green);font-size:22px;display:flex;align-items:center;gap:10px}
     .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .games{display:grid;gap:14px;grid-template-columns:1fr}
     @media(min-width:700px){ .games{grid-template-columns:repeat(3,1fr)} }
@@ -60,7 +57,6 @@
     .desc{color:var(--muted);font-size:13px}
     .game .btn{width:100%; margin-top:auto}
 
-    /* 模态框 */
     .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.3);z-index:100}
     .modal{width:min(96vw,560px);background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow)}
     .modal header{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:800}
@@ -72,10 +68,16 @@
     .muted{color:var(--muted)}
     .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed var(--line);border-radius:12px}
     .kv .k{color:var(--muted)} .kv .v{font-weight:700}
+
+    /* VIP 徽章 */
+    .vip-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
+      color:#b45309;font-weight:700;font-size:12px
+    }
   </style>
 </head>
 <body>
-  <!-- 顶部导航：含客服按钮 -->
   <div class="nav">
     <div class="nav-inner">
       <div class="brand">
@@ -102,7 +104,11 @@
             <button id="open-withdraw" class="btn">Withdraw</button>
           </div>
         </div>
-        <div class="balance">₹<span id="balance">0</span></div>
+        <div class="balance">
+          ₹<span id="balance">0</span>
+          <!-- VIP 徽章 -->
+          <span id="vip-badge" class="vip-badge" title="VIP Level">VIP 0</span>
+        </div>
       </div>
     </div>
 
@@ -134,7 +140,7 @@
     </div>
   </div>
 
-  <!-- 登录/注册 Modal -->
+  <!-- 登录 Modal -->
   <div id="login-modal" class="modal-bg">
     <div class="modal">
       <header>Login / Signup</header>
@@ -153,7 +159,7 @@
     </div>
   </div>
 
-  <!-- 存款 Modal：集成银行/UPI 信息 + UTR/金额 -->
+  <!-- 存款 Modal -->
   <div id="dep-modal" class="modal-bg">
     <div class="modal">
       <header>Deposit</header>
@@ -178,13 +184,12 @@
     </div>
   </div>
 
-  <!-- 提款 Modal：集成并可编辑个人资料 + 提现金额 + 打码量显示 -->
+  <!-- 提款 Modal（含打码量显示） -->
   <div id="wd-modal" class="modal-bg">
     <div class="modal">
       <header>Withdraw</header>
       <div class="body">
         <div class="form">
-          <!-- 新增一行：显示当前打码量（与你的布局风格一致） -->
           <div class="kv" id="rollover-kv"><div class="k">Rollover Needed</div><div class="v" id="rollover-val">0.00</div></div>
 
           <div class="row">
@@ -212,31 +217,28 @@
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    // 简易工具
     const $ = (id)=>document.getElementById(id);
     const show = (el,on=true)=> el.style.display = on ? 'flex' : 'none';
     const toast = (m)=>alert(m);
     const fmt2 = (n)=> Number(n ?? 0).toFixed(2);
 
-    // 顶栏按钮
     const openLogin = $('open-login');
     const logoutBtn = $('logout-btn');
-    // 用户区
     const userEmail = $('user-email');
     const balanceEl = $('balance');
-    // 模态：登录
+    const vipBadge  = $('vip-badge');
+
     const loginModal = $('login-modal'), loginCancel = $('login-cancel'),
           signupBtn = $('signup-btn'), loginBtn = $('login-btn'),
           loginEmail = $('login-email'), loginPass = $('login-pass');
-    // 模态：存款
+
     const depModal = $('dep-modal'), depCancel = $('dep-cancel'), depSubmit = $('dep-submit'),
           depUtr = $('dep-utr'), depAmount = $('dep-amount'), depBank = $('dep-bank');
-    // 模态：提现
+
     const wdModal = $('wd-modal'), wdCancel = $('wd-cancel'), wdSubmit = $('wd-submit'),
           wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
           wdAmount = $('wd-amount'), wdSave = $('wd-save'), rolloverVal = $('rollover-val');
 
-    // 入口按钮
     $('open-deposit').onclick = async()=>{ await loadBankInfoIntoDeposit(); show(depModal,true); };
     $('open-withdraw').onclick = async()=>{ await loadWithdrawProfileIntoModal(); show(wdModal,true); };
     openLogin.onclick = ()=> show(loginModal,true);
@@ -246,7 +248,7 @@
 
     let currentUser = null;
     function setAuthUI(loggedIn){
-      openLogin.style.display = loggedIn ? 'none' : '';
+      $('open-login').style.display = loggedIn ? 'none' : '';
       logoutBtn.style.display = loggedIn ? '' : 'none';
     }
 
@@ -269,22 +271,23 @@
     };
     logoutBtn.onclick = async ()=>{
       await supabase.auth.signOut();
-      currentUser = null; userEmail.textContent = '—'; balanceEl.textContent = '0'; setAuthUI(false);
+      currentUser = null; userEmail.textContent = '—'; balanceEl.textContent = '0'; vipBadge.textContent='VIP 0'; setAuthUI(false);
     };
 
-    // 登录后初始化
     async function afterLogin(){
       setAuthUI(true);
       userEmail.textContent = currentUser.email || '—';
       await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
-      await refreshBalance();
+      await refreshUserSummary();
     }
-    async function refreshBalance(){
-      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+    async function refreshUserSummary(){
+      const { data } = await supabase.from('users')
+        .select('balance, vip_level')
+        .eq('id', currentUser.id).single();
       balanceEl.textContent = data?.balance ?? 0;
+      vipBadge.textContent = `VIP ${Number(data?.vip_level ?? 0)}`;
     }
 
-    // —— 存款：加载银行信息到存款弹窗 —— //
     async function loadBankInfoIntoDeposit(){
       const { data } = await supabase.from('bank_info').select('*').eq('id', 1).maybeSingle();
       const items = [
@@ -296,12 +299,10 @@
       `).join('');
     }
 
-    // —— 提款：加载/回填用户提现资料 + 打码量 —— //
     async function loadWithdrawProfileIntoModal(){
       const { data } = await supabase.from('users')
         .select('name,ac,ifsc,upi,turnover_remaining')
         .eq('id', currentUser.id).single();
-
       wName.value = data?.name || '';
       wAc.value   = data?.ac || '';
       wIfsc.value = data?.ifsc || '';
@@ -310,7 +311,6 @@
       rolloverVal.textContent = fmt2(data?.turnover_remaining);
     }
 
-    // —— 存款提交 -> 仅写充值请求；打码量实际由状态 approved 的触发器增加 —— //
     depSubmit.onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
       const utr = depUtr.value.trim();
@@ -324,7 +324,6 @@
       toast('✅ Recharge request submitted.');
     };
 
-    // —— 提现：保存资料按钮 —— //
     wdSave.onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
       const payload = { name:wName.value.trim(), ac:wAc.value.trim(), ifsc:wIfsc.value.trim(), upi:wUpi.value.trim() };
@@ -334,18 +333,15 @@
       toast('✅ Profile saved.');
     };
 
-    // —— 提现提交：走 RPC，后端强校验 turnover_remaining==0 —— //
     wdSubmit.onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
       const amount = Number(wdAmount.value);
       if (!amount || amount <= 0) return toast('Enter amount');
 
-      // 基本资料校验
       if (!wName.value.trim() || !wAc.value.trim() || !wIfsc.value.trim()) {
         return toast('Please complete withdrawal profile (Name / AC / IFSC).');
       }
 
-      // 本地读一次剩余打码量减少无效请求
       const { data: u } = await supabase.from('users')
         .select('turnover_remaining').eq('id', currentUser.id).single();
       const need = Number(u?.turnover_remaining || 0);
@@ -353,7 +349,6 @@
         return toast(`Rollover not met: ₹${fmt2(need)} remaining`);
       }
 
-      // 调RPC（数据库再兜底校验）
       const { error } = await supabase.rpc('request_withdraw', {
         _user_id: currentUser.id,
         _email: currentUser.email,
@@ -370,7 +365,6 @@
       toast('✅ Withdraw request submitted.');
     };
 
-    // 恢复登录
     (async ()=>{
       const { data:{ user } } = await supabase.auth.getUser();
       if (user){ currentUser=user; await afterLogin(); } else { setAuthUI(false); }
