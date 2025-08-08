@@ -81,6 +81,8 @@
         <button data-tab="withdraw">💸 Withdraw Requests</button>
         <button data-tab="bets">📜 Today’s Bets (IST)</button>
         <button data-tab="manual">🎯 Manual Result</button>
+        <!-- 🆕 新增：Users 标签 -->
+        <button data-tab="users">👥 Users</button>
       </div>
     </aside>
 
@@ -145,6 +147,18 @@
           </p>
         </div>
       </section>
+
+      <!-- 🆕 Users -->
+      <section id="tab-users" class="tab hidden">
+        <div class="card">
+          <h3>👥 Users</h3>
+          <div class="toolbar">
+            <input id="users-email-filter" placeholder="Filter by email (optional)" style="max-width:320px"/>
+            <button id="users-reload" style="width:auto">Reload</button>
+          </div>
+          <div id="users-table" style="margin-top:8px">Loading...</div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -184,6 +198,7 @@
           if (tab==='recharge') loadRechargeRequests();
           if (tab==='withdraw') loadWithdrawRequests();
           if (tab==='bets')     loadTodayBets();
+          if (tab==='users')    loadUsers();         // 🆕
         };
       });
     }
@@ -203,6 +218,7 @@
       loadRechargeRequests();
       loadWithdrawRequests();
       loadTodayBets();
+      // Users 不抢首屏（进入 tab 时再加载）
     }
 
     document.getElementById('save-bank-btn').onclick = async () => {
@@ -245,7 +261,7 @@
       }
     }
 
-    // ---------- Withdraw（批量补全用户提款信息） ----------
+    // ---------- Withdraw（含用户保存的提款信息） ----------
     async function loadWithdrawRequests() {
       const container = document.getElementById('withdraw-requests');
       const { data, error } = await supabase
@@ -443,6 +459,79 @@
         if (insertError) alert('Insert failed: ' + insertError.message);
         else alert(`✅ Inserted result for ${round} = ${result}`);
       }
+    };
+
+    // ---------- 🆕 Users 列表 + 余额增减 ----------
+    async function loadUsers(){
+      const container = document.getElementById('users-table');
+      const emailFilter = (document.getElementById('users-email-filter').value || '').trim();
+
+      let q = supabase.from('users')
+        .select('id, email, balance, turnover_remaining, name, ac, ifsc, upi, created_at')
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (emailFilter) q = q.ilike('email', `%${emailFilter}%`);
+
+      const { data, error } = await q;
+      if (error) { container.textContent = 'Failed to load users: ' + error.message; return; }
+      if (!data || data.length === 0) { container.textContent = 'No users.'; return; }
+
+      const rows = data.map(u => `
+        <tr>
+          <td class="mono" style="font-size:12px">${u.id}</td>
+          <td>${u.email || '-'}</td>
+          <td>₹${Number(u.balance||0).toFixed(2)}</td>
+          <td>₹${Number(u.turnover_remaining||0).toFixed(2)}</td>
+          <td>${u.name || '-'}</td>
+          <td>${u.ac || '-'}</td>
+          <td>${u.ifsc || '-'}</td>
+          <td>${u.upi || '-'}</td>
+          <td>${new Date(u.created_at).toLocaleString()}</td>
+          <td>
+            <div class="btn-group" style="display:flex;gap:6px;flex-wrap:wrap">
+              <button style="width:auto" onclick="adjustBalance('${u.id}', ${u.balance||0}, 'add')">➕ Add</button>
+              <button style="width:auto;background:#ef4444" onclick="adjustBalance('${u.id}', ${u.balance||0}, 'sub')">➖ Deduct</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      container.innerHTML = `
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th><th>Email</th><th>Balance</th><th>Turnover</th>
+                <th>Name</th><th>AC</th><th>IFSC</th><th>UPI</th><th>Created</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    document.getElementById('users-reload').onclick = loadUsers;
+
+    // 暴露到 window 以便按钮调用
+    window.adjustBalance = async (user_id, currentBalance, action) => {
+      let val = prompt(action === 'add' ? 'Enter amount to ADD:' : 'Enter amount to DEDUCT:');
+      if (val === null) return; // 取消
+      const amt = Number(val);
+      if (!amt || amt <= 0) return alert('Invalid amount');
+
+      let newBalance = Number(currentBalance || 0);
+      if (action === 'add') newBalance += amt;
+      else {
+        if (newBalance < amt) return alert('Balance would go negative');
+        newBalance -= amt;
+      }
+
+      const { error } = await supabase.from('users').update({ balance: newBalance }).eq('id', user_id);
+      if (error) return alert('Update failed: ' + error.message);
+      alert('Balance updated.');
+      loadUsers();
     };
   </script>
 </body>
