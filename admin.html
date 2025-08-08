@@ -29,12 +29,11 @@
     button:hover{filter:brightness(.95)}
     .hidden{display:none}
 
-    /* --- 2栏布局 --- */
-    .layout{
-      display:flex;min-height:100vh;
-    }
+    /* --- 两栏布局，侧边栏不粘屏 --- */
+    .layout{display:flex;min-height:100vh}
     .sidebar{
-      width:240px;background:var(--sidebar);color:var(--sidebar-text);padding:16px 12px;position:sticky;top:0;height:100vh;overflow:auto;
+      width:240px;background:var(--sidebar);color:var(--sidebar-text);
+      padding:16px 12px;height:auto; /* 不再 sticky */
     }
     .brand{display:flex;gap:10px;align-items:center;color:#fff;font-weight:700;margin:8px 8px 16px}
     .menu{display:flex;flex-direction:column;gap:6px;margin-top:8px}
@@ -46,11 +45,8 @@
     .menu button.active{background:var(--sidebar-active);color:#fff}
 
     .content{flex:1;padding:20px;min-width:0}
-    .grid{display:grid;grid-template-columns:1fr;gap:16px}
-    @media (min-width:980px){ .grid{grid-template-columns:repeat(2,1fr)} }
-
     .card{
-      background:var(--card);padding:18px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.08)
+      background:var(--card);padding:18px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.08);margin-bottom:16px;
     }
     .request-box{background:#f1f8e9;padding:12px;border-radius:8px;margin-top:10px}
     .btn-group{display:flex;gap:10px;margin-top:10px}
@@ -60,6 +56,8 @@
     .row{display:flex;gap:10px}
     .row > *{flex:1}
     .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+    .muted{color:var(--muted);font-size:12px}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
   </style>
 </head>
 <body>
@@ -74,7 +72,7 @@
 
   <!-- 主界面 -->
   <div id="admin-layout" class="layout hidden">
-    <!-- 左侧菜单 -->
+    <!-- 左侧菜单（不粘屏） -->
     <aside class="sidebar">
       <div class="brand">🛠️ Admin Panel</div>
       <div class="menu">
@@ -113,7 +111,7 @@
         </div>
       </section>
 
-      <!-- Withdraw -->
+      <!-- Withdraw（含用户保存的提款信息） -->
       <section id="tab-withdraw" class="tab hidden">
         <div class="card">
           <h3>💸 Withdraw Requests</h3>
@@ -138,11 +136,11 @@
         <div class="card">
           <h3>🎯 Manual Result Setter</h3>
           <div class="row">
-            <input id="manual-round" placeholder="Round Number (e.g. 202508081430)" />
+            <input id="manual-round" class="mono" placeholder="Round Number (e.g. 202508081430)" />
             <input id="manual-result" type="number" min="1" max="6" placeholder="Result (1-6)" />
           </div>
           <button id="set-result-btn">Set Result</button>
-          <p style="color:var(--muted);font-size:13px;margin-top:8px">
+          <p class="muted" style="margin-top:8px">
             若该期已存在，将直接 <b>更新</b> 结果并标记为 <code>is_manual=true</code>，自动开奖不会覆盖。
           </p>
         </div>
@@ -247,19 +245,48 @@
       }
     }
 
-    // ---------- Withdraw ----------
+    // ---------- Withdraw（批量补全用户提款信息） ----------
     async function loadWithdrawRequests() {
       const container = document.getElementById('withdraw-requests');
-      const { data, error } = await supabase.from('withdraw_requests').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('withdraw_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       if (error) { container.textContent = 'Failed to load'; return; }
       container.innerHTML = '';
+
+      if (!data || data.length === 0) {
+        container.textContent = 'No withdraw requests.';
+        return;
+      }
+
+      // 批量查对应用户资料（email, name, ac, ifsc, upi）
+      const userIds = [...new Set(data.map(r => r.user_id).filter(Boolean))];
+      let userMap = {};
+      if (userIds.length) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, email, name, ac, ifsc, upi')
+          .in('id', userIds);
+        (users || []).forEach(u => { userMap[u.id] = u; });
+      }
+
       for (const item of data) {
+        const u = userMap[item.user_id] || {};
         const el = document.createElement('div');
         el.className = 'request-box';
         el.innerHTML = `
-          <b>${item.email || item.user_id}</b><br/>
-          Amount: ₹${item.amount}<br/>
-          Status: ${item.status || 'pending'}
+          <div><b>${u.email || item.email || item.user_id}</b></div>
+          <div>Amount: ₹${item.amount}</div>
+          <div>Status: ${item.status || 'pending'}</div>
+          <div class="muted" style="margin-top:6px">Saved Withdraw Info:</div>
+          <div class="mono" style="font-size:13px">
+            Name: ${u.name || '-'}<br/>
+            AC: ${u.ac || '-'}<br/>
+            IFSC: ${u.ifsc || '-'}<br/>
+            UPI: ${u.upi || '-'}
+          </div>
           ${
             item.status === 'pending'
               ? `<div class="btn-group">
@@ -388,13 +415,13 @@
     }
     document.getElementById('bets-reload').onclick = loadTodayBets;
 
-    // ---------- 手动设置开奖结果（存在则更新，不重复插入） ----------
+    // ---------- 手动设置开奖结果 ----------
     document.getElementById('set-result-btn').onclick = async () => {
       const round = document.getElementById('manual-round').value.trim();
       const result = parseInt(document.getElementById('manual-result').value);
       if (!round || isNaN(result) || result < 1 || result > 6) return alert('Invalid input');
 
-      // 先查是否存在
+      // 查是否存在
       const { data: existing, error: fetchError } = await supabase
         .from('game_rounds')
         .select('round_number')
