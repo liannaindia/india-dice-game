@@ -2,272 +2,419 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>India Game Lobby</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script type="module" src="./supabase-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to bottom right, #fff7e6, #f0f8ff);
-      color: #222;
+    :root{
+      --bg:#f6f9fc; --card:#fff; --text:#0f172a; --muted:#64748b;
+      --line:#e2e8f0; --primary:#ff6f00; --primary-press:#e65f00;
+      --green:#16a34a; --blue:#2563eb; --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08);
     }
-    .container {
-      max-width: 480px;
-      margin: auto;
-      padding: 20px;
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial; color:var(--text); background:
+      radial-gradient(1000px 500px at 100% -10%, #ffe7c6 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 0%, #e0f2ff 0%, transparent 55%),
+      var(--bg);
     }
-    h2 {
-      text-align: center;
-      color: #ff6f00;
+
+    /* 顶栏 */
+    .nav{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter:saturate(160%) blur(12px);
+      background:rgba(246,249,252,.85);
+      border-bottom:1px solid var(--line);
     }
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 20px;
-      margin-bottom: 20px;
+    .nav-inner{
+      max-width:1080px; margin:0 auto; padding:12px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
     }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
+    .logo{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;
+      border:1px solid #ffd7aa; background:linear-gradient(135deg,#ffe2bd,#fff); box-shadow:inset 0 1px 0 #fff}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 14px;
+      border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700}
+    .btn.primary{background:var(--primary);color:#fff;border:0}
+    .btn.primary:active{background:var(--primary-press)}
+    .btn.ghost{background:#fff}
+
+    /* 布局 */
+    .wrap{max-width:1080px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:16px}
+    @media(min-width:900px){ .grid{ grid-template-columns: 2fr 1fr; } }
+
+    /* 卡片 */
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card .inner{padding:16px}
+
+    /* 用户卡 */
+    .user{
+      display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center
     }
-    button {
-      background: #007bff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
+    .user .hello{font-size:13px;color:var(--muted)}
+    .balance{font-weight:800;color:var(--green);font-size:22px}
+    .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+    /* 游戏区 */
+    .games{display:grid;gap:14px;grid-template-columns:1fr}
+    @media(min-width:700px){ .games{grid-template-columns:repeat(3,1fr)} }
+    .game{
+      display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;
+      background:linear-gradient(180deg,#ffffff,#fffef9);border:1px solid var(--line);
+      transition:transform .15s ease, box-shadow .15s ease;
     }
-    button:hover {
-      background: #0056b3;
-    }
-    .hidden { display: none; }
-    .game-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 20px;
-    }
-    .game-card {
-      text-align: center;
-      padding: 16px;
-      cursor: pointer;
-      border-radius: 12px;
-      background: #f9f9f9;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .game-card:hover {
-      transform: scale(1.03);
-      box-shadow: 0 6px 14px rgba(0,0,0,0.15);
-    }
-    .game-card img {
-      max-width: 100%;
-      height: 100px;
-      object-fit: contain;
-      margin-bottom: 10px;
-    }
-    .balance {
-      font-weight: bold;
-      color: #2e7d32;
-    }
+    .game:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.06); }
+    .thumb{height:120px;border-radius:12px;background:linear-gradient(135deg,#ffedd5,#fff);
+      border:1px solid #ffe4c7;display:grid;place-items:center;font-size:46px}
+    .title{font-weight:800}
+    .desc{color:var(--muted);font-size:13px}
+    .game .btn{width:100%; margin-top:auto}
+
+    /* 银行信息侧栏 */
+    .banklist{display:grid;gap:8px}
+    .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed var(--line);border-radius:12px}
+    .kv .k{color:var(--muted)}
+    .kv .v{font-weight:700}
+
+    /* 模态框 */
+    .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.3);z-index:100}
+    .modal{width:min(96vw,520px);background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .modal header{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:800}
+    .modal .body{padding:16px}
+    .modal footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+    .form{display:grid;gap:10px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    input{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);padding:0 12px;font-size:15px;background:#fff}
+    .muted{color:var(--muted)}
+
     /* 客服按钮 */
-    #customer-service-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #ff6f00;
-      color: white;
-      font-size: 16px;
-      font-weight: 600;
-      padding: 10px 18px;
-      border-radius: 50px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      text-decoration: none;
-      z-index: 9999;
-      transition: background 0.3s;
+    #customer-service-btn{
+      position:fixed;right:16px;bottom:16px;z-index:110;background:var(--blue);color:#fff;
+      font-weight:700;border-radius:999px;padding:12px 16px;box-shadow:0 10px 20px rgba(37,99,235,.25)
     }
-    #customer-service-btn:hover {
-      background: #e65c00;
-    }
+    #customer-service-btn:hover{filter:brightness(.96)}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🎮 India Game Lobby</h2>
-
-    <!-- 登录注册 -->
-    <div class="card" id="auth-section">
-      <h3>🔐 Login / Signup</h3>
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <button id="signup-btn">Sign Up</button>
-      <button id="login-btn">Log In</button>
-    </div>
-
-    <!-- 游戏大厅 -->
-    <div id="lobby-section" class="hidden">
-      <div class="card">
-        <p>👋 Welcome, <span id="user-email"></span></p>
-        <p class="balance">💰 Balance: ₹<span id="balance">0</span></p>
-        <button id="logout-btn">Logout</button>
+  <!-- 顶栏 -->
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="logo">🎲</div>
+        <div>India Game Lobby</div>
       </div>
-
-      <div class="card">
-        <h3>🕹️ Select a Game</h3>
-        <div class="game-grid">
-          <div class="game-card" onclick="window.location.href='dice.html'">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Alea_1.png/100px-Alea_1.png" alt="Dice Game">
-            <div>🎲 Lucky Dice</div>
-          </div>
-          <div class="game-card" style="opacity:0.5;cursor: not-allowed;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Crystal_Clear_app_korganizer.png/100px-Crystal_Clear_app_korganizer.png" alt="Coming Soon">
-            <div>🔒 Coming Soon</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 充值 -->
-      <div class="card">
-        <h3>💰 Recharge</h3>
-        <div id="bank-info">Loading bank info...</div>
-        <input type="text" id="utr" placeholder="UTR / Reference Number" />
-        <input type="number" id="recharge-amount" placeholder="Amount ₹" />
-        <button id="recharge-btn">Submit Recharge</button>
-      </div>
-
-      <!-- 提现 -->
-      <div class="card">
-        <h3>🏦 Withdraw</h3>
-        <div id="withdraw-section"></div>
-        <input type="number" id="withdraw-amount" placeholder="Amount ₹" />
-        <button id="withdraw-btn">Submit Withdrawal</button>
+      <div class="actions">
+        <button id="open-login" class="btn">Login / Signup</button>
+        <button id="logout-btn" class="btn ghost" style="display:none">Logout</button>
       </div>
     </div>
   </div>
 
-  <!-- 客服按钮 -->
-  <a href="https://your-customer-service-link.com" target="_blank" id="customer-service-btn">💬 客服</a>
+  <div class="wrap">
+    <div class="grid">
+      <!-- 左侧：用户卡 + 游戏区 -->
+      <div class="left">
+        <div class="card">
+          <div class="inner user">
+            <div>
+              <div class="hello">Logged in as</div>
+              <div id="user-email" style="font-weight:800">—</div>
+              <div class="quick">
+                <button id="open-deposit" class="btn primary">Deposit</button>
+                <button id="open-withdraw" class="btn">Withdraw</button>
+              </div>
+            </div>
+            <div class="balance">₹<span id="balance">0</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="inner">
+            <div style="font-weight:800;margin-bottom:10px">🎮 Select a Game</div>
+            <div class="games">
+              <div class="game">
+                <div class="thumb">🎲</div>
+                <div class="title">Lucky Dice</div>
+                <div class="desc">Bet on Big/Small or exact number. Results every minute (IST).</div>
+                <a class="btn primary" href="./dice.html">Play</a>
+              </div>
+              <div class="game">
+                <div class="thumb">🧧</div>
+                <div class="title">Coming Soon</div>
+                <div class="desc">New India-style games are on the way.</div>
+                <button class="btn" disabled>Stay tuned</button>
+              </div>
+              <div class="game">
+                <div class="thumb">💎</div>
+                <div class="title">Coming Soon</div>
+                <div class="desc">Unlock more experiences for players.</div>
+                <button class="btn" disabled>Stay tuned</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：银行信息 / 提现资料 -->
+      <div class="right">
+        <div class="card">
+          <div class="inner">
+            <div style="font-weight:800;margin-bottom:10px">🏦 Bank / UPI Info</div>
+            <div id="bank-box" class="banklist">
+              <div class="muted">Loading…</div>
+            </div>
+            <div class="muted" style="margin-top:8px">* Transfer first, then submit UTR in Deposit.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="inner">
+            <div style="font-weight:800;margin-bottom:10px">🧾 Withdrawal Profile</div>
+            <div id="withdraw-profile" class="banklist">
+              <div class="muted">Loading…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> <!-- /grid -->
+  </div> <!-- /wrap -->
+
+  <!-- 客服按钮：换成你的链接 -->
+  <a id="customer-service-btn" href="https://wa.me/919876543210" target="_blank">💬 Customer Service</a>
+
+  <!-- 登录/注册 Modal -->
+  <div id="login-modal" class="modal-bg">
+    <div class="modal">
+      <header>Login / Signup</header>
+      <div class="body">
+        <div class="form">
+          <input id="login-email" type="email" placeholder="Email" />
+          <input id="login-pass" type="password" placeholder="Password" />
+          <div class="muted">New user? Click “Signup” then login.</div>
+        </div>
+      </div>
+      <footer>
+        <button id="login-cancel" class="btn">Cancel</button>
+        <button id="signup-btn" class="btn">Signup</button>
+        <button id="login-btn" class="btn primary">Login</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 充值 Modal（提交到 recharge_requests） -->
+  <div id="dep-modal" class="modal-bg">
+    <div class="modal">
+      <header>Deposit</header>
+      <div class="body">
+        <div class="form">
+          <div class="muted">Please transfer to the bank/UPI above, then submit UTR:</div>
+          <input id="dep-utr" type="text" placeholder="UTR / Reference Number" />
+          <input id="dep-amount" type="number" min="1" placeholder="Amount ₹" />
+        </div>
+      </div>
+      <footer>
+        <button id="dep-cancel" class="btn">Cancel</button>
+        <button id="dep-submit" class="btn primary">Submit</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 提现 Modal（提交到 withdraw_requests） -->
+  <div id="wd-modal" class="modal-bg">
+    <div class="modal">
+      <header>Withdraw</header>
+      <div class="body">
+        <div class="form">
+          <div class="muted">Make sure your withdrawal profile is complete.</div>
+          <input id="wd-amount" type="number" min="1" placeholder="Amount ₹" />
+        </div>
+      </div>
+      <footer>
+        <button id="wd-cancel" class="btn">Cancel</button>
+        <button id="wd-submit" class="btn primary">Submit</button>
+      </footer>
+    </div>
+  </div>
 
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    const authSec = document.getElementById('auth-section');
-    const lobbySec = document.getElementById('lobby-section');
-    const emailEl = document.getElementById('email');
-    const passwordEl = document.getElementById('password');
-    const userEmail = document.getElementById('user-email');
-    const balanceEl = document.getElementById('balance');
-    const bankInfo = document.getElementById('bank-info');
-    const withdrawSec = document.getElementById('withdraw-section');
+    // 简易选择器 & 弹窗控制
+    const $ = (id)=>document.getElementById(id);
+    const show = (el,on=true)=> el.style.display = on ? 'flex' : 'none';
+    const toast = (m)=>alert(m);
+
+    // 顶栏按钮
+    const openLogin = $('open-login');
+    const logoutBtn = $('logout-btn');
+
+    // 用户信息
+    const userEmail = $('user-email');
+    const balanceEl = $('balance');
+
+    // 侧栏
+    const bankBox = $('bank-box');
+    const withdrawProfile = $('withdraw-profile');
+
+    // 登录弹窗
+    const loginModal = $('login-modal');
+    const loginCancel = $('login-cancel');
+    const signupBtn = $('signup-btn');
+    const loginBtn = $('login-btn');
+    const loginEmail = $('login-email');
+    const loginPass = $('login-pass');
+
+    // 充值弹窗
+    const depModal = $('dep-modal');
+    const depCancel = $('dep-cancel');
+    const depSubmit = $('dep-submit');
+    const depUtr = $('dep-utr');
+    const depAmount = $('dep-amount');
+
+    // 提现弹窗
+    const wdModal = $('wd-modal');
+    const wdCancel = $('wd-cancel');
+    const wdSubmit = $('wd-submit');
+    const wdAmount = $('wd-amount');
+
+    // 快捷按钮
+    $('open-deposit').onclick = ()=> show(depModal,true);
+    $('open-withdraw').onclick = ()=> show(wdModal,true);
+    openLogin.onclick = ()=> show(loginModal,true);
+    loginCancel.onclick = ()=> show(loginModal,false);
+    depCancel.onclick = ()=> show(depModal,false);
+    wdCancel.onclick = ()=> show(wdModal,false);
+
     let currentUser = null;
+    function setAuthUI(loggedIn){
+      openLogin.style.display = loggedIn ? 'none' : '';
+      logoutBtn.style.display = loggedIn ? '' : 'none';
+    }
 
-    document.getElementById('signup-btn').onclick = async () => {
-      const { error } = await supabase.auth.signUp({
-        email: emailEl.value,
-        password: passwordEl.value
-      });
-      if (error) alert(error.message);
-      else alert('Signup successful!');
+    // 登录/注册
+    signupBtn.onclick = async ()=>{
+      const email = loginEmail.value.trim();
+      const pass = loginPass.value;
+      if(!email || !pass) return toast('Enter email & password');
+      const { error } = await supabase.auth.signUp({ email, password: pass });
+      if (error) return toast(error.message);
+      toast('✅ Signup success. Now login.');
     };
-
-    document.getElementById('login-btn').onclick = async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailEl.value,
-        password: passwordEl.value
-      });
-      if (error) return alert('Login failed: ' + error.message);
+    loginBtn.onclick = async ()=>{
+      const email = loginEmail.value.trim();
+      const pass = loginPass.value;
+      if(!email || !pass) return toast('Enter email & password');
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) return toast('Login failed: ' + error.message);
       currentUser = data.user;
-      afterLogin();
+      show(loginModal,false);
+      await afterLogin();
     };
-
-    document.getElementById('logout-btn').onclick = async () => {
+    logoutBtn.onclick = async ()=>{
       await supabase.auth.signOut();
-      location.reload();
+      currentUser = null;
+      userEmail.textContent = '—';
+      balanceEl.textContent = '0';
+      setAuthUI(false);
     };
 
-    async function afterLogin() {
-      authSec.classList.add('hidden');
-      lobbySec.classList.remove('hidden');
-      userEmail.textContent = currentUser.email;
+    // 登录后初始化
+    async function afterLogin(){
+      setAuthUI(true);
+      userEmail.textContent = currentUser.email || '—';
+      // 确保 users 表有该用户
       await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
-      loadBalance();
-      loadBankInfo();
-      loadWithdrawInfo();
+      await refreshBalance();
+      await loadBankInfo();
+      await loadWithdrawProfile();
     }
-
-    async function loadBalance() {
+    async function refreshBalance(){
       const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
-      balanceEl.textContent = data?.balance || 0;
+      balanceEl.textContent = data?.balance ?? 0;
     }
 
-    async function loadBankInfo() {
-      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single();
-      bankInfo.innerHTML = `
-        Name: ${data.name || 'N/A'}<br/>
-        AC: ${data.ac || 'N/A'}<br/>
-        IFSC: ${data.ifsc || 'N/A'}<br/>
-        UPI: ${data.upi || 'N/A'}<br/>
-        Crypto: ${data.crypto_address || 'N/A'}<br/>
-      `;
+    // 侧栏数据
+    async function loadBankInfo(){
+      const { data, error } = await supabase.from('bank_info').select('*').eq('id', 1).maybeSingle();
+      if (error || !data){
+        bankBox.innerHTML = '<div class="muted">No bank info yet.</div>'; return;
+      }
+      const items = [
+        ['Name', data.name], ['AC', data.ac], ['IFSC', data.ifsc],
+        ['UPI', data.upi], ['Crypto', data.crypto_address]
+      ];
+      bankBox.innerHTML = items.map(([k,v])=>`
+        <div class="kv"><div class="k">${k}</div><div class="v">${v || '—'}</div></div>
+      `).join('');
     }
-
-    async function loadWithdrawInfo() {
-      const { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
-      if (!data.name) {
-        withdrawSec.innerHTML = `
-          <input type="text" id="w-name" placeholder="Your Name"/>
-          <input type="text" id="w-ac" placeholder="AC Number"/>
-          <input type="text" id="w-ifsc" placeholder="IFSC Code"/>
-          <input type="text" id="w-upi" placeholder="UPI ID"/>
-          <button onclick="saveWithdrawInfo()">Save Withdrawal Info</button>
-        `;
-      } else {
-        withdrawSec.innerHTML = `
-          Name: ${data.name}<br/>
-          AC: ${data.ac}<br/>
-          IFSC: ${data.ifsc}<br/>
-          UPI: ${data.upi}
-        `;
+    async function loadWithdrawProfile(){
+      const { data, error } = await supabase.from('users').select('name,ac,ifsc,upi').eq('id', currentUser.id).single();
+      if (error) { withdrawProfile.innerHTML = '<div class="muted">Load failed.</div>'; return; }
+      if (!data?.name){
+        withdrawProfile.innerHTML = `
+          <div class="form">
+            <div class="row">
+              <input id="w-name" placeholder="Your Name" />
+              <input id="w-ac" placeholder="AC Number" />
+            </div>
+            <div class="row">
+              <input id="w-ifsc" placeholder="IFSC Code" />
+              <input id="w-upi" placeholder="UPI ID" />
+            </div>
+            <button id="save-wd" class="btn">Save</button>
+          </div>`;
+        $('save-wd').onclick = async ()=>{
+          const name=$('w-name').value, ac=$('w-ac').value, ifsc=$('w-ifsc').value, upi=$('w-upi').value;
+          const { error: e } = await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id);
+          if (e) return toast('Save failed: '+e.message);
+          toast('Saved'); loadWithdrawProfile();
+        };
+      }else{
+        withdrawProfile.innerHTML = `
+          <div class="banklist">
+            <div class="kv"><div class="k">Name</div><div class="v">${data.name}</div></div>
+            <div class="kv"><div class="k">AC</div><div class="v">${data.ac}</div></div>
+            <div class="kv"><div class="k">IFSC</div><div class="v">${data.ifsc}</div></div>
+            <div class="kv"><div class="k">UPI</div><div class="v">${data.upi || '—'}</div></div>
+          </div>`;
       }
     }
 
-    window.saveWithdrawInfo = async () => {
-      const name = document.getElementById('w-name').value;
-      const ac = document.getElementById('w-ac').value;
-      const ifsc = document.getElementById('w-ifsc').value;
-      const upi = document.getElementById('w-upi').value;
-      await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id);
-      loadWithdrawInfo();
+    // 充值提交 -> recharge_requests
+    depSubmit.onclick = async ()=>{
+      if (!currentUser) return toast('Please login first');
+      const utr = depUtr.value.trim();
+      const amount = Number(depAmount.value);
+      if (!utr || !amount) return toast('Enter UTR & amount');
+      const { error } = await supabase.from('recharge_requests').insert([{
+        user_id: currentUser.id, email: currentUser.email, utr, amount
+      }]);
+      if (error) return toast('Submit failed: ' + error.message);
+      show(depModal,false);
+      toast('✅ Recharge request submitted.');
     };
 
-    // 充值
-    document.getElementById('recharge-btn').onclick = async () => {
-      const utr = document.getElementById('utr').value;
-      const amount = parseFloat(document.getElementById('recharge-amount').value);
-      if (!utr || !amount) return alert('Fill UTR and amount');
-      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, email: currentUser.email, utr, amount }]);
-      alert('Recharge request submitted.');
+    // 提现提交 -> withdraw_requests
+    wdSubmit.onclick = async ()=>{
+      if (!currentUser) return toast('Please login first');
+      const amount = Number(wdAmount.value);
+      if (!amount) return toast('Enter amount');
+      const { error } = await supabase.from('withdraw_requests').insert([{
+        user_id: currentUser.id, email: currentUser.email, amount
+      }]);
+      if (error) return toast('Submit failed: ' + error.message);
+      show(wdModal,false);
+      toast('✅ Withdraw request submitted.');
     };
 
-    // 提现
-    document.getElementById('withdraw-btn').onclick = async () => {
-      const amount = parseFloat(document.getElementById('withdraw-amount').value);
-      if (!amount) return alert('Enter amount');
-      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, email: currentUser.email, amount }]);
-      alert('Withdraw request submitted.');
-    };
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        currentUser = data.user;
-        afterLogin();
-      }
-    });
+    // 恢复登录
+    (async ()=>{
+      const { data:{ user } } = await supabase.auth.getUser();
+      if (user){ currentUser=user; await afterLogin(); } else { setAuthUI(false); }
+    })();
   </script>
 </body>
 </html>
