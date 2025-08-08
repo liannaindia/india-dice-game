@@ -2,213 +2,379 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>India Game Lobby</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script type="module" src="./supabase-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; font-family: 'Poppins', sans-serif; background: linear-gradient(to bottom right, #fff7e6, #f0f8ff); color: #222; }
-    .container { max-width: 480px; margin: auto; padding: 20px; }
-    header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
-    h2 { color: #ff6f00; margin: 0; }
-    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
-    input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-    button { background: #007bff; color: white; font-weight: bold; cursor: pointer; transition: background 0.3s; }
-    button:hover { background: #0056b3; }
-    .hidden { display: none; }
-    .game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; }
-    .game-card { text-align: center; padding: 16px; cursor: pointer; transition: transform 0.2s ease; }
-    .game-card:hover { transform: scale(1.03); box-shadow: 0 6px 14px rgba(0,0,0,0.15); }
-    .game-card img { max-width: 100%; height: 100px; object-fit: contain; margin-bottom: 10px; }
-    .balance { font-weight: bold; color: #2e7d32; }
-    .top-btn { background: #28a745; color: white; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-size: 14px; }
+    :root{
+      --bg:#f6f9fc; --card:#fff; --text:#0f172a; --muted:#64748b;
+      --line:#e2e8f0; --primary:#ff6f00; --primary-press:#e65f00;
+      --green:#16a34a; --blue:#2563eb; --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial; color:var(--text);
+      background:
+        radial-gradient(900px 450px at 100% -10%, #ffe7c6 0%, transparent 60%),
+        radial-gradient(900px 450px at -10% 0%, #e0f2ff 0%, transparent 55%),
+        #f6f9fc;
+    }
+
+    /* 顶栏 */
+    .nav{position:sticky; top:0; z-index:50; backdrop-filter:saturate(160%) blur(12px);
+      background:rgba(246,249,252,.85); border-bottom:1px solid var(--line);}
+    .nav-inner{max-width:1080px; margin:0 auto; padding:12px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800;}
+    .logo{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;
+      border:1px solid #ffd7aa; background:linear-gradient(135deg,#ffe2bd,#fff); box-shadow:inset 0 1px 0 #fff}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 14px;
+      border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700}
+    .btn.primary{background:var(--primary);color:#fff;border:0}
+    .btn.primary:active{background:var(--primary-press)}
+    .btn.ghost{background:#fff}
+    a.btn{text-decoration:none;color:inherit}
+
+    /* 容器/卡片 */
+    .wrap{max-width:1080px;margin:0 auto;padding:16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .inner{padding:16px}
+
+    /* 用户卡 & 游戏区 */
+    .user{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+    .hello{font-size:13px;color:var(--muted)}
+    .balance{font-weight:800;color:var(--green);font-size:22px}
+    .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .games{display:grid;gap:14px;grid-template-columns:1fr}
+    @media(min-width:700px){ .games{grid-template-columns:repeat(3,1fr)} }
+    .game{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;
+      background:linear-gradient(180deg,#ffffff,#fffef9);border:1px solid var(--line);
+      transition:transform .15s ease, box-shadow .15s ease;}
+    .game:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.06); }
+    .thumb{height:120px;border-radius:12px;background:linear-gradient(135deg,#ffedd5,#fff);
+      border:1px solid #ffe4c7;display:grid;place-items:center;font-size:46px}
+    .title{font-weight:800}
+    .desc{color:var(--muted);font-size:13px}
+    .game .btn{width:100%; margin-top:auto}
+
+    /* 模态框 */
+    .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.3);z-index:100}
+    .modal{width:min(96vw,560px);background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .modal header{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:800}
+    .modal .body{padding:16px}
+    .modal footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+    .form{display:grid;gap:10px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    input{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);padding:0 12px;font-size:15px;background:#fff}
+    .muted{color:var(--muted)}
+    .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed var(--line);border-radius:12px}
+    .kv .k{color:var(--muted)} .kv .v{font-weight:700}
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h2>🎮 India Game Lobby</h2>
-      <a href="https://wa.me/919876543210" class="top-btn" target="_blank" rel="noopener">💬 Customer Service</a>
-    </header>
+  <!-- 顶部导航：含客服按钮 -->
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="logo">🎲</div>
+        <div>Ganeshcasino Game</div>
+      </div>
+      <div class="actions">
+        <a id="cs-link" class="btn ghost" href="https://t.me/customerservice7777777" target="_blank">💬 Customer Service</a>
+        <button id="open-login" class="btn">Login / Signup</button>
+        <button id="logout-btn" class="btn ghost" style="display:none">Logout</button>
+      </div>
+    </div>
+  </div>
 
-    <div class="card" id="auth-section">
-      <h3>🔐 Login / Signup</h3>
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <button id="signup-btn">Sign Up</button>
-      <button id="login-btn">Log In</button>
+  <div class="wrap">
+    <!-- 用户卡 -->
+    <div class="card">
+      <div class="inner user">
+        <div>
+          <div class="hello">Logged in as</div>
+          <div id="user-email" style="font-weight:800">—</div>
+          <div class="quick">
+            <button id="open-deposit" class="btn primary">Deposit</button>
+            <button id="open-withdraw" class="btn">Withdraw</button>
+          </div>
+        </div>
+        <div class="balance">₹<span id="balance">0</span></div>
+      </div>
     </div>
 
-    <div id="lobby-section" class="hidden">
-      <div class="card">
-        <p>👋 Welcome, <span id="user-email"></span></p>
-        <p class="balance">💰 Balance: ₹<span id="balance">0</span></p>
-        <button id="logout-btn">Logout</button>
-      </div>
-
-      <div class="card">
-        <h3>🕹️ Select a Game</h3>
-        <div class="game-grid">
-          <div class="game-card" onclick="window.location.href='dice.html'">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Alea_1.png/100px-Alea_1.png" alt="Dice Game">
-            <div>🎲 Lucky Dice</div>
+    <!-- 游戏区 -->
+    <div class="card">
+      <div class="inner">
+        <div style="font-weight:800;margin-bottom:10px">🎮 Select a Game</div>
+        <div class="games">
+          <div class="game">
+            <div class="thumb">🎲</div>
+            <div class="title">Lucky Dice</div>
+            <div class="desc">Bet on Big/Small or exact number. Results every minute (IST).</div>
+            <a class="btn primary" href="./dice.html">Play</a>
           </div>
-          <div class="game-card" style="opacity:0.5;cursor:not-allowed;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Crystal_Clear_app_korganizer.png/100px-Crystal_Clear_app_korganizer.png" alt="Coming Soon">
-            <div>🔒 Coming Soon</div>
+          <div class="game">
+            <div class="thumb">🧧</div>
+            <div class="title">Coming Soon</div>
+            <div class="desc">More India-style games are on the way.</div>
+            <button class="btn" disabled>Stay tuned</button>
+          </div>
+          <div class="game">
+            <div class="thumb">💎</div>
+            <div class="title">Coming Soon</div>
+            <div class="desc">Unlock new experiences for your players.</div>
+            <button class="btn" disabled>Stay tuned</button>
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="card">
-        <h3>💰 Deposit</h3>
-        <div id="bank-info">Loading bank info...</div>
-        <input type="text" id="utr" placeholder="UTR / Reference Number" />
-        <input type="number" id="recharge-amount" placeholder="Amount ₹" />
-        <button id="recharge-btn">Submit Recharge</button>
+  <!-- 登录/注册 Modal -->
+  <div id="login-modal" class="modal-bg">
+    <div class="modal">
+      <header>Login / Signup</header>
+      <div class="body">
+        <div class="form">
+          <input id="login-email" type="email" placeholder="Email" />
+          <input id="login-pass" type="password" placeholder="Password" />
+          <div class="muted">New user? Click “Signup” then login.</div>
+        </div>
       </div>
+      <footer>
+        <button id="login-cancel" class="btn">Cancel</button>
+        <button id="signup-btn" class="btn">Signup</button>
+        <button id="login-btn" class="btn primary">Login</button>
+      </footer>
+    </div>
+  </div>
 
-      <div class="card">
-        <h3>🏦 Withdraw</h3>
-        <p>Rollover Needed: <span id="turnover-need">0.00</span></p>
-        <div id="withdraw-section"></div>
-        <input type="number" id="withdraw-amount" placeholder="Amount ₹" />
-        <button id="withdraw-btn">Submit Withdrawal</button>
+  <!-- 存款 Modal：集成银行/UPI 信息 + UTR/金额 -->
+  <div id="dep-modal" class="modal-bg">
+    <div class="modal">
+      <header>Deposit</header>
+      <div class="body">
+        <div class="form">
+          <div class="muted">Please transfer to the account below, then submit UTR and amount.</div>
+          <div id="dep-bank" class="form">
+            <div class="kv"><div class="k">Name</div><div class="v">—</div></div>
+            <div class="kv"><div class="k">AC</div><div class="v">—</div></div>
+            <div class="kv"><div class="k">IFSC</div><div class="v">—</div></div>
+            <div class="kv"><div class="k">UPI</div><div class="v">—</div></div>
+            <div class="kv"><div class="k">Crypto</div><div class="v">—</div></div>
+          </div>
+          <input id="dep-utr" type="text" placeholder="UTR / Reference Number" />
+          <input id="dep-amount" type="number" min="1" placeholder="Amount ₹" />
+        </div>
       </div>
+      <footer>
+        <button id="dep-cancel" class="btn">Cancel</button>
+        <button id="dep-submit" class="btn primary">Submit</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 提款 Modal：集成并可编辑个人资料 + 提现金额 + 打码量显示 -->
+  <div id="wd-modal" class="modal-bg">
+    <div class="modal">
+      <header>Withdraw</header>
+      <div class="body">
+        <div class="form">
+          <!-- 新增一行：显示当前打码量（与你的布局风格一致） -->
+          <div class="kv" id="rollover-kv"><div class="k">Rollover Needed</div><div class="v" id="rollover-val">0.00</div></div>
+
+          <div class="row">
+            <input id="w-name" placeholder="Your Name" />
+            <input id="w-ac" placeholder="AC Number" />
+          </div>
+          <div class="row">
+            <input id="w-ifsc" placeholder="IFSC Code" />
+            <input id="w-upi" placeholder="UPI ID (optional)" />
+          </div>
+          <div class="row">
+            <input id="wd-amount" type="number" min="1" placeholder="Amount ₹" />
+            <button id="wd-save" class="btn">Save Profile</button>
+          </div>
+          <div class="muted">Save your bank profile first if you modified it.</div>
+        </div>
+      </div>
+      <footer>
+        <button id="wd-cancel" class="btn">Cancel</button>
+        <button id="wd-submit" class="btn primary">Submit Withdrawal</button>
+      </footer>
     </div>
   </div>
 
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    const authSec = document.getElementById('auth-section');
-    const lobbySec = document.getElementById('lobby-section');
-    const emailEl = document.getElementById('email');
-    const passwordEl = document.getElementById('password');
-    const userEmail = document.getElementById('user-email');
-    const balanceEl = document.getElementById('balance');
-    const bankInfo = document.getElementById('bank-info');
-    const withdrawSec = document.getElementById('withdraw-section');
-    const turnoverNeedEl = document.getElementById('turnover-need');
-
-    let currentUser = null;
+    // 简易工具
+    const $ = (id)=>document.getElementById(id);
+    const show = (el,on=true)=> el.style.display = on ? 'flex' : 'none';
+    const toast = (m)=>alert(m);
     const fmt2 = (n)=> Number(n ?? 0).toFixed(2);
 
-    document.getElementById('signup-btn').onclick = async () => {
-      const email = emailEl.value.trim(), pass = passwordEl.value;
-      if (!email || !pass) return alert('Enter email & password');
-      const { error } = await supabase.auth.signUp({ email, password: pass });
-      if (error) alert(error.message); else alert('Signup successful!');
-    };
+    // 顶栏按钮
+    const openLogin = $('open-login');
+    const logoutBtn = $('logout-btn');
+    // 用户区
+    const userEmail = $('user-email');
+    const balanceEl = $('balance');
+    // 模态：登录
+    const loginModal = $('login-modal'), loginCancel = $('login-cancel'),
+          signupBtn = $('signup-btn'), loginBtn = $('login-btn'),
+          loginEmail = $('login-email'), loginPass = $('login-pass');
+    // 模态：存款
+    const depModal = $('dep-modal'), depCancel = $('dep-cancel'), depSubmit = $('dep-submit'),
+          depUtr = $('dep-utr'), depAmount = $('dep-amount'), depBank = $('dep-bank');
+    // 模态：提现
+    const wdModal = $('wd-modal'), wdCancel = $('wd-cancel'), wdSubmit = $('wd-submit'),
+          wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
+          wdAmount = $('wd-amount'), wdSave = $('wd-save'), rolloverVal = $('rollover-val');
 
-    document.getElementById('login-btn').onclick = async () => {
-      const email = emailEl.value.trim(), pass = passwordEl.value;
-      if (!email || !pass) return alert('Enter email & password');
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (error) return alert('Login failed: ' + error.message);
-      currentUser = data.user; afterLogin();
-    };
+    // 入口按钮
+    $('open-deposit').onclick = async()=>{ await loadBankInfoIntoDeposit(); show(depModal,true); };
+    $('open-withdraw').onclick = async()=>{ await loadWithdrawProfileIntoModal(); show(wdModal,true); };
+    openLogin.onclick = ()=> show(loginModal,true);
+    loginCancel.onclick = ()=> show(loginModal,false);
+    depCancel.onclick = ()=> show(depModal,false);
+    wdCancel.onclick = ()=> show(wdModal,false);
 
-    document.getElementById('logout-btn').onclick = async () => {
-      await supabase.auth.signOut(); location.reload();
-    };
-
-    async function afterLogin() {
-      authSec.classList.add('hidden');
-      lobbySec.classList.remove('hidden');
-      userEmail.textContent = currentUser.email;
-      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
-      await Promise.all([loadBalance(), loadBankInfo(), loadWithdrawInfo(), loadTurnover()]);
+    let currentUser = null;
+    function setAuthUI(loggedIn){
+      openLogin.style.display = loggedIn ? 'none' : '';
+      logoutBtn.style.display = loggedIn ? '' : 'none';
     }
 
-    async function loadBalance() {
+    // 登录/注册
+    signupBtn.onclick = async ()=>{
+      const email = loginEmail.value.trim(), pass = loginPass.value;
+      if(!email || !pass) return toast('Enter email & password');
+      const { error } = await supabase.auth.signUp({ email, password: pass });
+      if (error) return toast(error.message);
+      toast('✅ Signup success. Now login.');
+    };
+    loginBtn.onclick = async ()=>{
+      const email = loginEmail.value.trim(), pass = loginPass.value;
+      if(!email || !pass) return toast('Enter email & password');
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) return toast('Login failed: ' + error.message);
+      currentUser = data.user;
+      show(loginModal,false);
+      await afterLogin();
+    };
+    logoutBtn.onclick = async ()=>{
+      await supabase.auth.signOut();
+      currentUser = null; userEmail.textContent = '—'; balanceEl.textContent = '0'; setAuthUI(false);
+    };
+
+    // 登录后初始化
+    async function afterLogin(){
+      setAuthUI(true);
+      userEmail.textContent = currentUser.email || '—';
+      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+      await refreshBalance();
+    }
+    async function refreshBalance(){
       const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
       balanceEl.textContent = data?.balance ?? 0;
     }
 
-    async function loadTurnover() {
-      const { data } = await supabase.from('users').select('turnover_remaining').eq('id', currentUser.id).single();
-      turnoverNeedEl.textContent = fmt2(data?.turnover_remaining);
-    }
-
-    async function loadBankInfo() {
+    // —— 存款：加载银行信息到存款弹窗 —— //
+    async function loadBankInfoIntoDeposit(){
       const { data } = await supabase.from('bank_info').select('*').eq('id', 1).maybeSingle();
-      bankInfo.innerHTML = `
-        Name: ${data?.name ?? 'N/A'}<br/>
-        AC: ${data?.ac ?? 'N/A'}<br/>
-        IFSC: ${data?.ifsc ?? 'N/A'}<br/>
-        UPI: ${data?.upi ?? 'N/A'}<br/>
-        Crypto: ${data?.crypto_address ?? 'N/A'}<br/>
-      `;
+      const items = [
+        ['Name', data?.name], ['AC', data?.ac], ['IFSC', data?.ifsc],
+        ['UPI', data?.upi], ['Crypto', data?.crypto_address]
+      ];
+      depBank.innerHTML = items.map(([k,v])=>`
+        <div class="kv"><div class="k">${k}</div><div class="v">${v || '—'}</div></div>
+      `).join('');
     }
 
-    async function loadWithdrawInfo() {
-      const { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
-      if (!data?.name) {
-        withdrawSec.innerHTML = `
-          <input type="text" id="w-name" placeholder="Your Name"/>
-          <input type="text" id="w-ac" placeholder="AC Number"/>
-          <input type="text" id="w-ifsc" placeholder="IFSC Code"/>
-          <input type="text" id="w-upi" placeholder="UPI ID"/>
-          <button onclick="saveWithdrawInfo()">Save Withdrawal Info</button>
-        `;
-      } else {
-        withdrawSec.innerHTML = `
-          Name: ${data.name}<br/>
-          AC: ${data.ac}<br/>
-          IFSC: ${data.ifsc}<br/>
-          UPI: ${data.upi ?? ''}
-        `;
-      }
+    // —— 提款：加载/回填用户提现资料 + 打码量 —— //
+    async function loadWithdrawProfileIntoModal(){
+      const { data } = await supabase.from('users')
+        .select('name,ac,ifsc,upi,turnover_remaining')
+        .eq('id', currentUser.id).single();
+
+      wName.value = data?.name || '';
+      wAc.value   = data?.ac || '';
+      wIfsc.value = data?.ifsc || '';
+      wUpi.value  = data?.upi || '';
+      wdAmount.value = '';
+      rolloverVal.textContent = fmt2(data?.turnover_remaining);
     }
 
-    window.saveWithdrawInfo = async () => {
-      const name = document.getElementById('w-name').value.trim();
-      const ac = document.getElementById('w-ac').value.trim();
-      const ifsc = document.getElementById('w-ifsc').value.trim();
-      const upi = document.getElementById('w-upi').value.trim();
-      if (!name || !ac || !ifsc) return alert('Please fill Name / AC / IFSC');
-      const { error } = await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id);
-      if (error) return alert('Save failed: ' + error.message);
-      loadWithdrawInfo();
-    };
-
-    document.getElementById('recharge-btn').onclick = async () => {
-      const utr = document.getElementById('utr').value.trim();
-      const amount = Number(document.getElementById('recharge-amount').value);
-      if (!utr || !amount || amount <= 0) return alert('Fill valid UTR and amount');
+    // —— 存款提交 -> 仅写充值请求；打码量实际由状态 approved 的触发器增加 —— //
+    depSubmit.onclick = async ()=>{
+      if (!currentUser) return toast('Please login first');
+      const utr = depUtr.value.trim();
+      const amount = Number(depAmount.value);
+      if (!utr || !amount || amount <= 0) return toast('Enter UTR & amount');
       const { error } = await supabase.from('recharge_requests').insert([{
         user_id: currentUser.id, email: currentUser.email, utr, amount, status: 'pending'
       }]);
-      if (error) return alert('Recharge failed: ' + error.message);
-      alert('Recharge request submitted.');
+      if (error) return toast('Submit failed: ' + error.message);
+      show(depModal,false);
+      toast('✅ Recharge request submitted.');
     };
 
-    document.getElementById('withdraw-btn').onclick = async () => {
-      const amount = Number(document.getElementById('withdraw-amount').value);
-      if (!amount || amount <= 0) return alert('Enter a valid amount');
-      const { data: u } = await supabase.from('users').select('turnover_remaining').eq('id', currentUser.id).single();
+    // —— 提现：保存资料按钮 —— //
+    wdSave.onclick = async ()=>{
+      if (!currentUser) return toast('Please login first');
+      const payload = { name:wName.value.trim(), ac:wAc.value.trim(), ifsc:wIfsc.value.trim(), upi:wUpi.value.trim() };
+      if (!payload.name || !payload.ac || !payload.ifsc) return toast('Fill Name / AC / IFSC');
+      const { error } = await supabase.from('users').update(payload).eq('id', currentUser.id);
+      if (error) return toast('Save failed: ' + error.message);
+      toast('✅ Profile saved.');
+    };
+
+    // —— 提现提交：走 RPC，后端强校验 turnover_remaining==0 —— //
+    wdSubmit.onclick = async ()=>{
+      if (!currentUser) return toast('Please login first');
+      const amount = Number(wdAmount.value);
+      if (!amount || amount <= 0) return toast('Enter amount');
+
+      // 基本资料校验
+      if (!wName.value.trim() || !wAc.value.trim() || !wIfsc.value.trim()) {
+        return toast('Please complete withdrawal profile (Name / AC / IFSC).');
+      }
+
+      // 本地读一次剩余打码量减少无效请求
+      const { data: u } = await supabase.from('users')
+        .select('turnover_remaining').eq('id', currentUser.id).single();
       const need = Number(u?.turnover_remaining || 0);
-      if (need > 0) return alert(`You must finish your rollover before withdrawing. Remaining: ₹${fmt2(need)}`);
+      if (need > 0) {
+        return toast(`Rollover not met: ₹${fmt2(need)} remaining`);
+      }
+
+      // 调RPC（数据库再兜底校验）
       const { error } = await supabase.rpc('request_withdraw', {
-        _user_id: currentUser.id, _email: currentUser.email, _amount: amount
+        _user_id: currentUser.id,
+        _email: currentUser.email,
+        _amount: amount
       });
       if (error) {
         if (String(error.message).includes('TURNOVER_NOT_MET')) {
-          alert('You must finish your rollover before withdrawing.');
-        } else {
-          alert('Withdraw failed: ' + error.message);
+          return toast('Rollover not met. Please continue betting.');
         }
-      } else {
-        alert('Withdraw request submitted.');
-        await loadTurnover();
-        await loadBalance();
+        return toast('Submit failed: ' + error.message);
       }
+
+      show(wdModal,false);
+      toast('✅ Withdraw request submitted.');
     };
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) { currentUser = data.user; afterLogin(); }
-    });
+    // 恢复登录
+    (async ()=>{
+      const { data:{ user } } = await supabase.auth.getUser();
+      if (user){ currentUser=user; await afterLogin(); } else { setAuthUI(false); }
+    })();
   </script>
 </body>
 </html>
