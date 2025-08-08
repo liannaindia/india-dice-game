@@ -2,244 +2,411 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>India Game Lobby</title>
+  <title>Game Lobby - India Dice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- Supabase client -->
   <script type="module" src="./supabase-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
+    :root{
+      --bg:#f7fafc; --card:#ffffff; --text:#1e293b; --muted:#64748b;
+      --primary:#ff6f00; --primary-press:#e55f00; --line:#e2e8f0;
+      --success:#2e7d32; --danger:#d32f2f; --blue:#2563eb; --green:#16a34a;
+      --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial; color:var(--text); background:var(--bg);}
+    a{color:inherit; text-decoration:none}
+    .wrap{max-width:1060px; margin:0 auto; padding:14px 14px 120px}
 
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to bottom right, #fff7e6, #f0f8ff);
-      color: #222;
+    /* Header */
+    .nav{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:12px 10px; position:sticky; top:0; background:rgba(247,250,252,.9);
+      backdrop-filter:saturate(180%) blur(12px); border-bottom:1px solid var(--line); z-index:10;
     }
-    .container {
-      max-width: 480px;
-      margin: auto;
-      padding: 20px;
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
+    .brand .logo{
+      width:34px; height:34px; border-radius:10px; display:grid; place-items:center;
+      background:linear-gradient(135deg,#ffd8a3,#fff); border:1px solid #ffe5c2;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
+      font-size:18px;
     }
-    h2 {
-      text-align: center;
-      color: #ff6f00;
+    .nav-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      height:42px; padding:0 14px; border-radius:12px; border:1px solid var(--line);
+      background:#fff; cursor:pointer; font-weight:700;
     }
-    .card, .game-card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 20px;
-      margin-bottom: 20px;
+    .btn.primary{background:var(--primary); color:#fff; border:0}
+    .btn.primary:active{background:var(--primary-press)}
+    .btn.ghost{background:#fff}
+    .btn.icon{padding:0 12px}
+
+    /* Hero / user card */
+    .hero{
+      display:grid; grid-template-columns:1fr; gap:14px; margin-top:14px;
     }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:var(--shadow); padding:16px;
     }
-    button {
-      background: #007bff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
+    .user-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+    .user-meta .t1{font-size:13px; color:var(--muted)}
+    .user-meta .t2{font-weight:800}
+    .balance{font-weight:800; color:var(--green); font-size:18px}
+
+    .quick-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .chip{
+      padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:#fff; font-weight:600;
     }
-    button:hover {
-      background: #0056b3;
+
+    /* Games grid */
+    .grid{
+      display:grid; gap:14px; margin-top:10px;
+      grid-template-columns:1fr;
     }
-    .hidden { display: none; }
-    .game-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 20px;
+    @media (min-width:720px){ .grid{ grid-template-columns:repeat(3, 1fr); } }
+    .game{
+      display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:14px;
+      background:linear-gradient(180deg,#fff,#fffef9);
+      border:1px solid var(--line);
+      transition:transform .15s ease, box-shadow .15s ease;
     }
-    .game-card {
-      text-align: center;
-      padding: 16px;
-      cursor: pointer;
-      transition: transform 0.2s ease;
+    .game:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.06); }
+    .game .thumb{
+      height:120px; border-radius:12px; background:linear-gradient(135deg,#ffedd5,#fff);
+      border:1px solid #ffe4c7; display:grid; place-items:center; font-size:46px;
     }
-    .game-card:hover {
-      transform: scale(1.03);
-      box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+    .game .title{font-weight:800}
+    .game .desc{color:var(--muted); font-size:13px}
+    .game .go{margin-top:auto}
+    .go .btn{width:100%}
+
+    /* Modal */
+    .modal-bg{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(2,6,23,.25); z-index:999; animation:fade .2s ease;
     }
-    .game-card img {
-      max-width: 100%;
-      height: 100px;
-      object-fit: contain;
-      margin-bottom: 10px;
+    .modal{ background:#fff; width:min(96vw,520px); border-radius:18px; border:1px solid var(--line); box-shadow:var(--shadow); }
+    .modal header{padding:14px 16px; border-bottom:1px solid var(--line); font-weight:800}
+    .modal .body{padding:16px}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .row>*{min-width:0}
+    .form{display:grid; gap:10px}
+    input, select, textarea{
+      width:100%; height:44px; border-radius:12px; border:1px solid var(--line); padding:0 12px; font-size:15px; background:#fff;
     }
-    .balance {
-      font-weight: bold;
-      color: #2e7d32;
+    textarea{height:88px; padding:10px 12px; resize:vertical}
+    .modal footer{display:flex; justify-content:flex-end; gap:10px; padding:12px 16px; border-top:1px solid var(--line)}
+    .muted{color:var(--muted)}
+    @keyframes fade{from{opacity:0} to{opacity:1}}
+
+    /* Customer service floating button */
+    #customer-service-btn{
+      position:fixed; right:16px; bottom:16px; z-index:1000;
+      background:var(--blue); color:#fff; font-weight:700; border-radius:999px;
+      padding:12px 16px; box-shadow:0 10px 20px rgba(37,99,235,.25);
     }
+    #customer-service-btn:hover{filter:brightness(.96)}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🎮 India Game Lobby</h2>
-
-    <div class="card" id="auth-section">
-      <h3>🔐 Login / Signup</h3>
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <button id="signup-btn">Sign Up</button>
-      <button id="login-btn">Log In</button>
+  <div class="nav">
+    <div class="brand">
+      <div class="logo">🎲</div>
+      <div>India Dice Lobby</div>
     </div>
+    <div class="nav-actions">
+      <button id="login-open" class="btn">Login</button>
+      <button id="logout-btn" class="btn ghost" style="display:none">Logout</button>
+    </div>
+  </div>
 
-    <div id="lobby-section" class="hidden">
+  <div class="wrap">
+    <!-- User / Balance -->
+    <section class="hero">
       <div class="card">
-        <p>👋 Welcome, <span id="user-email"></span></p>
-        <p class="balance">💰 Balance: ₹<span id="balance">0</span></p>
-        <button id="logout-btn">Logout</button>
-      </div>
-
-      <div class="card">
-        <h3>🕹️ Select a Game</h3>
-        <div class="game-grid">
-          <div class="game-card" onclick="window.location.href='dice.html'">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Alea_1.png/100px-Alea_1.png" alt="Dice Game">
-            <div>🎲 Lucky Dice</div>
+        <div class="user-row">
+          <div class="user-meta">
+            <div class="t1">Logged in as</div>
+            <div id="user-email" class="t2">—</div>
           </div>
-          <div class="game-card" style="opacity:0.5;cursor: not-allowed;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Crystal_Clear_app_korganizer.png/100px-Crystal_Clear_app_korganizer.png" alt="Coming Soon">
-            <div>🔒 Coming Soon</div>
-          </div>
+          <div class="balance">₹<span id="balance">0</span></div>
+        </div>
+        <div class="quick-row">
+          <button class="btn primary" id="open-deposit">Deposit</button>
+          <button class="btn" id="open-withdraw">Withdraw</button>
+          <span class="chip">IST synced • 1 round/min</span>
+          <span class="chip">Secure & Fast</span>
         </div>
       </div>
+    </section>
 
-      <div class="card">
-        <h3>💰 Recharge</h3>
-        <div id="bank-info">Loading bank info...</div>
-        <input type="text" id="utr" placeholder="UTR / Reference Number" />
-        <input type="number" id="recharge-amount" placeholder="Amount ₹" />
-        <button id="recharge-btn">Submit Recharge</button>
-      </div>
+    <!-- Games -->
+    <section class="grid">
+      <!-- Dice -->
+      <article class="game">
+        <div class="thumb">🎲</div>
+        <div class="title">Lucky Dice</div>
+        <div class="desc">Bet on Big/Small or exact number. Results every minute, synced to IST.</div>
+        <div class="go">
+          <a class="btn primary" href="./dice.html">Play</a>
+        </div>
+      </article>
 
-      <div class="card">
-        <h3>🏦 Withdraw</h3>
-        <div id="withdraw-section"></div>
-        <input type="number" id="withdraw-amount" placeholder="Amount ₹" />
-        <button id="withdraw-btn">Submit Withdrawal</button>
+      <!-- 预留位：更多游戏可以复制上面的卡片 -->
+      <article class="game">
+        <div class="thumb">🧧</div>
+        <div class="title">Coming Soon</div>
+        <div class="desc">More India-style games are on the way.</div>
+        <div class="go"><button class="btn" disabled>Stay tuned</button></div>
+      </article>
+
+      <article class="game">
+        <div class="thumb">💎</div>
+        <div class="title">Coming Soon</div>
+        <div class="desc">Unlock new experiences for your players.</div>
+        <div class="go"><button class="btn" disabled>Stay tuned</button></div>
+      </article>
+    </section>
+  </div>
+
+  <!-- Customer service -->
+  <a href="https://wa.me/919876543210" target="_blank" id="customer-service-btn">💬 Customer Service</a>
+
+  <!-- Login Modal -->
+  <div class="modal-bg" id="login-modal">
+    <div class="modal">
+      <header>Login</header>
+      <div class="body">
+        <div class="form">
+          <input id="login-email" type="email" placeholder="Email" />
+          <input id="login-pass" type="password" placeholder="Password" />
+          <div class="muted">* New user? Just sign up then login.</div>
+        </div>
       </div>
+      <footer>
+        <button class="btn" id="login-cancel">Cancel</button>
+        <button class="btn primary" id="login-submit">Login</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Deposit Modal -->
+  <div class="modal-bg" id="deposit-modal">
+    <div class="modal">
+      <header>Deposit</header>
+      <div class="body">
+        <div class="form">
+          <!-- 可根据后台配置展示收款信息 -->
+          <div class="muted">Please transfer to the displayed account and submit UTR for review.</div>
+          <div class="row">
+            <input id="dep-amount" type="number" min="1" placeholder="Amount ₹" />
+            <input id="dep-utr" type="text" placeholder="UTR / Ref No." />
+          </div>
+          <textarea id="dep-note" placeholder="Notes (optional)"></textarea>
+        </div>
+      </div>
+      <footer>
+        <button class="btn" id="dep-cancel">Cancel</button>
+        <button class="btn primary" id="dep-submit">Submit</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Withdraw Modal -->
+  <div class="modal-bg" id="withdraw-modal">
+    <div class="modal">
+      <header>Withdraw</header>
+      <div class="body">
+        <div class="form">
+          <div class="row">
+            <input id="wd-amount" type="number" min="1" placeholder="Amount ₹" />
+            <input id="wd-ifsc" type="text" placeholder="IFSC Code" />
+          </div>
+          <div class="row">
+            <input id="wd-name" type="text" placeholder="Account Holder Name" />
+            <input id="wd-account" type="text" placeholder="Account Number" />
+          </div>
+          <textarea id="wd-note" placeholder="Notes (optional)"></textarea>
+        </div>
+      </div>
+      <footer>
+        <button class="btn" id="wd-cancel">Cancel</button>
+        <button class="btn primary" id="wd-submit">Submit</button>
+      </footer>
     </div>
   </div>
 
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    const authSec = document.getElementById('auth-section')
-    const lobbySec = document.getElementById('lobby-section')
-    const emailEl = document.getElementById('email')
-    const passwordEl = document.getElementById('password')
-    const userEmail = document.getElementById('user-email')
-    const balanceEl = document.getElementById('balance')
-    const bankInfo = document.getElementById('bank-info')
-    const withdrawSec = document.getElementById('withdraw-section')
+    // ===== Helpers =====
+    const $ = (id)=>document.getElementById(id);
+    const show = (el, on=true)=>{ el.style.display = on ? 'flex' : 'none'; };
+    const toast = (msg)=>alert(msg); // 可替换为自定义提示
 
-    let currentUser = null
+    // ===== Elements =====
+    const emailEl = $('user-email');
+    const balanceEl = $('balance');
+    const loginOpen = $('login-open');
+    const logoutBtn = $('logout-btn');
 
-    document.getElementById('signup-btn').onclick = async () => {
-      const { error } = await supabase.auth.signUp({
-        email: emailEl.value,
-        password: passwordEl.value
-      })
-      if (error) alert(error.message)
-      else alert('Signup successful!')
+    const loginModal = $('login-modal');
+    const loginCancel = $('login-cancel');
+    const loginSubmit = $('login-submit');
+    const loginEmail = $('login-email');
+    const loginPass = $('login-pass');
+
+    const depModal = $('deposit-modal');
+    const depAmount = $('dep-amount');
+    const depUtr = $('dep-utr');
+    const depNote = $('dep-note');
+    const depOpen = $('open-deposit');
+    const depCancel = $('dep-cancel');
+    const depSubmit = $('dep-submit');
+
+    const wdModal = $('withdraw-modal');
+    const wdAmount = $('wd-amount');
+    const wdIfsc = $('wd-ifsc');
+    const wdName = $('wd-name');
+    const wdAccount = $('wd-account');
+    const wdNote = $('wd-note');
+    const wdOpen = $('open-withdraw');
+    const wdCancel = $('wd-cancel');
+    const wdSubmit = $('wd-submit');
+
+    let currentUser = null;
+
+    // ===== UI State =====
+    function setAuthUI(loggedIn){
+      loginOpen.style.display = loggedIn ? 'none' : '';
+      logoutBtn.style.display = loggedIn ? '' : 'none';
     }
 
-    document.getElementById('login-btn').onclick = async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailEl.value,
-        password: passwordEl.value
-      })
-      if (error) return alert('Login failed: ' + error.message)
-      currentUser = data.user
-      afterLogin()
+    // ===== Auth =====
+    loginOpen.onclick = ()=> show(loginModal, true);
+    loginCancel.onclick = ()=> show(loginModal, false);
+
+    loginSubmit.onclick = async ()=>{
+      const email = loginEmail.value.trim();
+      const pass = loginPass.value;
+      if(!email || !pass) return toast('Enter email and password');
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) return toast('Login failed: ' + error.message);
+
+      show(loginModal, false);
+      await initAfterAuth();
+      toast('✅ Logged in!');
+    };
+
+    logoutBtn.onclick = async ()=>{
+      await supabase.auth.signOut();
+      currentUser = null;
+      emailEl.textContent = '—';
+      balanceEl.textContent = '0';
+      setAuthUI(false);
+      toast('Logged out.');
+    };
+
+    // ===== After login =====
+    async function initAfterAuth(){
+      const { data: { user } } = await supabase.auth.getUser();
+      currentUser = user || null;
+      if (!currentUser) { setAuthUI(false); return; }
+
+      setAuthUI(true);
+      emailEl.textContent = currentUser.email || '—';
+
+      // ensure user row
+      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+      await refreshBalance();
     }
 
-    document.getElementById('logout-btn').onclick = async () => {
-      await supabase.auth.signOut()
-      location.reload()
+    async function refreshBalance(){
+      if (!currentUser) return;
+      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+      balanceEl.textContent = data?.balance ?? 0;
     }
 
-    async function afterLogin() {
-      authSec.classList.add('hidden')
-      lobbySec.classList.remove('hidden')
-      userEmail.textContent = currentUser.email
-      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }])
-      loadBalance()
-      loadBankInfo()
-      loadWithdrawInfo()
-    }
+    // ===== Deposit =====
+    depOpen.onclick = ()=> {
+      if (!currentUser) return toast('Please login first');
+      depAmount.value = ''; depUtr.value=''; depNote.value='';
+      show(depModal, true);
+    };
+    depCancel.onclick = ()=> show(depModal, false);
 
-    async function loadBalance() {
-      const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single()
-      balanceEl.textContent = data?.balance || 0
-    }
+    depSubmit.onclick = async ()=>{
+      if (!currentUser) return;
+      const amount = Number(depAmount.value);
+      const utr = depUtr.value.trim();
+      const note = depNote.value.trim();
+      if (!amount || amount<=0) return toast('Enter amount');
+      if (!utr) return toast('Enter UTR');
 
-    async function loadBankInfo() {
-      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single()
-      bankInfo.innerHTML = `
-        Name: ${data.name || 'N/A'}<br/>
-        AC: ${data.ac || 'N/A'}<br/>
-        IFSC: ${data.ifsc || 'N/A'}<br/>
-        UPI: ${data.upi || 'N/A'}<br/>
-        Crypto: ${data.crypto_address || 'N/A'}<br/>
-      `
-    }
+      const { error } = await supabase.from('deposits').insert([{
+        user_id: currentUser.id,
+        email: currentUser.email,
+        amount,
+        utr,
+        note,
+        status: 'pending',
+      }]);
+      if (error) return toast('Submit failed: ' + error.message);
 
-    async function loadWithdrawInfo() {
-      const { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single()
-      if (!data.name) {
-        withdrawSec.innerHTML = `
-          <input type="text" id="w-name" placeholder="Your Name"/>
-          <input type="text" id="w-ac" placeholder="AC Number"/>
-          <input type="text" id="w-ifsc" placeholder="IFSC Code"/>
-          <input type="text" id="w-upi" placeholder="UPI ID"/>
-          <button onclick="saveWithdrawInfo()">Save Withdrawal Info</button>
-        `
+      show(depModal, false);
+      toast('✅ Submitted! Wait for review.');
+    };
+
+    // ===== Withdraw =====
+    wdOpen.onclick = ()=> {
+      if (!currentUser) return toast('Please login first');
+      wdAmount.value=''; wdIfsc.value=''; wdName.value=''; wdAccount.value=''; wdNote.value='';
+      show(wdModal, true);
+    };
+    wdCancel.onclick = ()=> show(wdModal, false);
+
+    wdSubmit.onclick = async ()=>{
+      if (!currentUser) return;
+      const amount = Number(wdAmount.value);
+      const ifsc = wdIfsc.value.trim();
+      const name = wdName.value.trim();
+      const account = wdAccount.value.trim();
+      const note = wdNote.value.trim();
+
+      if (!amount || amount<=0) return toast('Enter amount');
+      if (!ifsc || !name || !account) return toast('Enter IFSC, Name & Account');
+
+      const { error } = await supabase.from('withdrawals').insert([{
+        user_id: currentUser.id,
+        email: currentUser.email,
+        amount,
+        ifsc,
+        account_name: name,
+        account_no: account,
+        note,
+        status: 'pending',
+      }]);
+      if (error) return toast('Submit failed: ' + error.message);
+
+      show(wdModal, false);
+      toast('✅ Submitted! Wait for review.');
+    };
+
+    // ===== Init =====
+    // 打开页面尝试恢复登录状态
+    (async ()=>{
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await initAfterAuth();
       } else {
-        withdrawSec.innerHTML = `
-          Name: ${data.name}<br/>
-          AC: ${data.ac}<br/>
-          IFSC: ${data.ifsc}<br/>
-          UPI: ${data.upi}
-        `
+        setAuthUI(false);
       }
-    }
-
-    window.saveWithdrawInfo = async () => {
-      const name = document.getElementById('w-name').value
-      const ac = document.getElementById('w-ac').value
-      const ifsc = document.getElementById('w-ifsc').value
-      const upi = document.getElementById('w-upi').value
-      await supabase.from('users').update({ name, ac, ifsc, upi }).eq('id', currentUser.id)
-      loadWithdrawInfo()
-    }
-
-    document.getElementById('recharge-btn').onclick = async () => {
-      const utr = document.getElementById('utr').value
-      const amount = parseFloat(document.getElementById('recharge-amount').value)
-      if (!utr || !amount) return alert('Fill UTR and amount')
-      await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, email: currentUser.email,utr, amount }])
-      alert('Recharge request submitted.')
-    }
-
-    document.getElementById('withdraw-btn').onclick = async () => {
-      const amount = parseFloat(document.getElementById('withdraw-amount').value)
-      if (!amount) return alert('Enter amount')
-      await supabase.from('withdraw_requests').insert([{ user_id: currentUser.id, email: currentUser.email,amount }])
-      alert('Withdraw request submitted.')
-    }
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        currentUser = data.user
-        afterLogin()
-      }
-    })
+    })();
   </script>
 </body>
 </html>
