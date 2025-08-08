@@ -1,44 +1,85 @@
-// supabase-config.js  —— 用户端（前台站点）
-// 使用 CDN ESM 版 supabase-js
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+// supabase-config.js  —— 直接覆盖这个文件即可
+// 说明：前端只用 anon key；千万不要把 service_role 放到前端！
 
-// ⚠️ 前端只能使用 anon 公钥，千万不要用 service_role
-const supabaseUrl = 'https://gtoofdphwneqpwsmjcwl.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyOTYwODEsImV4cCI6MjA2OTg3MjA4MX0.XOlnadAyNTMLy8W-JQLyA7Kmh0dKBRslL3vXvx_ebj4'
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// 自定义一个独立的 storageKey，避免与“管理员项目”的会话冲突
-const AUTH_STORAGE_KEY = 'dice_user_supabase_auth_v1'
+// ====== 你的项目配置（已填好）======
+const supabaseUrl = 'https://gtoofdphwneqpwsmjcwl.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyOTYwODEsImV4cCI6MjA2OTg3MjA4MX0.XOlnadAyNTMLy8W-JQLyA7Kmh0dKBRslL3vXvx_ebj4';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  db: {
-    schema: 'public',
-  },
-  auth: {
-    // 前端需要自动续期与持久化登录
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storageKey: AUTH_STORAGE_KEY,
-  },
   global: {
-    // 可选的全局 fetch/headers。不要带多余的自定义 Header，以免触发 CORS 预检或 4xx。
-    headers: {
-      'X-Client-Info': 'india-dice-frontend',
-    },
-  },
-  // 可选：限制实时事件速率，稳定一些浏览器环境
-  realtime: {
-    params: { eventsPerSecond: 2 },
-  },
-})
-
-// 可选：导出一个小工具，检查连接是否可用（调试用）
-export async function pingSupabase() {
-  try {
-    const { data, error } = await supabase.from('_ping').select('*').limit(1)
-    // 大多数项目没有 _ping 表，这里只验证 SDK 是否正常工作
-    return { ok: !error, error }
-  } catch (e) {
-    return { ok: false, error: e }
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
   }
+});
+
+/* ===================================================================
+ *                       Common helpers（可选）
+ * =================================================================== */
+
+// 当前登录用户
+export async function getCurrentUser() {
+  const { data } = await supabase.auth.getUser();
+  return data?.user ?? null;
+}
+
+// 用户余额
+export async function getUserBalance(userId) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('balance')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  return data?.balance ?? 0;
+}
+
+/* ===================================================================
+ *                 Andar Bahar API（使用 RPC，避免直插）
+ * =================================================================== */
+
+// 原子下注（扣款 + 封盘校验 + 写注单）
+// side: 'andar' | 'bahar'
+export async function placeABBetNow({ userId, email, side, amount, odds }) {
+  return await supabase.rpc('place_ab_bet_now', {
+    _user_id: userId,
+    _email: email,
+    _side: side,
+    _amount: amount,
+    _odds: odds
+  });
+}
+
+// 上一期结果（传入上一期 round_number，返回 'andar' | 'bahar' | null）
+export async function getABPrevResult(prevRoundNumber) {
+  const { data, error } = await supabase
+    .from('ab_rounds')
+    .select('result_side')
+    .eq('round_number', prevRoundNumber)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.result_side ?? null;
+}
+
+// 用户最近 N 条 AB 注单（只读）
+export async function getABUserBets(userId, limit = 10) {
+  const { data, error } = await supabase
+    .from('ab_bets')
+    .select('round_number, side, amount, status, payout, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+// （可选）读取某个期号详情
+export async function getABRound(roundNumber) {
+  const { data, error } = await supabase
+    .from('ab_rounds')
+    .select('*')
+    .eq('round_number', roundNumber)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
 }
