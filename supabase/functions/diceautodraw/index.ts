@@ -25,75 +25,12 @@ function randResult(): number {
   return Math.floor(Math.random() * 6) + 1; // 1~6
 }
 
-// 结算本期：只结算 pending
-async function settleRound(rn: string) {
-  // 取该期的开奖结果
-  const { data: gr, error: roundErr } = await supabase
-    .from("game_rounds")
-    .select("round_number, result")
-    .eq("round_number", rn)
-    .maybeSingle();
-  if (roundErr || !gr) return;
-
-  const result = gr.result as number;
-
-  // 抓未结算注单
-  const { data: tickets, error: betsErr } = await supabase
-    .from("bets")
-    .select("*")
-    .eq("round_number", rn)
-    .eq("status", "pending");
-
-  if (betsErr || !tickets || tickets.length === 0) return;
-
-  // 逐单结算（量不大可直接循环；量大可以批量用存储过程处理）
-  for (const t of tickets) {
-    const isWin =
-      (t.bet_type === "big" && result >= 4) ||
-      (t.bet_type === "small" && result <= 3) ||
-      (t.bet_type === "number" && t.choice === result);
-
-    const payout = isWin ? Number(t.amount) * Number(t.odds) : 0;
-
-    // 事务式：先标记注单，再派彩（只处理 pending，避免重复）
-    // 1) 标记注单状态
-    const { error: updBetErr } = await supabase
-      .from("bets")
-      .update({
-        status: isWin ? "won" : "lost",
-        payout,
-        settled_at: new Date().toISOString(),
-      })
-      .eq("id", t.id)
-      .eq("status", "pending"); // 防止重复结算
-
-    if (updBetErr) continue;
-
-    // 2) 派彩（仅赢才加余额）
-    if (isWin && payout > 0) {
-      await supabase
-        .from("users")
-        .update({ balance: (Number(t.user_balance) || undefined) }) // 占位避免 type 报错，无作用行可删
-        .select(); // 占位
-      // 直接累加（注意并发：这里量不大且同一轮只结一次，可接受）
-      await supabase.rpc("sql", { q:
-        `update users set balance = balance + ${payout}
-         where id = '${t.user_id}'`
-      }) as any; // 如果你不开启 RPC，可直接用 update + select balance; 这里示例为简化
-      // 更通用写法（无 RPC）：
-      // await supabase.from("users")
-      //   .update({ balance: newBalance })
-      //   .eq("id", t.user_id);
-    }
-  }
-}
-
 serve(async () => {
   const now = getIndianTime();
 
-  // === 写入结果（你可以保留“每5分钟写5期”或改为只写当前一期） ===
+  // === 1) 写入结果（保留每次只写当前期；你要写5期就把 for 的上限改 5） ===
   let insertCount = 0;
-  for (let i = 0; i < 1; i++) { // 每次只写入当前期：想回到5期就把 1 改成 5
+  for (let i = 0; i < 1; i++) {
     const t = getIndianTime(i); // i 分钟后
     const rn = roundNo(t);
 
@@ -118,11 +55,15 @@ serve(async () => {
     }
   }
 
-  // === 结算“刚刚写入/当前分钟”的这一期 ===
-  const currentRound = roundNo(now);
-  await settleRound(currentRound);
+  // === 2) 结算“上一分钟”的注单（关键！避免时间竞态） ===
+  const prev = new Date(now.getTime() - 60 * 1000);
+  const prevRound = roundNo(prev);
+  const { error: settleErr } = await supabase.rpc("settle_round", { _round: prevRound });
+  if (settleErr) {
+    console.error("settle_round failed:", settleErr.message);
+  }
 
-  // === 清理 1 天前旧数据 ===
+  // === 3) 清理 1 天前旧数据（可保留） ===
   const clean = new Date(now);
   clean.setMinutes(0, 0, 0);
   clean.setDate(clean.getDate() - 1);
@@ -130,5 +71,5 @@ serve(async () => {
   await supabase.from("game_rounds").delete().lt("round_number", threshold);
   await supabase.from("bets").delete().lt("round_number", threshold);
 
-  return new Response(`OK: wrote=${insertCount}, settled=${currentRound}`, { status: 200 });
+  return new Response(`OK: wrote=${insertCount}, settled=${prevRound}`, { status: 200 });
 });
