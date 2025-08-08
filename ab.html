@@ -9,21 +9,21 @@
   <style>
     :root{
       --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#222;
-      --muted:#666; --primary:#0d6efd; --primary-pressed:#0b5ed7;
-      --success:#2e7d32; --danger:#d32f2f; --line:#e6eaf2;
+      --muted:#667085; --primary:#0d6efd; --primary-pressed:#0b5ed7;
+      --success:#16a34a; --line:#e6eaf2;
       --radius:14px; --shadow:0 6px 18px rgba(0,0,0,.08);
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:'Poppins',sans-serif;color:var(--text);
       background:linear-gradient(180deg,var(--bg1),var(--bg2));padding-bottom:94px}
-    .container{max-width:720px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+    .container{max-width:820px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
     h2{margin:6px 0 14px;text-align:center;color:#ff6f00}
 
     .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
       padding:14px;margin-bottom:14px;border:1px solid var(--line)}
     .userbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
     .balance{font-weight:700;color:var(--success)}
-    .btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 14px;border-radius:12px;border:0;cursor:pointer;background:var(--primary);color:#fff;font-weight:700;min-height:46px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:12px;border:0;cursor:pointer;background:var(--primary);color:#fff;font-weight:700;min-height:42px}
     .btn:active{background:var(--primary-pressed)}
     .btn.secondary{background:#eef4ff;color:#1e3a8a}
     .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
@@ -31,8 +31,7 @@
     .chip{padding:12px;text-align:center;border-radius:12px;background:#f7f9fc;border:1px solid var(--line);font-weight:700;cursor:pointer}
     .chip.active{background:#eaf2ff;border-color:#cfe0ff;color:#0b5ed7}
     .quick{display:flex;gap:8px;flex-wrap:wrap}
-    .qchip{padding:8px 10px;border-radius:10px;background:#f2f5fa;border:1px solid var(--line);cursor:pointer}
-    .qchip:active{transform:scale(.98)}
+    .qchip{padding:8px 10px;border-radius:10px;background:#f2f5fa;border:1px solid #e6eaf2;cursor:pointer}
     .muted{color:var(--muted);font-size:12px}
     .result-box{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center}
     .result-big{font-size:28px;font-weight:800}
@@ -42,29 +41,28 @@
     table{width:100%;border-collapse:collapse}
     th,td{padding:8px 6px;border-bottom:1px solid #eee;font-size:14px;text-align:left}
 
-    /* ====== 动画样式（新增） ====== */
+    /* ===== 翻牌动画 ===== */
     .ab-anim{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
-    .lane{background:#f7f9fc;border:1px dashed #d7e0f2;border-radius:12px;padding:10px}
+    .lane{background:#f7f9fc;border:1px dashed #d7e0f2;border-radius:12px;padding:10px;position:relative}
     .lane h4{margin:0 0 8px;font-size:13px;color:#3b4a66;display:flex;justify-content:space-between;align-items:center}
-    .rail{display:flex;gap:8px;flex-wrap:wrap;min-height:90px}
+    /* 只显示最近 12 张 */
+    .rail{display:grid;grid-template-columns:repeat(6, 52px);grid-auto-rows:72px;gap:8px;min-height:160px}
     .maincard-area{display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px;border:1px solid #e8edf6;border-radius:12px;background:#fff}
     .slot{width:80px;height:112px;perspective:1000px}
-    .card3d{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.22,.61,.36,1);border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08), inset 0 0 0 1px rgba(0,0,0,.06)}
+    .card3d{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.22,.61,.36,1);border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08), inset 0 0 0 1px rgba(0,0,0,.06)}
     .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:12px;backface-visibility:hidden}
     .front{background:#fff;color:#111;font-weight:800;font-size:28px}
     .back{background:linear-gradient(135deg,#f0f4ff,#e8efff);color:#6b7aa6;transform:rotateY(180deg);border:1px solid #d7e0f2;font-weight:700}
     .flip{transform:rotateY(180deg)}
-    .mini{width:48px;height:68px}
+    .mini{width:52px;height:72px}
     .mini .front{font-size:16px}
-    .mini .back{font-size:14px}
-    .red{color:#c91d1d}
-    .black{color:#111}
+    .mini .back{font-size:13px}
+    .red{color:#c91d1d}.black{color:#111}
     .winner{box-shadow:0 0 0 2px rgba(16,185,129,.55),0 0 18px rgba(16,185,129,.25) inset}
     .banner{margin-top:8px;padding:8px 10px;border-radius:10px;display:none;font-weight:700}
     .banner.show{display:block}
     .banner.andar{background:#e7f5ff;border:1px solid #b3dcff;color:#0466c8}
     .banner.bahar{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
   </style>
 </head>
 <body>
@@ -78,7 +76,7 @@
           <div id="user-email" style="font-weight:700">—</div>
         </div>
         <div class="balance">₹<span id="balance">0</span></div>
-        <div class="toolbar">
+        <div class="userbar-right">
           <button id="demo-btn" class="btn ghost">Play Demo</button>
           <button id="lobby-btn" class="btn ghost">Lobby</button>
           <button id="logout-btn" class="btn secondary">Logout</button>
@@ -118,10 +116,10 @@
         </div>
       </div>
 
-      <!-- ===== 动画区域（新增） ===== -->
+      <!-- 动画区域 -->
       <div class="maincard-area">
         <div class="muted">Main Card</div>
-        <div class="slot"><div id="mainCard" class="card3d"><div id="mainFront" class="face front">?</div><div class="face back">AB</div></div></div>
+        <div class="slot"><div id="mainCard" class="card3d"><div id="mainFront" class="face front">AB</div><div class="face back">AB</div></div></div>
         <div class="muted">Flip & deal to Andar/Bahar until hit.</div>
       </div>
       <div class="ab-anim">
@@ -160,9 +158,9 @@ import { supabase } from './supabase-config.js';
 /* ===== Config ===== */
 const ANDAR_ODDS = 1.95;
 const BAHAR_ODDS = 1.95;
-const CLOSE_BUFFER = 10; // 封盘秒数
-// 动画节奏（毫秒）：单张发牌间隔
-let DEAL_SPEED = 650;
+const CLOSE_BUFFER = 10;      // 封盘秒数
+const DEAL_SPEED = 520;       // 单张翻牌间隔(ms)
+const VISIBLE_MAX = 12;       // 每边最多显示的牌数
 
 /* ===== Refs ===== */
 let currentUser = null;
@@ -178,7 +176,6 @@ const prevEl = document.getElementById('prev-result');
 const countEl = document.getElementById('countdown');
 const betsTbody = document.getElementById('bets-tbody');
 
-// 动画区
 const mainCardEl = document.getElementById('mainCard');
 const mainFrontEl = document.getElementById('mainFront');
 const railA = document.getElementById('railA');
@@ -198,24 +195,13 @@ function getIST() {
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
   return new Date(utcMs + 5.5 * 60 * 60 * 1000);
 }
-function currentRoundNo() {
-  const n = getIST();
-  const y=n.getFullYear();
-  const m=String(n.getMonth()+1).padStart(2,'0');
-  const d=String(n.getDate()).padStart(2,'0');
-  const h=String(n.getHours()).padStart(2,'0');
-  const min=String(n.getMinutes()).padStart(2,'0');
+function roundKey(date){
+  const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
+  const h=String(date.getHours()).padStart(2,'0'), min=String(date.getMinutes()).padStart(2,'0');
   return `${y}${m}${d}${h}${min}`;
 }
-function prevRoundNo() {
-  const n = new Date(getIST().getTime()-60*1000);
-  const y=n.getFullYear();
-  const m=String(n.getMonth()+1).padStart(2,'0');
-  const d=String(n.getDate()).padStart(2,'0');
-  const h=String(n.getHours()).padStart(2,'0');
-  const min=String(n.getMinutes()).padStart(2,'0');
-  return `${y}${m}${d}${h}${min}`;
-}
+function currentRoundNo(){ return roundKey(getIST()); }
+function prevRoundNo(){ return roundKey(new Date(getIST().getTime()-60*1000)); }
 
 /* ===== Auth ===== */
 logoutBtn.onclick = async ()=>{ await supabase.auth.signOut(); location.href='./index.html'; };
@@ -229,7 +215,7 @@ supabase.auth.getUser().then(async ({ data }) => {
     emailEl.textContent = currentUser.email;
     await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
     await loadBalance();
-    await loadPrevResult(true); // 首次也触发一次动画
+    await refreshAndAnimate(true);   // 首次加载并播放上一期动画
     await loadMyBets();
     startTicker();
   }
@@ -252,13 +238,13 @@ document.getElementById('quick-amt').querySelectorAll('.qchip').forEach(q=>{
   q.onclick = ()=>{ betAmountEl.value = Number(q.dataset.v); };
 });
 
-/* ====== 翻牌动画工具 ====== */
+/* ===== 动画工具 ===== */
 const suits = ['♠','♥','♦','♣'];
 const ranks = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 const color = (s)=> (s==='♥'||s==='♦')?'red':'black';
 const $el = (t,c)=>{const e=document.createElement(t); if(c) e.className=c; return e;};
 
-function clearAnimationBoard(){
+function resetBoard(){
   railA.innerHTML=''; railB.innerHTML='';
   cntA.textContent='0 cards'; cntB.textContent='0 cards';
   bannerA.classList.remove('show'); bannerA.textContent='';
@@ -266,101 +252,120 @@ function clearAnimationBoard(){
   document.getElementById('laneA').classList.remove('winner');
   document.getElementById('laneB').classList.remove('winner');
   mainCardEl.classList.remove('flip');
-  mainFrontEl.textContent='?';
+  mainFrontEl.textContent='AB';
 }
 
-function miniCardDOM(card){
+function pushToRail(rail, node){
+  rail.appendChild(node);
+  while (rail.children.length > VISIBLE_MAX) rail.removeChild(rail.firstElementChild);
+}
+
+function miniCard(card){
   const root = $el('div','slot mini');
   const c = $el('div','card3d');
   const f = $el('div','face front '+(color(card.suit)));
   const b = $el('div','face back');
-  f.innerHTML = `<span style="font-weight:800">${card.rank}</span>&nbsp;<span>${card.suit}</span>`;
+  f.innerHTML = `<strong>${card.rank}</strong>&nbsp;<span>${card.suit}</span>`;
   b.textContent = 'AB';
   c.appendChild(f); c.appendChild(b); root.appendChild(c);
-  // 轻微随机延迟：更自然
-  setTimeout(()=> c.classList.add('flip'), 30 + Math.random()*90);
+  setTimeout(()=> c.classList.add('flip'), 36 + Math.random()*90);
   return root;
 }
 
-function showMainCard(card){
-  mainFrontEl.innerHTML = `<span style="font-weight:800" class="${color(card.suit)}">${card.rank}</span>&nbsp;<span>${card.suit}</span>`;
-  // 两次翻转实现“先盖后亮”的过渡
+function showMain(rank){
+  const suit = suits[Math.floor(Math.random()*4)];
+  mainFrontEl.innerHTML = `<span class="${color(suit)}" style="font-weight:800">${rank || '?'}</span>&nbsp;<span>${suit}</span>`;
   mainCardEl.classList.remove('flip');
   setTimeout(()=> mainCardEl.classList.add('flip'), 80);
 }
 
-// 生成一局动画并播放；winner: 'andar' | 'bahar'
-async function playRevealAnimation(winner){
-  clearAnimationBoard();
+/* ===== 从真实数据复现一局 ===== */
+let animLock = false;
+async function playRealAnimation({winner, mainRank, hitNth}){
+  if (animLock) return;
+  animLock = true;
+  resetBoard();
 
-  // 随机主牌（仅用于视觉）
-  const main = { suit: suits[Math.floor(Math.random()*4)], rank: ranks[Math.floor(Math.random()*13)] };
-  showMainCard(main);
+  if (!winner){ animLock = false; return; }
 
-  // 规划“第几张命中”（避免太快或太慢）
-  const hitNth = Math.floor(Math.random()*4) + 5; // 第5~8张之间命中
+  // 后端缺字段时的回退：只高亮胜方
+  if (!mainRank || !hitNth){
+    showMain('?');
+    setTimeout(()=>{
+      const lane = winner==='andar' ? document.getElementById('laneA') : document.getElementById('laneB');
+      const banner = winner==='andar' ? bannerA : bannerB;
+      banner.textContent = `WIN — ${winner==='andar'?'Andar':'Bahar'}`;
+      banner.classList.add('show'); lane.classList.add('winner');
+      animLock = false;
+    }, 200);
+    return;
+  }
 
-  // 按顺序发牌
-  let index = 0, aCount = 0, bCount = 0, turn = 'andar';
+  showMain(mainRank);
+  let aCount = 0, bCount = 0, turn = 'andar';
+
   await new Promise(resolve=>{
+    let idx = 0;
     const timer = setInterval(()=>{
-      index++;
-      const isHit = (winner===turn && index===hitNth);
+      idx++;
+      const isHit = (idx === hitNth);
+
       let card;
       if (isHit){
-        // 命中牌：与主牌点数相同，随机花色
-        card = { suit: suits[Math.floor(Math.random()*4)], rank: main.rank };
+        card = { suit: suits[Math.floor(Math.random()*4)], rank: mainRank };
       }else{
-        // 非命中牌：随机且尽量避免与主牌点数相同
         let r = ranks[Math.floor(Math.random()*13)];
-        if (r===main.rank) r = ranks[(ranks.indexOf(r)+1)%13];
+        if (r===mainRank) r = ranks[(ranks.indexOf(r)+1)%13];
         card = { suit: suits[Math.floor(Math.random()*4)], rank: r };
       }
-      const node = miniCardDOM(card);
+
+      const node = miniCard(card);
       if (turn==='andar'){
-        railA.appendChild(node); aCount++; cntA.textContent = `${aCount} cards`;
-        turn='bahar';
+        pushToRail(railA, node); aCount++; cntA.textContent = `${aCount} cards`; turn='bahar';
       }else{
-        railB.appendChild(node); bCount++; cntB.textContent = `${bCount} cards`;
-        turn='andar';
+        pushToRail(railB, node); bCount++; cntB.textContent = `${bCount} cards`; turn='andar';
       }
 
       if (isHit){
         clearInterval(timer);
         setTimeout(()=>{
-          if (winner==='andar'){
-            bannerA.textContent = `WIN — Andar hits ${main.rank}`;
-            bannerA.classList.add('show'); document.getElementById('laneA').classList.add('winner');
-          }else{
-            bannerB.textContent = `WIN — Bahar hits ${main.rank}`;
-            bannerB.classList.add('show'); document.getElementById('laneB').classList.add('winner');
-          }
+          const lane = winner==='andar' ? document.getElementById('laneA') : document.getElementById('laneB');
+          const banner = winner==='andar' ? bannerA : bannerB;
+          banner.textContent = `WIN — ${winner==='andar'?'Andar':'Bahar'} hits ${mainRank}`;
+          banner.classList.add('show'); lane.classList.add('winner');
           resolve();
-        }, 400);
+        }, 360);
       }
     }, DEAL_SPEED);
   });
+
+  animLock = false;
 }
 
 /* ===== 结果/倒计时 ===== */
 let lastAnimatedRound = null;
 
-async function loadPrevResult(alsoAnimate=false){
+async function refreshAndAnimate(animate=false){
   const prevRound = prevRoundNo();
   roundEl.textContent = currentRoundNo();
-  const { data } = await supabase.from('ab_rounds').select('result_side').eq('round_number', prevRound).maybeSingle();
-  const side = data?.result_side;
-  prevEl.textContent = side ? (side === 'andar' ? 'Andar' : 'Bahar') : '—';
 
-  // 自动播放动画：只在该期结果存在且未播放过时触发
-  if (alsoAnimate && side && lastAnimatedRound !== prevRound){
+  const { data } = await supabase
+    .from('ab_rounds')
+    .select('result_side, lead_rank, match_index')
+    .eq('round_number', prevRound)
+    .maybeSingle();
+
+  const side = data?.result_side || null;
+  prevEl.textContent = side ? (side==='andar'?'Andar':'Bahar') : '—';
+
+  if (animate && side && lastAnimatedRound !== prevRound){
     lastAnimatedRound = prevRound;
-    // 稍微延迟，让UI先更新
-    setTimeout(()=> playRevealAnimation(side), 300);
+    await playRealAnimation({ winner: side, mainRank: data?.lead_rank || null, hitNth: data?.match_index || null });
   }
 }
 
 function startTicker(){
+  let gated = false;
   setInterval(async ()=>{
     const now = getIST();
     const sec = now.getSeconds();
@@ -373,14 +378,17 @@ function startTicker(){
       betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
     }
 
-    // 整分：刷新并播放该整分刚产生的“上一期”动画
-    if (sec === 0) {
-      await loadPrevResult(true);
+    // 只在整分触发一次
+    if (sec === 0 && !gated){
+      gated = true;
+      await refreshAndAnimate(true);
       await loadBalance();
       await loadMyBets();
+      setTimeout(()=> gated=false, 1100);
     }
+
     roundEl.textContent = currentRoundNo();
-  }, 500);
+  }, 250);
 }
 
 /* ===== 我的最近10条 ===== */
@@ -392,7 +400,6 @@ async function loadMyBets(){
     .order('created_at', { ascending: false })
     .limit(10);
 
-  // 查这些期的结果
   const rounds = [...new Set((bets||[]).map(b=>b.round_number))];
   let resultMap = {};
   if (rounds.length){
@@ -447,11 +454,9 @@ betBtn.onclick = async ()=>{
   await loadMyBets();
 };
 
-/* ===== Demo 按钮：随时播放动画 ===== */
+/* ===== Demo：手动演示（不影响真实数据） ===== */
 demoBtn.onclick = async ()=>{
-  // 没有结果也能演示：随机选择一侧
-  const side = Math.random()<0.5 ? 'andar' : 'bahar';
-  await playRevealAnimation(side);
+  await playRealAnimation({ winner:'bahar', mainRank:'8', hitNth:7 });
 };
 </script>
 </body>
