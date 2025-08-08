@@ -206,6 +206,10 @@
     const diceResult = document.getElementById('dice-result');
     const roundNumber = document.getElementById('round-number');
     const logoutBtn = document.getElementById('logout-btn');
+    const lobbyBtn = document.getElementById('lobby-btn');
+lobbyBtn.onclick = () => {
+  location.href = './index.html'; // 回到游戏大厅主页
+};
     const betBtn = document.getElementById('bet-btn');
     const betAmountEl = document.getElementById('bet-amount');
     const countEl = document.getElementById('countdown');
