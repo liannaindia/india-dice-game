@@ -13,34 +13,40 @@
       padding: 20px;
       color: #222;
     }
-    .container { max-width: 500px; margin: auto; }
+    .container { max-width: 520px; margin: auto; }
     h2 { text-align: center; color: #ff6f00; }
     .card {
-      background: white; border-radius: 12px; padding: 20px;
+      background: #fff; border-radius: 12px; padding: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px;
     }
     input, select, button {
       width: 100%; padding: 10px; margin-top: 10px; font-size: 16px;
       border-radius: 8px; border: 1px solid #ccc;
     }
-    button { background: #007bff; color: white; font-weight: bold; cursor: pointer; }
+    button { background: #007bff; color: #fff; font-weight: 600; cursor: pointer; }
+    button[disabled] { opacity:.6; cursor:not-allowed; }
     button:hover { background: #0056b3; }
     .balance { font-weight: bold; font-size: 18px; color: #388e3c; }
     .result-box { background: #e3f2fd; padding: 10px; border-radius: 8px; text-align: center; }
     .muted { color:#666; font-size:12px; margin-top:6px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding: 6px 4px; text-align:left; border-bottom: 1px solid #eee; font-size: 14px; }
+    th { font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>🎲 Lucky Dice</h2>
 
+    <!-- 用户与余额 -->
     <div class="card">
       <p>👤 Logged in as: <span id="user-email"></span></p>
       <p class="balance">💰 Balance: ₹<span id="balance">0</span></p>
       <button id="logout-btn">Logout</button>
-      <div class="muted">* Bets close in the last 3s of each minute.</div>
+      <div class="muted">* Bets close in the last 3 seconds of each minute.</div>
     </div>
 
+    <!-- 下注 -->
     <div class="card">
       <h3>🎯 Place Your Bet</h3>
       <select id="bet-type">
@@ -57,16 +63,23 @@
       <button id="bet-btn">Submit Bet</button>
     </div>
 
+    <!-- 开奖与倒计时 -->
     <div class="card result-box">
       <p>🎲 Result: <span id="dice-result">Waiting...</span></p>
       <p>⏱️ Round: <span id="round-number">...</span></p>
+    </div>
+
+    <!-- 最近10条下注 -->
+    <div class="card">
+      <h3>🧾 My Last 10 Bets</h3>
+      <div id="my-bets">Loading…</div>
     </div>
   </div>
 
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    // === UI refs ===
+    // ====== refs ======
     let currentUser = null;
     const emailEl = document.getElementById('user-email');
     const balanceEl = document.getElementById('balance');
@@ -77,13 +90,13 @@
     const betTypeEl = document.getElementById('bet-type');
     const betAmountEl = document.getElementById('bet-amount');
 
-    // === Odds config ===
+    // ====== odds / close time ======
     const BIG_ODDS = 2.00;
     const SMALL_ODDS = 2.00;
     const NUMBER_ODDS = 6.00;
-    const CLOSE_BUFFER = 3; // last N seconds closed
+    const CLOSE_BUFFER = 3; // last 3 seconds closed
 
-    // === Time helpers ===
+    // ====== time helpers ======
     function getIST() {
       const now = new Date();
       const utc = now.getTime() + now.getTimezoneOffset() * 60000;
@@ -99,7 +112,7 @@
       return `${y}${m}${d}${h}${min}`;
     }
 
-    // === Auth / init ===
+    // ====== auth/init ======
     logoutBtn.onclick = async () => {
       await supabase.auth.signOut();
       location.href = './index.html';
@@ -115,6 +128,7 @@
         await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
         await loadBalance();
         await loadLatestResult();
+        await loadMyLastBets();
         startTicker();
       }
     });
@@ -128,7 +142,7 @@
       if (!error) balanceEl.textContent = data?.balance || 0;
     }
 
-    // === Result polling (per minute) ===
+    // ====== result polling ======
     async function loadLatestResult() {
       const round = currentRoundNo();
       roundNumber.textContent = round;
@@ -158,7 +172,7 @@
         const remaining = 60 - sec;
         countdown.textContent = `⏳ Time Left: ${remaining}s`;
 
-        // 封盘提示样式（可选）
+        // close / open bet button
         if (remaining <= CLOSE_BUFFER) {
           betBtn.disabled = true;
           betBtn.textContent = 'Bet Closed';
@@ -167,25 +181,94 @@
           betBtn.textContent = 'Submit Bet';
         }
 
-        // 整点切分钟时刷新结果与期号
+        // new minute: refresh result & my bets
         if (sec === 0) {
           await loadLatestResult();
+          await loadMyLastBets();
+          await loadBalance(); // 可选，派彩后顺便刷新余额
         }
 
         roundNumber.textContent = currentRoundNo();
       }, 500);
     }
 
-    // === Place bet with atomic debit (RPC) ===
+    // ====== my last 10 bets ======
+    async function loadMyLastBets() {
+      if (!currentUser) return;
+      const container = document.getElementById('my-bets');
+
+      const { data: bets, error } = await supabase
+        .from('bets')
+        .select('round_number, bet_type, choice, amount, status, payout, created_at')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        container.textContent = 'Failed to load.';
+        return;
+      }
+      if (!bets || bets.length === 0) {
+        container.textContent = 'No recent bets.';
+        return;
+      }
+
+      // batch get results for these rounds
+      const rounds = [...new Set(bets.map(b => b.round_number))];
+      let resultMap = {};
+      if (rounds.length) {
+        const { data: roundsData } = await supabase
+          .from('game_rounds')
+          .select('round_number, result')
+          .in('round_number', rounds);
+        (roundsData || []).forEach(r => { resultMap[r.round_number] = r.result; });
+      }
+
+      const rows = bets.map(b => {
+        const humanBet =
+          b.bet_type === 'number' ? `Number ${b.choice}` :
+          b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)';
+        const res = resultMap[b.round_number] ?? '—';
+        return `
+          <tr>
+            <td>${b.round_number}</td>
+            <td>${humanBet}</td>
+            <td>₹${Number(b.amount).toFixed(2)}</td>
+            <td>${res}</td>
+            <td>${b.status}</td>
+            <td>₹${Number(b.payout || 0).toFixed(2)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Round</th>
+                <th>Bet</th>
+                <th>Amount</th>
+                <th>Result</th>
+                <th>Status</th>
+                <th>Payout</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // ====== place bet (atomic via RPC) ======
     betBtn.onclick = async () => {
       if (!currentUser) return alert('Please login first');
       const amount = Number(betAmountEl.value);
       if (!amount || amount <= 0) return alert('Enter amount');
 
-      // 封盘
+      // close check
       const now = getIST();
-      const sec = now.getSeconds();
-      const remaining = 60 - sec;
+      const remaining = 60 - now.getSeconds();
       if (remaining <= CLOSE_BUFFER) return alert('Bet closed');
 
       const rn = currentRoundNo();
@@ -203,7 +286,6 @@
         bet_type = 'number'; choice = Number(typeVal); odds = NUMBER_ODDS;
       }
 
-      // 调用原子扣款RPC
       const { error } = await supabase.rpc('place_bet', {
         _user_id: currentUser.id,
         _email: currentUser.email,
@@ -225,6 +307,7 @@
 
       alert('✅ Bet placed!');
       await loadBalance();
+      await loadMyLastBets();
     };
   </script>
 </body>
