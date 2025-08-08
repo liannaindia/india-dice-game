@@ -13,49 +13,21 @@
       padding: 20px;
       color: #222;
     }
-    .container {
-      max-width: 500px;
-      margin: auto;
-    }
-    h2 {
-      text-align: center;
-      color: #ff6f00;
-    }
+    .container { max-width: 500px; margin: auto; }
+    h2 { text-align: center; color: #ff6f00; }
     .card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px;
     }
     input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      width: 100%; padding: 10px; margin-top: 10px; font-size: 16px;
+      border-radius: 8px; border: 1px solid #ccc;
     }
-    button {
-      background: #007bff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .balance {
-      font-weight: bold;
-      font-size: 18px;
-      color: #388e3c;
-    }
-    .result-box {
-      background: #e3f2fd;
-      padding: 10px;
-      border-radius: 8px;
-      text-align: center;
-    }
+    button { background: #007bff; color: white; font-weight: bold; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .balance { font-weight: bold; font-size: 18px; color: #388e3c; }
+    .result-box { background: #e3f2fd; padding: 10px; border-radius: 8px; text-align: center; }
+    .muted { color:#666; font-size:12px; margin-top:6px; }
   </style>
 </head>
 <body>
@@ -66,6 +38,7 @@
       <p>👤 Logged in as: <span id="user-email"></span></p>
       <p class="balance">💰 Balance: ₹<span id="balance">0</span></p>
       <button id="logout-btn">Logout</button>
+      <div class="muted">* Bets close in the last 3s of each minute.</div>
     </div>
 
     <div class="card">
@@ -91,109 +64,168 @@
   </div>
 
   <script type="module">
-import { supabase } from './supabase-config.js';
+    import { supabase } from './supabase-config.js';
 
-let currentUser = null;
-const emailEl = document.getElementById('user-email');
-const balanceEl = document.getElementById('balance');
-const diceResult = document.getElementById('dice-result');
-const roundNumber = document.getElementById('round-number');
+    // === UI refs ===
+    let currentUser = null;
+    const emailEl = document.getElementById('user-email');
+    const balanceEl = document.getElementById('balance');
+    const diceResult = document.getElementById('dice-result');
+    const roundNumber = document.getElementById('round-number');
+    const logoutBtn = document.getElementById('logout-btn');
+    const betBtn = document.getElementById('bet-btn');
+    const betTypeEl = document.getElementById('bet-type');
+    const betAmountEl = document.getElementById('bet-amount');
 
-const logoutBtn = document.getElementById('logout-btn');
-logoutBtn.onclick = async () => {
-  await supabase.auth.signOut();
-  location.href = './index.html';
-};
+    // === Odds config ===
+    const BIG_ODDS = 2.00;
+    const SMALL_ODDS = 2.00;
+    const NUMBER_ODDS = 6.00;
+    const CLOSE_BUFFER = 3; // last N seconds closed
 
-supabase.auth.getUser().then(async ({ data }) => {
-  if (!data?.user) {
-    alert('Please login first.');
-    location.href = './index.html';
-  } else {
-    currentUser = data.user;
-    emailEl.textContent = currentUser.email;
-    await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
-    loadBalance();
-  }
-});
-
-async function loadBalance() {
-  const { data } = await supabase
-    .from('users')
-    .select('balance')
-    .eq('id', currentUser.id)
-    .single();
-  balanceEl.textContent = data?.balance || 0;
-}
-
-// 🔁 倒计时与开奖逻辑
-function getIndianTime() {
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utc + 5.5 * 60 * 60 * 1000); // 印度时间 UTC+5:30
-}
-
-function getCurrentRoundNumber() {
-  const now = getIndianTime();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hour = String(now.getHours()).padStart(2, '0');
-  const minute = String(now.getMinutes()).padStart(2, '0');
-  return `${year}${month}${day}${hour}${minute}`;
-}
-
-async function loadLatestResult() {
-  const round = getCurrentRoundNumber();
-  roundNumber.textContent = round;
-
-  const res = await fetch(`https://gtoofdphwneqpwsmjcwl.supabase.co/rest/v1/game_rounds?select=*&round_number=eq.${round}`, {
-    headers: {
-      apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyOTYwODEsImV4cCI6MjA2OTg3MjA4MX0.XOlnadAyNTMLy8W-JQLyA7Kmh0dKBRslL3vXvx_ebj4',
-      Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0b29mZHBod25lcXB3c21qY3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyOTYwODEsImV4cCI6MjA2OTg3MjA4MX0.XOlnadAyNTMLy8W-JQLyA7Kmh0dKBRslL3vXvx_ebj4',
-      Accept: 'application/json'
+    // === Time helpers ===
+    function getIST() {
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      return new Date(utc + 5.5 * 60 * 60 * 1000); // IST
     }
-  });
-
-  const data = await res.json();
-  if (data.length > 0) {
-    diceResult.textContent = data[0].result;
-  } else {
-    diceResult.textContent = 'Waiting...';
-  }
-}
-
-function startCountdown() {
-  const countdown = document.createElement('p');
-  countdown.style.fontWeight = 'bold';
-  countdown.id = 'countdown';
-  document.querySelector('.result-box').appendChild(countdown);
-
-  setInterval(() => {
-    const now = getIndianTime();
-    const seconds = now.getSeconds();
-    const remaining = 60 - seconds;
-    countdown.textContent = `⏳ Time Left: ${remaining}s`;
-
-    if (seconds === 0) {
-      loadLatestResult();
+    function currentRoundNo() {
+      const now = getIST();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const h = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      return `${y}${m}${d}${h}${min}`;
     }
 
-    roundNumber.textContent = getCurrentRoundNumber();
-  }, 1000);
-}
+    // === Auth / init ===
+    logoutBtn.onclick = async () => {
+      await supabase.auth.signOut();
+      location.href = './index.html';
+    };
 
-// 启动
-loadLatestResult();
-startCountdown();
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data?.user) {
+        alert('Please login first.');
+        location.href = './index.html';
+      } else {
+        currentUser = data.user;
+        emailEl.textContent = currentUser.email;
+        await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+        await loadBalance();
+        await loadLatestResult();
+        startTicker();
+      }
+    });
 
-// 下注逻辑按钮保留占位
-document.getElementById('bet-btn').onclick = async () => {
-  const type = document.getElementById('bet-type').value;
-  const amount = parseFloat(document.getElementById('bet-amount').value);
-  alert(`Bet submitted: ${type}, ₹${amount}. (下注逻辑将在下一步完成)`);
-};
-</script>
+    async function loadBalance() {
+      const { data, error } = await supabase
+        .from('users')
+        .select('balance')
+        .eq('id', currentUser.id)
+        .single();
+      if (!error) balanceEl.textContent = data?.balance || 0;
+    }
 
+    // === Result polling (per minute) ===
+    async function loadLatestResult() {
+      const round = currentRoundNo();
+      roundNumber.textContent = round;
+
+      const { data, error } = await supabase
+        .from('game_rounds')
+        .select('result')
+        .eq('round_number', round)
+        .maybeSingle();
+
+      if (!error && data) {
+        diceResult.textContent = data.result;
+      } else {
+        diceResult.textContent = 'Waiting...';
+      }
+    }
+
+    function startTicker() {
+      const countdown = document.createElement('p');
+      countdown.style.fontWeight = 'bold';
+      countdown.id = 'countdown';
+      document.querySelector('.result-box').appendChild(countdown);
+
+      setInterval(async () => {
+        const now = getIST();
+        const sec = now.getSeconds();
+        const remaining = 60 - sec;
+        countdown.textContent = `⏳ Time Left: ${remaining}s`;
+
+        // 封盘提示样式（可选）
+        if (remaining <= CLOSE_BUFFER) {
+          betBtn.disabled = true;
+          betBtn.textContent = 'Bet Closed';
+        } else {
+          betBtn.disabled = false;
+          betBtn.textContent = 'Submit Bet';
+        }
+
+        // 整点切分钟时刷新结果与期号
+        if (sec === 0) {
+          await loadLatestResult();
+        }
+
+        roundNumber.textContent = currentRoundNo();
+      }, 500);
+    }
+
+    // === Place bet with atomic debit (RPC) ===
+    betBtn.onclick = async () => {
+      if (!currentUser) return alert('Please login first');
+      const amount = Number(betAmountEl.value);
+      if (!amount || amount <= 0) return alert('Enter amount');
+
+      // 封盘
+      const now = getIST();
+      const sec = now.getSeconds();
+      const remaining = 60 - sec;
+      if (remaining <= CLOSE_BUFFER) return alert('Bet closed');
+
+      const rn = currentRoundNo();
+      const typeVal = betTypeEl.value;
+
+      let bet_type = 'big';
+      let choice = null;
+      let odds = BIG_ODDS;
+
+      if (typeVal === 'big') {
+        bet_type = 'big'; odds = BIG_ODDS;
+      } else if (typeVal === 'small') {
+        bet_type = 'small'; odds = SMALL_ODDS;
+      } else {
+        bet_type = 'number'; choice = Number(typeVal); odds = NUMBER_ODDS;
+      }
+
+      // 调用原子扣款RPC
+      const { error } = await supabase.rpc('place_bet', {
+        _user_id: currentUser.id,
+        _email: currentUser.email,
+        _round: rn,
+        _bet_type: bet_type,
+        _choice: choice,
+        _amount: amount,
+        _odds: odds
+      });
+
+      if (error) {
+        if (String(error.message).includes('INSUFFICIENT_BALANCE')) {
+          alert('Insufficient balance');
+        } else {
+          alert('Bet failed: ' + error.message);
+        }
+        return;
+      }
+
+      alert('✅ Bet placed!');
+      await loadBalance();
+    };
+  </script>
 </body>
 </html>
