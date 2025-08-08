@@ -2,15 +2,16 @@ name: Auto Trigger AB Draw
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # GitHub Actions 最小5分钟执行一次
+    - cron: '*/5 * * * *'  # 每5分钟
   workflow_dispatch:
 
 jobs:
   trigger:
     runs-on: ubuntu-latest
-
     steps:
       - name: Call abautodraw edge function
         run: |
-          curl -X POST "https://gtoofdphwneqpwsmjcwl.supabase.co/functions/v1/abautodraw" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          curl -sS -X POST "https://gtoofdphwneqpwsmjcwl.supabase.co/functions/v1/abautodraw" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
