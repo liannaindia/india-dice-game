@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Lucky Dice Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <!-- 保持你的 supabase 客户端配置文件 -->
   <script type="module" src="./supabase-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -134,19 +133,16 @@
       </div>
     </div>
 
-    <!-- 结果 -->
+    <!-- 结果（只显示上期 + 当前期号） -->
     <div class="card">
       <div class="result-box">
-        <div class="muted">Round</div>
+        <div class="muted">Current Round</div>
         <div id="round-number" style="font-weight:700">—</div>
 
-        <div class="muted">Prev Result</div>
-        <div id="prev-result" class="result-big">—</div>
+        <div class="muted" style="margin-top:6px">Last Round : Result</div>
+        <div id="prev-line" class="result-big">—</div>
 
-        <div class="muted">Current Result (debug)</div>
-        <div id="current-result" class="result-big">—</div>
-
-        <div class="muted">Time Left</div>
+        <div class="muted" style="margin-top:6px">Time Left</div>
         <div id="countdown" class="countdown">—</div>
       </div>
     </div>
@@ -186,8 +182,7 @@
     const emailEl=document.getElementById('user-email');
     const balanceEl=document.getElementById('balance');
     const roundNumber=document.getElementById('round-number');
-    const prevResultEl=document.getElementById('prev-result');
-    const currentResultEl=document.getElementById('current-result');
+    const prevLineEl=document.getElementById('prev-line');
     const logoutBtn=document.getElementById('logout-btn');
     const lobbyBtn=document.getElementById('lobby-btn');
     const betBtn=document.getElementById('bet-btn');
@@ -235,29 +230,21 @@
       balanceEl.textContent = data?.balance ?? 0;
     }
 
-    /* ====== 结果：上一期 + 当前期(调试) ====== */
-    async function loadPrevResult(){
-      const r = prevRoundNo();
+    /* ====== 只显示上期：期号 + 结果 ====== */
+    async function loadPrevLine(){
+      const prevRound = prevRoundNo();
       const { data } = await supabase
         .from('game_rounds')
         .select('result')
-        .eq('round_number', r)
+        .eq('round_number', prevRound)
         .maybeSingle();
-      prevResultEl.textContent = (data && data.result) ? data.result : '—';
-    }
-    async function loadCurrentResult(){
-      const r = currentRoundNo();
-      const { data } = await supabase
-        .from('game_rounds')
-        .select('result')
-        .eq('round_number', r)
-        .maybeSingle();
-      currentResultEl.textContent = (data && data.result) ? data.result : '—';
+
+      const res = (data && data.result) ? data.result : '—';
+      prevLineEl.textContent = `${prevRound} : ${res}`;
     }
     async function loadLatestResult(){
-      roundNumber.textContent = currentRoundNo();
-      await loadPrevResult();
-      await loadCurrentResult();
+      roundNumber.textContent = currentRoundNo(); // 只显示当前期号
+      await loadPrevLine();                       // 上期：期号 + 结果
     }
 
     function startTicker(){
