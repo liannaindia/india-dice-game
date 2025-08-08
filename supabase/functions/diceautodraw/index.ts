@@ -9,8 +9,12 @@ const supabase = createClient(
 
 // IST 工具
 function getIndianTime(offsetMin = 0): Date {
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const nowUTC = new Date();
+  const utc = nowUTC.getTime() + nowUTC.getTimezoneOffset() * 60000;
+  return new Date(utc + 5.5 * 60 * 60 * 1000 + offsetMin * 60 * 1000);
+}function getIndianTime(offsetMin = 0): Date {
+  const nowUTC = new Date();
+  const utc = nowUTC.getTime() + nowUTC.getTimezoneOffset() * 60000;
   return new Date(utc + 5.5 * 60 * 60 * 1000 + offsetMin * 60 * 1000);
 }
 function roundNo(d: Date): string {
@@ -58,7 +62,7 @@ serve(async () => {
   // === 2) 结算“上一分钟”的注单（关键！避免时间竞态） ===
   const prev = new Date(now.getTime() - 60 * 1000);
   const prevRound = roundNo(prev);
-  const { error: settleErr } = await supabase.rpc("settle_round", { _round: prevRound });
+  const { error: settleErr } = await supabase.rpc('settle_prev_minute');
   if (settleErr) {
     console.error("settle_round failed:", settleErr.message);
   }
@@ -73,3 +77,4 @@ serve(async () => {
 
   return new Response(`OK: wrote=${insertCount}, settled=${prevRound}`, { status: 200 });
 });
+
