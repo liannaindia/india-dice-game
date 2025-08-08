@@ -7,64 +7,30 @@
   <script type="module" src="./supabase-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#222;
-      --muted:#666; --primary:#0d6efd; --primary-pressed:#0b5ed7;
-      --success:#2e7d32; --danger:#d32f2f; --surface:#f6f8fb;
-      --radius:14px; --shadow:0 6px 18px rgba(0,0,0,.08);
-    }
+    :root{ --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#222; --muted:#666; --primary:#0d6efd; --primary-pressed:#0b5ed7; --success:#2e7d32; --danger:#d32f2f; --surface:#f6f8fb; --radius:14px; --shadow:0 6px 18px rgba(0,0,0,.08); }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{
-      margin:0; font-family:'Poppins',sans-serif; color:var(--text);
-      background:linear-gradient(180deg,var(--bg1),var(--bg2));
-      padding-bottom:94px;
-    }
+    body{ margin:0; font-family:'Poppins',sans-serif; color:var(--text); background:linear-gradient(180deg,var(--bg1),var(--bg2)); padding-bottom:94px; }
     .container{max-width:720px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
     h2{margin:6px 0 14px;text-align:center;color:#ff6f00}
-
-    .card{
-      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
-      padding:14px 14px; margin-bottom:14px;
-    }
+    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 14px; margin-bottom:14px; }
     .muted{color:var(--muted); font-size:12px}
-
-    /* 顶部用户条 */
     .userbar{display:flex; align-items:center; justify-content:space-between; gap:10px}
     .balance{font-weight:700; color:var(--success)}
-    .btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:12px 14px; border-radius:12px; border:0; cursor:pointer;
-      background:var(--primary); color:#fff; font-weight:700; min-height:46px;
-    }
-    .btn:active{background:var(--primary-pressed)}
-    .btn.secondary{background:#eef4ff; color:#1e3a8a}
-    .btn.ghost{background:#fff; color:#111; border:1px solid #e6eaf2}
-
-    /* 玩法选择 */
+    .btn{ display:inline-flex; align-items:center; justify-content:center; padding:12px 14px; border-radius:12px; border:0; cursor:pointer; background:var(--primary); color:#fff; font-weight:700; min-height:46px; }
+    .btn:active{background:var(--primary-pressed)} .btn.secondary{background:#eef4ff; color:#1e3a8a} .btn.ghost{background:#fff; color:#111; border:1px solid #e6eaf2}
     .seg{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px}
-    .seg .chip{
-      padding:10px 12px; text-align:center; border-radius:12px;
-      background:#f2f5fa; border:1px solid #e6eaf2; font-weight:600; cursor:pointer;
-    }
+    .seg .chip{ padding:10px 12px; text-align:center; border-radius:12px; background:#f2f5fa; border:1px solid #e6eaf2; font-weight:600; cursor:pointer; }
     .seg .chip.active{background:#eaf2ff; border-color:#cfe0ff; color:#0b5ed7}
-
-    /* 数字按钮 */
     .grid6{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:8px}
     .num{padding:12px 0; text-align:center; border-radius:12px; background:#f7f9fc; border:1px solid #e6eaf2; font-weight:700; cursor:pointer}
     .num.active{background:#fff0e6; border-color:#ffc999}
-
-    /* 快捷金额 */
     .quick{display:flex; gap:8px; flex-wrap:wrap}
     .qchip{padding:8px 10px; border-radius:10px; background:#f2f5fa; border:1px solid #e6eaf2; cursor:pointer}
     .qchip:active{transform:scale(.98)}
-
-    /* 结果区 */
     .result-box{display:flex; flex-direction:column; align-items:center; gap:8px}
     .result-big{font-size:28px; font-weight:800}
     .countdown{font-weight:700}
-
-    /* 列表视图切换：手机卡片、桌面表格 */
     .cardsver{display:block}
     .tablever{display:none}
     @media(min-width:800px){
@@ -75,17 +41,8 @@
       th,td{padding:8px 6px; border-bottom:1px solid #eee; font-size:14px; text-align:left}
       th{font-weight:700}
     }
-
-    /* 底部下注栏 */
-    .betbar{
-      position:fixed; left:0; right:0; bottom:0;
-      padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-      background:rgba(255,255,255,.85); backdrop-filter: blur(10px);
-      border-top:1px solid #e8edf6; display:flex; gap:10px; align-items:center;
-    }
-    .betbar input{
-      flex:1; height:46px; border-radius:12px; border:1px solid #e1e6f0; padding:0 12px; font-size:16px; background:#fff
-    }
+    .betbar{ position:fixed; left:0; right:0; bottom:0; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); background:rgba(255,255,255,.85); backdrop-filter: blur(10px); border-top:1px solid #e8edf6; display:flex; gap:10px; align-items:center; }
+    .betbar input{ flex:1; height:46px; border-radius:12px; border:1px solid #e1e6f0; padding:0 12px; font-size:16px; background:#fff }
     .betbar .btn{min-width:140px}
   </style>
 </head>
@@ -93,7 +50,6 @@
   <div class="container">
     <h2>🎲 Lucky Dice</h2>
 
-    <!-- 用户 -->
     <div class="card">
       <div class="userbar">
         <div>
@@ -107,14 +63,12 @@
       <div class="muted" style="margin-top:8px">* Bets close in the last 3 seconds of each minute.</div>
     </div>
 
-    <!-- 玩法 -->
     <div class="card">
       <h3 style="margin:0 0 6px">🎯 Select Bet</h3>
       <div class="seg" id="mode-seg">
         <div class="chip active" data-mode="big">Big (4–6) ×<span id="odds-big">2.00</span></div>
         <div class="chip" data-mode="small">Small (1–3) ×<span id="odds-small">2.00</span></div>
       </div>
-
       <div class="muted" style="margin-top:8px">Or choose exact number:</div>
       <div class="grid6" id="num-grid">
         <div class="num" data-n="1">1 ×<span class="o">6.00</span></div>
@@ -124,7 +78,6 @@
         <div class="num" data-n="5">5 ×<span class="o">6.00</span></div>
         <div class="num" data-n="6">6 ×<span class="o">6.00</span></div>
       </div>
-
       <div style="margin-top:10px" class="quick" id="quick-amt">
         <div class="qchip" data-v="100">₹100</div>
         <div class="qchip" data-v="200">₹200</div>
@@ -133,7 +86,7 @@
       </div>
     </div>
 
-    <!-- 结果（只显示上期 + 当前期号） -->
+    <!-- 结果：只显示上期 + 当前期号 -->
     <div class="card">
       <div class="result-box">
         <div class="muted">Current Round</div>
@@ -147,12 +100,9 @@
       </div>
     </div>
 
-    <!-- 最近10条 -->
     <div class="card">
       <h3 style="margin:0 0 6px">🧾 My Last 10 Bets</h3>
-      <!-- 手机卡片 -->
       <div id="my-bets" class="cardsver">Loading…</div>
-      <!-- 桌面表格 -->
       <div class="tablewrap">
         <table class="tablever">
           <thead>
@@ -164,7 +114,6 @@
     </div>
   </div>
 
-  <!-- 底部下注栏 -->
   <div class="betbar">
     <input type="number" id="bet-amount" placeholder="Amount ₹" inputmode="decimal" />
     <button id="bet-btn" class="btn">Submit Bet</button>
@@ -173,11 +122,9 @@
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    /* ====== 常量 ====== */
     const BIG_ODDS=2.00, SMALL_ODDS=2.00, NUMBER_ODDS=6.00;
-    const CLOSE_BUFFER=3; // 封盘秒数（与文案一致）
+    const CLOSE_BUFFER=3;
 
-    /* ====== refs ====== */
     let currentUser=null;
     const emailEl=document.getElementById('user-email');
     const balanceEl=document.getElementById('balance');
@@ -189,28 +136,14 @@
     const betAmountEl=document.getElementById('bet-amount');
     const countEl=document.getElementById('countdown');
 
-    // 赔率展示
     document.getElementById('odds-big').textContent=BIG_ODDS.toFixed(2);
     document.getElementById('odds-small').textContent=SMALL_ODDS.toFixed(2);
     document.querySelectorAll('#num-grid .o').forEach(el=>el.textContent=NUMBER_ODDS.toFixed(2));
 
-    /* ====== IST 工具 ====== */
-    function getIST(){
-      const now=new Date();
-      const utc=now.getTime()+now.getTimezoneOffset()*60000;
-      return new Date(utc+5.5*3600000);
-    }
-    function currentRoundNo(){
-      const n=getIST();
-      return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}`;
-    }
-    function prevRoundNo(){
-      const n=getIST();
-      n.setMinutes(n.getMinutes()-1,0,0);
-      return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}`;
-    }
+    function getIST(){const now=new Date();const utc=now.getTime()+now.getTimezoneOffset()*60000;return new Date(utc+5.5*3600000);}
+    function currentRoundNo(){const n=getIST();return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}`;}
+    function prevRoundNo(){const n=getIST();n.setMinutes(n.getMinutes()-1,0,0);return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}`;}
 
-    /* ====== 登录/初始化 ====== */
     lobbyBtn.onclick=()=>location.href='./index.html';
     logoutBtn.onclick=async()=>{await supabase.auth.signOut();location.href='./index.html';};
 
@@ -230,21 +163,15 @@
       balanceEl.textContent = data?.balance ?? 0;
     }
 
-    /* ====== 只显示上期：期号 + 结果 ====== */
     async function loadPrevLine(){
       const prevRound = prevRoundNo();
-      const { data } = await supabase
-        .from('game_rounds')
-        .select('result')
-        .eq('round_number', prevRound)
-        .maybeSingle();
-
+      const { data } = await supabase.from('game_rounds').select('result').eq('round_number', prevRound).maybeSingle();
       const res = (data && data.result) ? data.result : '—';
       prevLineEl.textContent = `${prevRound} : ${res}`;
     }
     async function loadLatestResult(){
-      roundNumber.textContent = currentRoundNo(); // 只显示当前期号
-      await loadPrevLine();                       // 上期：期号 + 结果
+      roundNumber.textContent = currentRoundNo();
+      await loadPrevLine();
     }
 
     function startTicker(){
@@ -257,7 +184,7 @@
         if (remaining <= CLOSE_BUFFER) { betBtn.disabled = true; betBtn.textContent = 'Bet Closed'; }
         else { betBtn.disabled = false; betBtn.textContent = 'Submit Bet'; }
 
-        if (secNow === 0) { // 每到新分钟
+        if (secNow === 0) {
           await loadLatestResult();
           await loadMyLastBets();
           await loadBalance();
@@ -266,7 +193,16 @@
       }, 500);
     }
 
-    /* ====== 我的最近10条（同步渲染卡片 & 表格） ====== */
+    // —— 这里是关键：即使后台提前把本期设为 won/lost，我们也把本期强制显示为 pending —— //
+    function maskIfCurrentRound(b){
+      const nowRound = currentRoundNo();
+      const isCurrent = b.round_number === nowRound;
+      if (isCurrent) {
+        return { ...b, status: 'pending', payout: 0 }; // 强制遮蔽
+      }
+      return b;
+    }
+
     async function loadMyLastBets() {
       if (!currentUser) return;
       const cardsWrap = document.getElementById('my-bets');
@@ -286,7 +222,10 @@
         return;
       }
 
-      const rounds = [...new Set((bets || []).map(b => b.round_number))];
+      // 强制遮蔽当前期的状态，避免提前显示
+      const safeBets = (bets || []).map(maskIfCurrentRound);
+
+      const rounds = [...new Set(safeBets.map(b => b.round_number))];
       let resultMap = {};
       if (rounds.length) {
         const { data: rs } = await supabase
@@ -296,18 +235,13 @@
         (rs || []).forEach(r => { resultMap[r.round_number] = r.result; });
       }
 
-      const rows = (bets || []).map(b => {
+      const rows = safeBets.map(b => {
         const betLabel = b.bet_type === 'number' ? `Number ${b.choice}` :
                          b.bet_type === 'big'    ? 'Big (4–6)'          : 'Small (1–3)';
         const showRes = b.status !== 'pending';
         const res = showRes ? (resultMap[b.round_number] ?? '—') : '—';
         const payout = showRes ? Number(b.payout || 0).toFixed(2) : '0.00';
-        return {
-          round: b.round_number,
-          bet: betLabel,
-          amount: Number(b.amount).toFixed(2),
-          res, status: b.status, payout
-        };
+        return { round: b.round_number, bet: betLabel, amount: Number(b.amount).toFixed(2), res, status: b.status, payout };
       });
 
       // 手机卡片
@@ -339,34 +273,24 @@
       }
     }
 
-    // 切换屏幕宽度时重渲染一次历史
     window.addEventListener('resize', () => loadMyLastBets());
 
-    /* ====== 下注（调用 RPC place_bet_now） ====== */
-    let currentBetType='big'; // 'big' | 'small' | 'number'
-    let currentChoice=null;
-
-    // 玩法切换
+    // 下注
+    let currentBetType='big', currentChoice=null;
     document.querySelectorAll('#mode-seg .chip').forEach(ch=>{
       ch.onclick=()=>{
         document.querySelectorAll('#mode-seg .chip').forEach(x=>x.classList.remove('active'));
-        ch.classList.add('active');
-        currentBetType=ch.dataset.mode;
-        currentChoice=null;
+        ch.classList.add('active'); currentBetType=ch.dataset.mode; currentChoice=null;
         document.querySelectorAll('#num-grid .num').forEach(n=>n.classList.remove('active'));
       };
     });
     document.querySelectorAll('#num-grid .num').forEach(n=>{
       n.onclick=()=>{
         document.querySelectorAll('#num-grid .num').forEach(x=>x.classList.remove('active'));
-        n.classList.add('active');
-        currentBetType='number';
-        currentChoice=Number(n.dataset.n);
+        n.classList.add('active'); currentBetType='number'; currentChoice=Number(n.dataset.n);
         document.querySelectorAll('#mode-seg .chip').forEach(x=>x.classList.remove('active'));
       };
     });
-
-    // 快捷金额
     document.getElementById('quick-amt').querySelectorAll('.qchip').forEach(q=>{
       q.onclick=()=>{ betAmountEl.value = Number(q.dataset.v); };
     });
@@ -375,7 +299,6 @@
       if(!currentUser) return alert('Please login first');
       const amount=Number(betAmountEl.value);
       if(!amount || amount<=0) return alert('Enter amount');
-
       const remaining = 60 - getIST().getSeconds();
       if (remaining <= CLOSE_BUFFER) return alert('Bet closed');
 
@@ -386,8 +309,8 @@
       const { error } = await supabase.rpc('place_bet_now', {
         _user_id: currentUser.id,
         _email: currentUser.email,
-        _bet_type: currentBetType,  // 'big' | 'small' | 'number'
-        _choice: currentChoice,     // number or null
+        _bet_type: currentBetType,
+        _choice: currentChoice,
         _amount: amount,
         _odds: odds
       });
