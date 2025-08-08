@@ -32,6 +32,7 @@
     table { width:100%; border-collapse: collapse; }
     th, td { padding: 6px 4px; text-align:left; border-bottom: 1px solid #eee; font-size: 14px; }
     th { font-weight: 600; }
+    .odds-line { font-size: 13px; color:#555; margin-top:6px; }
   </style>
 </head>
 <body>
@@ -49,16 +50,8 @@
     <!-- 下注 -->
     <div class="card">
       <h3>🎯 Place Your Bet</h3>
-      <select id="bet-type">
-        <option value="big">Big (4-6)</option>
-        <option value="small">Small (1-3)</option>
-        <option value="1">Point 1</option>
-        <option value="2">Point 2</option>
-        <option value="3">Point 3</option>
-        <option value="4">Point 4</option>
-        <option value="5">Point 5</option>
-        <option value="6">Point 6</option>
-      </select>
+      <select id="bet-type"></select>
+      <div class="odds-line" id="odds-tip"></div>
       <input type="number" id="bet-amount" placeholder="Bet Amount ₹" />
       <button id="bet-btn">Submit Bet</button>
     </div>
@@ -79,6 +72,11 @@
   <script type="module">
     import { supabase } from './supabase-config.js';
 
+    // ====== 赔率（只改这里）======
+    const BIG_ODDS   = 2.00;
+    const SMALL_ODDS = 2.00;
+    const NUMBER_ODDS= 5.00;
+
     // ====== refs ======
     let currentUser = null;
     const emailEl = document.getElementById('user-email');
@@ -89,11 +87,8 @@
     const betBtn = document.getElementById('bet-btn');
     const betTypeEl = document.getElementById('bet-type');
     const betAmountEl = document.getElementById('bet-amount');
+    const oddsTipEl = document.getElementById('odds-tip');
 
-    // ====== odds / close time ======
-    const BIG_ODDS = 2.00;
-    const SMALL_ODDS = 2.00;
-    const NUMBER_ODDS = 6.00;
     const CLOSE_BUFFER = 3; // last 3 seconds closed
 
     // ====== time helpers ======
@@ -112,6 +107,22 @@
       return `${y}${m}${d}${h}${min}`;
     }
 
+    // ====== 渲染下注选项（带倍率显示）======
+    function renderBetOptions() {
+      const options = [
+        { value: 'big',   label: `Big (4-6) ×${BIG_ODDS.toFixed(2)}` },
+        { value: 'small', label: `Small (1-3) ×${SMALL_ODDS.toFixed(2)}` },
+        { value: '1',     label: `Point 1 ×${NUMBER_ODDS.toFixed(2)}` },
+        { value: '2',     label: `Point 2 ×${NUMBER_ODDS.toFixed(2)}` },
+        { value: '3',     label: `Point 3 ×${NUMBER_ODDS.toFixed(2)}` },
+        { value: '4',     label: `Point 4 ×${NUMBER_ODDS.toFixed(2)}` },
+        { value: '5',     label: `Point 5 ×${NUMBER_ODDS.toFixed(2)}` },
+        { value: '6',     label: `Point 6 ×${NUMBER_ODDS.toFixed(2)}` },
+      ];
+      betTypeEl.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+      oddsTipEl.textContent = `Odds — Big: ×${BIG_ODDS.toFixed(2)}, Small: ×${SMALL_ODDS.toFixed(2)}, Number: ×${NUMBER_ODDS.toFixed(2)}`;
+    }
+
     // ====== auth/init ======
     logoutBtn.onclick = async () => {
       await supabase.auth.signOut();
@@ -126,6 +137,7 @@
         currentUser = data.user;
         emailEl.textContent = currentUser.email;
         await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+        renderBetOptions();                 // <-- 渲染含倍率的选项
         await loadBalance();
         await loadLatestResult();
         await loadMyLastBets();
@@ -181,11 +193,11 @@
           betBtn.textContent = 'Submit Bet';
         }
 
-        // new minute: refresh result & my bets
+        // new minute: refresh result & my bets & balance
         if (sec === 0) {
           await loadLatestResult();
           await loadMyLastBets();
-          await loadBalance(); // 可选，派彩后顺便刷新余额
+          await loadBalance();
         }
 
         roundNumber.textContent = currentRoundNo();
@@ -213,7 +225,7 @@
         return;
       }
 
-      // batch get results for these rounds
+      // batch get results
       const rounds = [...new Set(bets.map(b => b.round_number))];
       let resultMap = {};
       if (rounds.length) {
