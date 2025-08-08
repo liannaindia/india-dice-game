@@ -2,97 +2,163 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Panel</title>
   <script type="module" src="./supabase-config-admin.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      background: linear-gradient(to right, #f8f9fa, #e3f2fd);
-      padding: 20px;
+    :root{
+      --primary:#007bff;
+      --bg1:#f8f9fa;
+      --bg2:#e3f2fd;
+      --card:#ffffff;
+      --text:#222;
+      --muted:#666;
+      --sidebar:#0f172a;
+      --sidebar-text:#e2e8f0;
+      --sidebar-active:#1d4ed8;
     }
-    .container { max-width: 900px; margin: auto; }
-    h2 { text-align: center; color: #007bff; }
-    .card {
-      background: #fff; padding: 20px; border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Poppins',sans-serif;background:linear-gradient(to right,var(--bg1),var(--bg2));color:var(--text)}
+    h2,h3{margin:0 0 12px}
+    .login-wrap{max-width:420px;margin:48px auto;padding:24px;border-radius:12px;background:var(--card);box-shadow:0 4px 10px rgba(0,0,0,.08)}
+    input,button,textarea,select{
+      width:100%;padding:12px;margin-top:10px;font-size:16px;border-radius:8px;border:1px solid #d1d5db;background:#fff
     }
-    input, button, textarea {
-      width: 100%; padding: 12px; font-size: 16px; margin-top: 10px;
-      border-radius: 8px; border: 1px solid #ccc;
+    button{background:var(--primary);color:#fff;font-weight:600;cursor:pointer;border:none}
+    button:hover{filter:brightness(.95)}
+    .hidden{display:none}
+
+    /* --- 2栏布局 --- */
+    .layout{
+      display:flex;min-height:100vh;
     }
-    button { background: #007bff; color: white; font-weight: bold; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    .hidden { display: none; }
-    .request-box {
-      background: #f1f8e9; padding: 12px; margin-top: 12px; border-radius: 8px;
+    .sidebar{
+      width:240px;background:var(--sidebar);color:var(--sidebar-text);padding:16px 12px;position:sticky;top:0;height:100vh;overflow:auto;
     }
-    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; font-size: 14px; }
-    th { font-weight: 600; color: #333; }
-    .row-actions { display:flex; gap:8px; }
-    .flex { display:flex; gap:10px; align-items: center; }
-    .w-40 { width: 40%; }
-    .w-auto { width: auto; }
+    .brand{display:flex;gap:10px;align-items:center;color:#fff;font-weight:700;margin:8px 8px 16px}
+    .menu{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+    .menu button{
+      width:100%;text-align:left;background:transparent;border:1px solid transparent;color:var(--sidebar-text);
+      padding:10px 12px;border-radius:10px
+    }
+    .menu button:hover{background:rgba(255,255,255,.06)}
+    .menu button.active{background:var(--sidebar-active);color:#fff}
+
+    .content{flex:1;padding:20px;min-width:0}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media (min-width:980px){ .grid{grid-template-columns:repeat(2,1fr)} }
+
+    .card{
+      background:var(--card);padding:18px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.08)
+    }
+    .request-box{background:#f1f8e9;padding:12px;border-radius:8px;margin-top:10px}
+    .btn-group{display:flex;gap:10px;margin-top:10px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:8px 6px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
+    th{color:#333}
+    .row{display:flex;gap:10px}
+    .row > *{flex:1}
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🔐 admin Login</h2>
 
-    <div class="card" id="login-section">
-      <input type="email" id="email" placeholder="Admin Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <button id="login-btn">Login</button>
-    </div>
+  <!-- 登录 -->
+  <div id="login-section" class="login-wrap">
+    <h2>🔐 Admin Login</h2>
+    <input type="email" id="email" placeholder="Admin Email" />
+    <input type="password" id="password" placeholder="Password" />
+    <button id="login-btn">Login</button>
+  </div>
 
-    <div id="admin-panel" class="hidden">
-      <!-- Bank -->
-      <div class="card">
-        <h3>🏦 Bank Info</h3>
-        <input id="name" placeholder="Name" />
-        <input id="ac" placeholder="Account Number" />
-        <input id="ifsc" placeholder="IFSC Code" />
-        <input id="upi" placeholder="UPI ID" />
-        <input id="crypto" placeholder="Crypto Address" />
-        <button id="save-bank-btn">Save</button>
+  <!-- 主界面 -->
+  <div id="admin-layout" class="layout hidden">
+    <!-- 左侧菜单 -->
+    <aside class="sidebar">
+      <div class="brand">🛠️ Admin Panel</div>
+      <div class="menu">
+        <button data-tab="bank" class="active">🏦 Bank Info</button>
+        <button data-tab="recharge">💳 Recharge Requests</button>
+        <button data-tab="withdraw">💸 Withdraw Requests</button>
+        <button data-tab="bets">📜 Today’s Bets (IST)</button>
+        <button data-tab="manual">🎯 Manual Result</button>
       </div>
+    </aside>
+
+    <!-- 右侧内容 -->
+    <main class="content">
+      <!-- Bank -->
+      <section id="tab-bank" class="tab">
+        <div class="card">
+          <h3>🏦 Bank Info</h3>
+          <div class="row">
+            <input id="name"  placeholder="Name"/>
+            <input id="ac"    placeholder="Account Number"/>
+          </div>
+          <div class="row">
+            <input id="ifsc"  placeholder="IFSC Code"/>
+            <input id="upi"   placeholder="UPI ID"/>
+          </div>
+          <input id="crypto" placeholder="Crypto Address"/>
+          <button id="save-bank-btn">Save</button>
+        </div>
+      </section>
 
       <!-- Recharge -->
-      <div class="card">
-        <h3>💳 Recharge Requests</h3>
-        <div id="recharge-requests">Loading...</div>
-      </div>
+      <section id="tab-recharge" class="tab hidden">
+        <div class="card">
+          <h3>💳 Recharge Requests</h3>
+          <div id="recharge-requests">Loading...</div>
+        </div>
+      </section>
 
       <!-- Withdraw -->
-      <div class="card">
-        <h3>💸 Withdraw Requests</h3>
-        <div id="withdraw-requests">Loading...</div>
-      </div>
-
-      <!-- Today's Bets (IST) -->
-      <div class="card">
-        <h3>📜 Today’s Bets (IST)</h3>
-        <div class="flex">
-          <input id="bet-email-filter" class="w-40" placeholder="Filter by email (optional)" />
-          <button id="bets-reload" class="w-auto">Reload</button>
+      <section id="tab-withdraw" class="tab hidden">
+        <div class="card">
+          <h3>💸 Withdraw Requests</h3>
+          <div id="withdraw-requests">Loading...</div>
         </div>
-        <div id="today-bets">Loading...</div>
-      </div>
-    </div>
+      </section>
+
+      <!-- Bets Today -->
+      <section id="tab-bets" class="tab hidden">
+        <div class="card">
+          <h3>📜 Today’s Bets (IST)</h3>
+          <div class="toolbar">
+            <input id="bet-email-filter" placeholder="Filter by email (optional)" style="max-width:320px"/>
+            <button id="bets-reload" style="width:auto">Reload</button>
+          </div>
+          <div id="today-bets" style="margin-top:8px">Loading...</div>
+        </div>
+      </section>
+
+      <!-- Manual Result -->
+      <section id="tab-manual" class="tab hidden">
+        <div class="card">
+          <h3>🎯 Manual Result Setter</h3>
+          <div class="row">
+            <input id="manual-round" placeholder="Round Number (e.g. 202508081430)" />
+            <input id="manual-result" type="number" min="1" max="6" placeholder="Result (1-6)" />
+          </div>
+          <button id="set-result-btn">Set Result</button>
+          <p style="color:var(--muted);font-size:13px;margin-top:8px">
+            若该期已存在，将直接 <b>更新</b> 结果并标记为 <code>is_manual=true</code>，自动开奖不会覆盖。
+          </p>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script type="module">
     import { supabase } from './supabase-config-admin.js';
 
+    // ---------- 登录 ----------
     const loginSection = document.getElementById('login-section');
-    const adminPanel = document.getElementById('admin-panel');
+    const adminLayout  = document.getElementById('admin-layout');
 
     document.getElementById('login-btn').onclick = async () => {
-      const email = document.getElementById('email').value;
+      const email = (document.getElementById('email').value || '').trim();
       const password = document.getElementById('password').value;
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return alert('Login failed: ' + error.message);
@@ -101,21 +167,41 @@
         return;
       }
       loginSection.classList.add('hidden');
-      adminPanel.classList.remove('hidden');
+      adminLayout.classList.remove('hidden');
+      initTabs();
       loadAll();
     };
 
+    // ---------- Tab 切换 ----------
+    function initTabs(){
+      const buttons = document.querySelectorAll('.menu button');
+      buttons.forEach(btn=>{
+        btn.onclick = ()=>{
+          buttons.forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          const tab = btn.getAttribute('data-tab');
+          document.querySelectorAll('.tab').forEach(sec=>sec.classList.add('hidden'));
+          document.getElementById('tab-' + tab).classList.remove('hidden');
+          // 进入某些tab时刷新列表
+          if (tab==='recharge') loadRechargeRequests();
+          if (tab==='withdraw') loadWithdrawRequests();
+          if (tab==='bets')     loadTodayBets();
+        };
+      });
+    }
+
+    // ---------- 初始化数据 ----------
     async function loadAll() {
       // bank
       const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single();
       if (data) {
-        document.getElementById('name').value = data.name || '';
-        document.getElementById('ac').value = data.ac || '';
-        document.getElementById('ifsc').value = data.ifsc || '';
-        document.getElementById('upi').value = data.upi || '';
+        document.getElementById('name').value   = data.name || '';
+        document.getElementById('ac').value     = data.ac || '';
+        document.getElementById('ifsc').value   = data.ifsc || '';
+        document.getElementById('upi').value    = data.upi || '';
         document.getElementById('crypto').value = data.crypto_address || '';
       }
-      // lists
+      // 首屏加载
       loadRechargeRequests();
       loadWithdrawRequests();
       loadTodayBets();
@@ -124,10 +210,10 @@
     document.getElementById('save-bank-btn').onclick = async () => {
       const update = {
         id: 1,
-        name: document.getElementById('name').value,
-        ac: document.getElementById('ac').value,
-        ifsc: document.getElementById('ifsc').value,
-        upi: document.getElementById('upi').value,
+        name:   document.getElementById('name').value,
+        ac:     document.getElementById('ac').value,
+        ifsc:   document.getElementById('ifsc').value,
+        upi:    document.getElementById('upi').value,
         crypto_address: document.getElementById('crypto').value
       };
       const { error } = await supabase.from('bank_info').upsert(update);
@@ -138,16 +224,13 @@
     async function loadRechargeRequests() {
       const container = document.getElementById('recharge-requests');
       const { data, error } = await supabase.from('recharge_requests').select('*').order('created_at', { ascending: false });
-      if (error) {
-        container.textContent = 'Failed to load';
-        return;
-      }
+      if (error) { container.textContent = 'Failed to load'; return; }
       container.innerHTML = '';
       for (const item of data) {
         const el = document.createElement('div');
         el.className = 'request-box';
         el.innerHTML = `
-          User: ${item.email || item.user_id}<br/>
+          <b>${item.email || item.user_id}</b><br/>
           UTR: ${item.utr}<br/>
           Amount: ₹${item.amount}<br/>
           Status: ${item.status || 'pending'}
@@ -168,16 +251,13 @@
     async function loadWithdrawRequests() {
       const container = document.getElementById('withdraw-requests');
       const { data, error } = await supabase.from('withdraw_requests').select('*').order('created_at', { ascending: false });
-      if (error) {
-        container.textContent = 'Failed to load';
-        return;
-      }
+      if (error) { container.textContent = 'Failed to load'; return; }
       container.innerHTML = '';
       for (const item of data) {
         const el = document.createElement('div');
         el.className = 'request-box';
         el.innerHTML = `
-          User: ${item.email || item.user_id}<br/>
+          <b>${item.email || item.user_id}</b><br/>
           Amount: ₹${item.amount}<br/>
           Status: ${item.status || 'pending'}
           ${
@@ -197,11 +277,7 @@
     window.handleApproveRecharge = async (id, user_id, amount) => {
       try {
         await supabase.from('recharge_requests').update({ status: 'approved' }).eq('id', id);
-        const { data: userDataArray, error: userError } = await supabase
-          .from('users')
-          .select('balance')
-          .eq('id', user_id)
-          .limit(1);
+        const { data: userDataArray, error: userError } = await supabase.from('users').select('balance').eq('id', user_id).limit(1);
         if (userError) throw userError;
         const userData = userDataArray?.[0];
         if (!userData) throw new Error('User not found');
@@ -215,7 +291,6 @@
         alert('Failed: ' + err.message);
       }
     };
-
     window.handleRejectRecharge = async (id) => {
       await supabase.from('recharge_requests').update({ status: 'rejected' }).eq('id', id);
       alert('Recharge rejected.');
@@ -225,11 +300,7 @@
     window.handleApproveWithdraw = async (id, user_id, amount) => {
       try {
         await supabase.from('withdraw_requests').update({ status: 'approved' }).eq('id', id);
-        const { data: userDataArray, error: userError } = await supabase
-          .from('users')
-          .select('balance')
-          .eq('id', user_id)
-          .limit(1);
+        const { data: userDataArray, error: userError } = await supabase.from('users').select('balance').eq('id', user_id).limit(1);
         if (userError) throw userError;
         const userData = userDataArray?.[0];
         if (!userData) throw new Error('User not found');
@@ -246,73 +317,56 @@
         alert('Failed: ' + err.message);
       }
     };
-
     window.handleRejectWithdraw = async (id) => {
       await supabase.from('withdraw_requests').update({ status: 'rejected' }).eq('id', id);
       alert('Withdraw rejected.');
       loadWithdrawRequests();
     };
 
-    // ---------- Today Bets (IST) ----------
-    // 计算“当天 IST”的 UTC ISO 起止时间，避免浏览器本地时区干扰
+    // ---------- Today’s Bets (IST) ----------
     function getISTDayRangeUTCISO() {
       const nowUtcMs = Date.now();
-      const IST_OFFSET = 5.5 * 60 * 60 * 1000; // +5:30
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
       const istNowMs = nowUtcMs + IST_OFFSET;
       const DAY = 24 * 60 * 60 * 1000;
-      const startIstMs = istNowMs - (istNowMs % DAY);     // 当天 IST 00:00
-      const endIstMs = startIstMs + DAY;                  // 次日 IST 00:00
-      const startUtcIso = new Date(startIstMs - IST_OFFSET).toISOString();
-      const endUtcIso   = new Date(endIstMs   - IST_OFFSET).toISOString();
-      return { startUtcIso, endUtcIso };
+      const startIstMs = istNowMs - (istNowMs % DAY);
+      const endIstMs   = startIstMs + DAY;
+      return {
+        startUtcIso: new Date(startIstMs - IST_OFFSET).toISOString(),
+        endUtcIso:   new Date(endIstMs   - IST_OFFSET).toISOString()
+      };
     }
-
     async function loadTodayBets() {
       const container = document.getElementById('today-bets');
       const emailFilter = (document.getElementById('bet-email-filter').value || '').trim();
 
       const { startUtcIso, endUtcIso } = getISTDayRangeUTCISO();
-
-      let q = supabase
-        .from('bets')
+      let q = supabase.from('bets')
         .select('created_at, email, user_id, round_number, bet_type, choice, amount, odds, status, payout')
         .gte('created_at', startUtcIso)
         .lt('created_at', endUtcIso)
         .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (emailFilter) {
-        // 包含匹配（不区分大小写）
-        q = q.ilike('email', `%${emailFilter}%`);
-      }
+        .limit(500);
+      if (emailFilter) q = q.ilike('email', `%${emailFilter}%`);
 
       const { data, error } = await q;
-      if (error) {
-        container.textContent = 'Failed to load bets: ' + error.message;
-        return;
-      }
-      if (!data || data.length === 0) {
-        container.textContent = 'No bets today.';
-        return;
-      }
+      if (error) { container.textContent = 'Failed to load bets: ' + error.message; return; }
+      if (!data || data.length === 0) { container.textContent = 'No bets today.'; return; }
 
-      const rows = data.map(b => {
+      const rows = data.map(b=>{
         const humanBet =
           b.bet_type === 'number' ? `Number ${b.choice ?? '-'}` :
           b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)';
-        const payout = Number(b.payout || 0).toFixed(2);
-        const amount = Number(b.amount || 0).toFixed(2);
-        const odds = Number(b.odds || 0).toFixed(2);
-        const ts = new Date(b.created_at).toLocaleString(); // 浏览器本地显示
+        const ts = new Date(b.created_at).toLocaleString();
         return `
           <tr>
             <td>${b.email || b.user_id}</td>
             <td>${b.round_number}</td>
             <td>${humanBet}</td>
-            <td>₹${amount}</td>
-            <td>×${odds}</td>
+            <td>₹${Number(b.amount||0).toFixed(2)}</td>
+            <td>×${Number(b.odds||0).toFixed(2)}</td>
             <td>${b.status}</td>
-            <td>₹${payout}</td>
+            <td>₹${Number(b.payout||0).toFixed(2)}</td>
             <td>${ts}</td>
           </tr>
         `;
@@ -323,14 +377,8 @@
           <table>
             <thead>
               <tr>
-                <th>User</th>
-                <th>Round</th>
-                <th>Bet</th>
-                <th>Amount</th>
-                <th>Odds</th>
-                <th>Status</th>
-                <th>Payout</th>
-                <th>Time</th>
+                <th>User</th><th>Round</th><th>Bet</th><th>Amount</th>
+                <th>Odds</th><th>Status</th><th>Payout</th><th>Time</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -338,9 +386,37 @@
         </div>
       `;
     }
-
     document.getElementById('bets-reload').onclick = loadTodayBets;
 
+    // ---------- 手动设置开奖结果（存在则更新，不重复插入） ----------
+    document.getElementById('set-result-btn').onclick = async () => {
+      const round = document.getElementById('manual-round').value.trim();
+      const result = parseInt(document.getElementById('manual-result').value);
+      if (!round || isNaN(result) || result < 1 || result > 6) return alert('Invalid input');
+
+      // 先查是否存在
+      const { data: existing, error: fetchError } = await supabase
+        .from('game_rounds')
+        .select('round_number')
+        .eq('round_number', round)
+        .maybeSingle();
+      if (fetchError) return alert('Query failed: ' + fetchError.message);
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from('game_rounds')
+          .update({ result, is_manual: true })
+          .eq('round_number', round);
+        if (updateError) alert('Update failed: ' + updateError.message);
+        else alert(`✅ Updated result for ${round} = ${result}`);
+      } else {
+        const { error: insertError } = await supabase
+          .from('game_rounds')
+          .insert([{ round_number: round, result, is_manual: true, created_at: new Date().toISOString() }]);
+        if (insertError) alert('Insert failed: ' + insertError.message);
+        else alert(`✅ Inserted result for ${round} = ${result}`);
+      }
+    };
   </script>
 </body>
 </html>
