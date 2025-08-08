@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Andar Bahar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <script type="module" src="./supabase-config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#222;
+      --muted:#666; --primary:#0d6efd; --primary-pressed:#0b5ed7;
+      --success:#2e7d32; --danger:#d32f2f; --line:#e6eaf2;
+      --radius:14px; --shadow:0 6px 18px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Poppins',sans-serif;color:var(--text);
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));padding-bottom:94px}
+    .container{max-width:720px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+    h2{margin:6px 0 14px;text-align:center;color:#ff6f00}
+
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+      padding:14px;margin-bottom:14px;border:1px solid var(--line)}
+    .userbar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .balance{font-weight:700;color:var(--success)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 14px;border-radius:12px;border:0;cursor:pointer;background:var(--primary);color:#fff;font-weight:700;min-height:46px}
+    .btn:active{background:var(--primary-pressed)}
+    .btn.secondary{background:#eef4ff;color:#1e3a8a}
+    .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
+    .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .chip{padding:12px;text-align:center;border-radius:12px;background:#f7f9fc;border:1px solid var(--line);font-weight:700;cursor:pointer}
+    .chip.active{background:#eaf2ff;border-color:#cfe0ff;color:#0b5ed7}
+    .quick{display:flex;gap:8px;flex-wrap:wrap}
+    .qchip{padding:8px 10px;border-radius:10px;background:#f2f5fa;border:1px solid var(--line);cursor:pointer}
+    .qchip:active{transform:scale(.98)}
+    .muted{color:var(--muted);font-size:12px}
+    .result-box{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center}
+    .result-big{font-size:28px;font-weight:800}
+    .betbar{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+      background:rgba(255,255,255,.85);backdrop-filter: blur(10px);border-top:1px solid #e8edf6;display:flex;gap:10px;align-items:center}
+    .betbar input{flex:1;height:46px;border-radius:12px;border:1px solid #e1e6f0;padding:0 12px;font-size:16px;background:#fff}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 6px;border-bottom:1px solid #eee;font-size:14px;text-align:left}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🃏 Andar Bahar</h2>
+
+    <div class="card">
+      <div class="userbar">
+        <div>
+          <div class="muted">Logged in as</div>
+          <div id="user-email" style="font-weight:700">—</div>
+        </div>
+        <div class="balance">₹<span id="balance">0</span></div>
+        <button id="lobby-btn" class="btn ghost">Lobby</button>
+        <button id="logout-btn" class="btn secondary">Logout</button>
+      </div>
+      <div class="muted" style="margin-top:8px">* Bets close in the last 10 seconds of each minute (IST).</div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px">🎯 Select Side</h3>
+      <div class="seg" id="side-seg">
+        <div class="chip active" data-side="andar">Andar ×<span id="odds-andar">1.95</span></div>
+        <div class="chip" data-side="bahar">Bahar ×<span id="odds-bahar">1.95</span></div>
+      </div>
+
+      <div style="margin-top:10px" class="quick" id="quick-amt">
+        <div class="qchip" data-v="100">₹100</div>
+        <div class="qchip" data-v="200">₹200</div>
+        <div class="qchip" data-v="500">₹500</div>
+        <div class="qchip" data-v="1000">₹1000</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="result-box">
+        <div>
+          <div class="muted">Round</div>
+          <div id="round-number" style="font-weight:700">—</div>
+        </div>
+        <div>
+          <div class="muted">Prev Result</div>
+          <div id="prev-result" class="result-big">—</div>
+        </div>
+        <div>
+          <div class="muted">Time Left</div>
+          <div id="countdown" style="font-weight:700">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px">🧾 My Last 10 Bets</h3>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Round</th><th>Side</th><th>Amount</th><th>Result</th><th>Status</th><th>Payout</th></tr></thead>
+          <tbody id="bets-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="betbar">
+    <input type="number" id="bet-amount" placeholder="Amount ₹" inputmode="decimal" />
+    <button id="bet-btn" class="btn">Submit Bet</button>
+  </div>
+
+<script type="module">
+import { supabase } from './supabase-config.js';
+
+/* ===== Config ===== */
+const ANDAR_ODDS = 1.95;
+const BAHAR_ODDS = 1.95;
+const CLOSE_BUFFER = 10; // 封盘秒数
+
+/* ===== Refs ===== */
+let currentUser = null;
+let currentSide = 'andar';
+const emailEl = document.getElementById('user-email');
+const balanceEl = document.getElementById('balance');
+const logoutBtn = document.getElementById('logout-btn');
+const lobbyBtn = document.getElementById('lobby-btn');
+const betBtn = document.getElementById('bet-btn');
+const betAmountEl = document.getElementById('bet-amount');
+const roundEl = document.getElementById('round-number');
+const prevEl = document.getElementById('prev-result');
+const countEl = document.getElementById('countdown');
+const betsTbody = document.getElementById('bets-tbody');
+
+document.getElementById('odds-andar').textContent = ANDAR_ODDS.toFixed(2);
+document.getElementById('odds-bahar').textContent = BAHAR_ODDS.toFixed(2);
+
+/* ===== 时间（IST） ===== */
+function getIST() {
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utcMs + 5.5 * 60 * 60 * 1000);
+}
+function currentRoundNo() {
+  const n = getIST();
+  const y=n.getFullYear();
+  const m=String(n.getMonth()+1).padStart(2,'0');
+  const d=String(n.getDate()).padStart(2,'0');
+  const h=String(n.getHours()).padStart(2,'0');
+  const min=String(n.getMinutes()).padStart(2,'0');
+  return `${y}${m}${d}${h}${min}`;
+}
+function prevRoundNo() {
+  const n = new Date(getIST().getTime()-60*1000);
+  const y=n.getFullYear();
+  const m=String(n.getMonth()+1).padStart(2,'0');
+  const d=String(n.getDate()).padStart(2,'0');
+  const h=String(n.getHours()).padStart(2,'0');
+  const min=String(n.getMinutes()).padStart(2,'0');
+  return `${y}${m}${d}${h}${min}`;
+}
+
+/* ===== Auth ===== */
+logoutBtn.onclick = async ()=>{ await supabase.auth.signOut(); location.href='./index.html'; };
+lobbyBtn.onclick = ()=> location.href='./index.html';
+
+supabase.auth.getUser().then(async ({ data }) => {
+  if (!data?.user) {
+    alert('Please login first.'); location.href = './index.html';
+  } else {
+    currentUser = data.user;
+    emailEl.textContent = currentUser.email;
+    await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+    await loadBalance();
+    await loadPrevResult();
+    await loadMyBets();
+    startTicker();
+  }
+});
+
+async function loadBalance(){
+  const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+  balanceEl.textContent = data?.balance || 0;
+}
+
+/* ===== UI 交互 ===== */
+document.querySelectorAll('#side-seg .chip').forEach(ch=>{
+  ch.onclick = ()=>{
+    document.querySelectorAll('#side-seg .chip').forEach(x=>x.classList.remove('active'));
+    ch.classList.add('active');
+    currentSide = ch.dataset.side;
+  };
+});
+document.getElementById('quick-amt').querySelectorAll('.qchip').forEach(q=>{
+  q.onclick = ()=>{ betAmountEl.value = Number(q.dataset.v); };
+});
+
+/* ===== 结果/倒计时 ===== */
+async function loadPrevResult(){
+  const prevRound = prevRoundNo();
+  roundEl.textContent = currentRoundNo();
+  const { data } = await supabase.from('ab_rounds').select('result_side').eq('round_number', prevRound).maybeSingle();
+  prevEl.textContent = data?.result_side ? (data.result_side === 'andar' ? 'Andar' : 'Bahar') : '—';
+}
+
+function startTicker(){
+  setInterval(async ()=>{
+    const now = getIST();
+    const sec = now.getSeconds();
+    const remaining = 60 - sec;
+    countEl.textContent = `${remaining}s`;
+
+    if (remaining <= CLOSE_BUFFER) {
+      betBtn.disabled = true; betBtn.textContent = 'Bet Closed';
+    } else {
+      betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
+    }
+
+    if (sec === 0) {
+      await loadPrevResult();
+      await loadBalance();
+      await loadMyBets();
+    }
+    roundEl.textContent = currentRoundNo();
+  }, 500);
+}
+
+/* ===== 我的最近10条 ===== */
+async function loadMyBets(){
+  const { data: bets } = await supabase
+    .from('ab_bets')
+    .select('round_number, side, amount, status, payout')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  // 查这些期的结果
+  const rounds = [...new Set((bets||[]).map(b=>b.round_number))];
+  let resultMap = {};
+  if (rounds.length){
+    const { data: rs } = await supabase
+      .from('ab_rounds')
+      .select('round_number,result_side')
+      .in('round_number', rounds);
+    (rs||[]).forEach(r=> resultMap[r.round_number]=r.result_side);
+  }
+
+  betsTbody.innerHTML = (bets||[]).map(b=>{
+    const side = b.side==='andar'?'Andar':'Bahar';
+    const res = b.status==='pending' ? '—' : (resultMap[b.round_number] ? (resultMap[b.round_number]==='andar'?'Andar':'Bahar') : '—');
+    return `<tr>
+      <td>${b.round_number}</td>
+      <td>${side}</td>
+      <td>₹${Number(b.amount).toFixed(2)}</td>
+      <td>${res}</td>
+      <td>${b.status}</td>
+      <td>₹${Number(b.payout||0).toFixed(2)}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" class="muted">No recent bets.</td></tr>`;
+}
+
+/* ===== 下单 ===== */
+betBtn.onclick = async ()=>{
+  if (!currentUser) return alert('Please login first');
+  const amount = Number(betAmountEl.value);
+  if (!amount || amount<=0) return alert('Enter amount');
+
+  const remaining = 60 - getIST().getSeconds();
+  if (remaining <= CLOSE_BUFFER) return alert('Bet closed');
+
+  const odds = currentSide==='andar' ? ANDAR_ODDS : BAHAR_ODDS;
+
+  const { error } = await supabase.rpc('place_ab_bet_now', {
+    _user_id: currentUser.id,
+    _email: currentUser.email,
+    _side: currentSide,
+    _amount: amount,
+    _odds: odds
+  });
+  if (error) {
+    if (String(error.message).includes('BET_CLOSED')) return alert('Bet closed');
+    if (String(error.message).includes('INSUFFICIENT_BALANCE')) return alert('Insufficient balance');
+    return alert('Bet failed: ' + error.message);
+  }
+
+  betAmountEl.value = '';
+  alert('✅ Bet placed!');
+  await loadBalance();
+  await loadMyBets();
+};
+</script>
+</body>
+</html>
