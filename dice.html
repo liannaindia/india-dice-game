@@ -60,7 +60,7 @@
         <button id="lobby-btn" class="btn ghost">Lobby</button>
         <button id="logout-btn" class="btn secondary">Logout</button>
       </div>
-      <div class="muted" style="margin-top:8px">* Bets close in the last 3 seconds of each minute.</div>
+      <div class="muted" style="margin-top:8px">* Bets close in the last 10 seconds of each minute.</div>
     </div>
 
     <div class="card">
@@ -123,7 +123,7 @@
     import { supabase } from './supabase-config.js';
 
     const BIG_ODDS=2.00, SMALL_ODDS=2.00, NUMBER_ODDS=6.00;
-    const CLOSE_BUFFER=3;
+    const CLOSE_BUFFER=10;
 
     let currentUser=null;
     const emailEl=document.getElementById('user-email');
