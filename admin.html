@@ -13,55 +13,36 @@
       background: linear-gradient(to right, #f8f9fa, #e3f2fd);
       padding: 20px;
     }
-    .container {
-      max-width: 600px;
-      margin: auto;
-    }
-    h2 {
-      text-align: center;
-      color: #007bff;
-    }
+    .container { max-width: 900px; margin: auto; }
+    h2 { text-align: center; color: #007bff; }
     .card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      background: #fff; padding: 20px; border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;
     }
     input, button, textarea {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      width: 100%; padding: 12px; font-size: 16px; margin-top: 10px;
+      border-radius: 8px; border: 1px solid #ccc;
     }
-    button {
-      background: #007bff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
+    button { background: #007bff; color: white; font-weight: bold; cursor: pointer; }
+    button:hover { background: #0056b3; }
     .hidden { display: none; }
     .request-box {
-      background: #f1f8e9;
-      padding: 12px;
-      margin-top: 12px;
-      border-radius: 8px;
+      background: #f1f8e9; padding: 12px; margin-top: 12px; border-radius: 8px;
     }
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
+    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; font-size: 14px; }
+    th { font-weight: 600; color: #333; }
+    .row-actions { display:flex; gap:8px; }
+    .flex { display:flex; gap:10px; align-items: center; }
+    .w-40 { width: 40%; }
+    .w-auto { width: auto; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>🔐 admin Login</h2>
+
     <div class="card" id="login-section">
       <input type="email" id="email" placeholder="Admin Email" />
       <input type="password" id="password" placeholder="Password" />
@@ -69,6 +50,7 @@
     </div>
 
     <div id="admin-panel" class="hidden">
+      <!-- Bank -->
       <div class="card">
         <h3>🏦 Bank Info</h3>
         <input id="name" placeholder="Name" />
@@ -79,21 +61,26 @@
         <button id="save-bank-btn">Save</button>
       </div>
 
+      <!-- Recharge -->
       <div class="card">
         <h3>💳 Recharge Requests</h3>
         <div id="recharge-requests">Loading...</div>
       </div>
 
+      <!-- Withdraw -->
       <div class="card">
         <h3>💸 Withdraw Requests</h3>
         <div id="withdraw-requests">Loading...</div>
       </div>
 
+      <!-- Today's Bets (IST) -->
       <div class="card">
-        <h3>🎯 Manual Result Setter</h3>
-        <input id="manual-round" placeholder="Enter Round Number (e.g. 202508081430)" />
-        <input id="manual-result" type="number" min="1" max="6" placeholder="Result (1-6)" />
-        <button id="set-result-btn">Set Result</button>
+        <h3>📜 Today’s Bets (IST)</h3>
+        <div class="flex">
+          <input id="bet-email-filter" class="w-40" placeholder="Filter by email (optional)" />
+          <button id="bets-reload" class="w-auto">Reload</button>
+        </div>
+        <div id="today-bets">Loading...</div>
       </div>
     </div>
   </div>
@@ -101,34 +88,37 @@
   <script type="module">
     import { supabase } from './supabase-config-admin.js';
 
-    const loginSection = document.getElementById('login-section')
-    const adminPanel = document.getElementById('admin-panel')
+    const loginSection = document.getElementById('login-section');
+    const adminPanel = document.getElementById('admin-panel');
 
     document.getElementById('login-btn').onclick = async () => {
-      const email = document.getElementById('email').value
-      const password = document.getElementById('password').value
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) return alert('Login failed: ' + error.message)
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return alert('Login failed: ' + error.message);
       if (data.user.email !== 'admin@gmail.com') {
-        alert('Not authorized')
-        return
+        alert('Not authorized');
+        return;
       }
-      loginSection.classList.add('hidden')
-      adminPanel.classList.remove('hidden')
-      loadAll()
-    }
+      loginSection.classList.add('hidden');
+      adminPanel.classList.remove('hidden');
+      loadAll();
+    };
 
     async function loadAll() {
-      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single()
+      // bank
+      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single();
       if (data) {
-        document.getElementById('name').value = data.name || ''
-        document.getElementById('ac').value = data.ac || ''
-        document.getElementById('ifsc').value = data.ifsc || ''
-        document.getElementById('upi').value = data.upi || ''
-        document.getElementById('crypto').value = data.crypto_address || ''
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('ac').value = data.ac || '';
+        document.getElementById('ifsc').value = data.ifsc || '';
+        document.getElementById('upi').value = data.upi || '';
+        document.getElementById('crypto').value = data.crypto_address || '';
       }
-      loadRechargeRequests()
-      loadWithdrawRequests()
+      // lists
+      loadRechargeRequests();
+      loadWithdrawRequests();
+      loadTodayBets();
     }
 
     document.getElementById('save-bank-btn').onclick = async () => {
@@ -139,68 +129,23 @@
         ifsc: document.getElementById('ifsc').value,
         upi: document.getElementById('upi').value,
         crypto_address: document.getElementById('crypto').value
-      }
-      await supabase.from('bank_info').upsert(update)
-      alert('Saved!')
-    }
+      };
+      const { error } = await supabase.from('bank_info').upsert(update);
+      if (error) alert(error.message); else alert('Saved!');
+    };
 
-    document.getElementById('set-result-btn').onclick = async () => {
-  const round = document.getElementById('manual-round').value.trim()
-  const result = parseInt(document.getElementById('manual-result').value)
-
-  if (!round || isNaN(result) || result < 1 || result > 6) {
-    alert('Invalid input')
-    return
-  }
-
-  // 查询是否存在该期号
-  const { data: existing, error: fetchError } = await supabase
-    .from('game_rounds')
-    .select('id')
-    .eq('round_number', round)
-    .maybeSingle()
-
-  if (fetchError) return alert('Query failed: ' + fetchError.message)
-
-  if (existing) {
-    // 如果已存在，则更新该期结果
-    const { error: updateError } = await supabase
-      .from('game_rounds')
-      .update({ result, is_manual: true })
-      .eq('round_number', round)
-
-    if (updateError) {
-      alert('Update failed: ' + updateError.message)
-    } else {
-      alert(`✅ Updated result for round ${round} = ${result}`)
-    }
-  } else {
-    // 不存在则插入
-    const { error: insertError } = await supabase.from('game_rounds').insert([
-      {
-        round_number: round,
-        result,
-        is_manual: true,
-        created_at: new Date().toISOString()
-      }
-    ])
-
-    if (insertError) {
-      alert('Insert failed: ' + insertError.message)
-    } else {
-      alert(`✅ Inserted result for round ${round} = ${result}`)
-    }
-  }
-}
-
-
+    // ---------- Recharge ----------
     async function loadRechargeRequests() {
-      const container = document.getElementById('recharge-requests')
-      const { data } = await supabase.from('recharge_requests').select('*').order('created_at', { ascending: false })
-      container.innerHTML = ''
+      const container = document.getElementById('recharge-requests');
+      const { data, error } = await supabase.from('recharge_requests').select('*').order('created_at', { ascending: false });
+      if (error) {
+        container.textContent = 'Failed to load';
+        return;
+      }
+      container.innerHTML = '';
       for (const item of data) {
-        const el = document.createElement('div')
-        el.className = 'request-box'
+        const el = document.createElement('div');
+        el.className = 'request-box';
         el.innerHTML = `
           User: ${item.email || item.user_id}<br/>
           UTR: ${item.utr}<br/>
@@ -215,17 +160,22 @@
               : ''
           }
         `;
-        container.appendChild(el)
+        container.appendChild(el);
       }
     }
 
+    // ---------- Withdraw ----------
     async function loadWithdrawRequests() {
-      const container = document.getElementById('withdraw-requests')
-      const { data } = await supabase.from('withdraw_requests').select('*').order('created_at', { ascending: false })
-      container.innerHTML = ''
+      const container = document.getElementById('withdraw-requests');
+      const { data, error } = await supabase.from('withdraw_requests').select('*').order('created_at', { ascending: false });
+      if (error) {
+        container.textContent = 'Failed to load';
+        return;
+      }
+      container.innerHTML = '';
       for (const item of data) {
-        const el = document.createElement('div')
-        el.className = 'request-box'
+        const el = document.createElement('div');
+        el.className = 'request-box';
         el.innerHTML = `
           User: ${item.email || item.user_id}<br/>
           Amount: ₹${item.amount}<br/>
@@ -239,74 +189,158 @@
               : ''
           }
         `;
-        container.appendChild(el)
+        container.appendChild(el);
       }
     }
 
-    window.handleApproveRecharge = async (id, email, amount) => {
+    // ---------- Approve/Reject handlers ----------
+    window.handleApproveRecharge = async (id, user_id, amount) => {
       try {
-        await supabase.from('recharge_requests').update({ status: 'approved' }).eq('id', id)
-
+        await supabase.from('recharge_requests').update({ status: 'approved' }).eq('id', id);
         const { data: userDataArray, error: userError } = await supabase
           .from('users')
           .select('balance')
-          .eq('id', email)
-          .limit(1)
+          .eq('id', user_id)
+          .limit(1);
+        if (userError) throw userError;
+        const userData = userDataArray?.[0];
+        if (!userData) throw new Error('User not found');
 
-        if (userError) throw userError
-        const userData = userDataArray?.[0]
-        if (!userData) throw new Error('User not found')
+        const newBalance = (userData.balance || 0) + amount;
+        await supabase.from('users').update({ balance: newBalance }).eq('id', user_id);
 
-        const currentBalance = userData.balance || 0
-        const newBalance = currentBalance + amount
-
-        await supabase.from('users').update({ balance: newBalance }).eq('id', email)
-
-        alert('Recharge approved and balance updated!')
-        loadRechargeRequests()
+        alert('Recharge approved and balance updated!');
+        loadRechargeRequests();
       } catch (err) {
-        alert('Failed: ' + err.message)
+        alert('Failed: ' + err.message);
       }
-    }
+    };
 
     window.handleRejectRecharge = async (id) => {
-      await supabase.from('recharge_requests').update({ status: 'rejected' }).eq('id', id)
-      alert('Recharge rejected.')
-      loadRechargeRequests()
-    }
+      await supabase.from('recharge_requests').update({ status: 'rejected' }).eq('id', id);
+      alert('Recharge rejected.');
+      loadRechargeRequests();
+    };
 
-    window.handleApproveWithdraw = async (id, email, amount) => {
+    window.handleApproveWithdraw = async (id, user_id, amount) => {
       try {
-        await supabase.from('withdraw_requests').update({ status: 'approved' }).eq('id', id)
-
+        await supabase.from('withdraw_requests').update({ status: 'approved' }).eq('id', id);
         const { data: userDataArray, error: userError } = await supabase
           .from('users')
           .select('balance')
-          .eq('id', email)
-          .limit(1)
+          .eq('id', user_id)
+          .limit(1);
+        if (userError) throw userError;
+        const userData = userDataArray?.[0];
+        if (!userData) throw new Error('User not found');
 
-        if (userError) throw userError
-        const userData = userDataArray?.[0]
-        if (!userData) throw new Error('User not found')
+        const currentBalance = userData.balance || 0;
+        if (currentBalance < amount) throw new Error('Insufficient balance');
 
-        const currentBalance = userData.balance || 0
-        if (currentBalance < amount) throw new Error('Insufficient balance')
+        const newBalance = currentBalance - amount;
+        await supabase.from('users').update({ balance: newBalance }).eq('id', user_id);
 
-        const newBalance = currentBalance - amount
-        await supabase.from('users').update({ balance: newBalance }).eq('id', email)
-
-        alert('Withdrawal approved and balance deducted!')
-        loadWithdrawRequests()
+        alert('Withdrawal approved and balance deducted!');
+        loadWithdrawRequests();
       } catch (err) {
-        alert('Failed: ' + err.message)
+        alert('Failed: ' + err.message);
       }
-    }
+    };
 
     window.handleRejectWithdraw = async (id) => {
-      await supabase.from('withdraw_requests').update({ status: 'rejected' }).eq('id', id)
-      alert('Withdraw rejected.')
-      loadWithdrawRequests()
+      await supabase.from('withdraw_requests').update({ status: 'rejected' }).eq('id', id);
+      alert('Withdraw rejected.');
+      loadWithdrawRequests();
+    };
+
+    // ---------- Today Bets (IST) ----------
+    // 计算“当天 IST”的 UTC ISO 起止时间，避免浏览器本地时区干扰
+    function getISTDayRangeUTCISO() {
+      const nowUtcMs = Date.now();
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000; // +5:30
+      const istNowMs = nowUtcMs + IST_OFFSET;
+      const DAY = 24 * 60 * 60 * 1000;
+      const startIstMs = istNowMs - (istNowMs % DAY);     // 当天 IST 00:00
+      const endIstMs = startIstMs + DAY;                  // 次日 IST 00:00
+      const startUtcIso = new Date(startIstMs - IST_OFFSET).toISOString();
+      const endUtcIso   = new Date(endIstMs   - IST_OFFSET).toISOString();
+      return { startUtcIso, endUtcIso };
     }
+
+    async function loadTodayBets() {
+      const container = document.getElementById('today-bets');
+      const emailFilter = (document.getElementById('bet-email-filter').value || '').trim();
+
+      const { startUtcIso, endUtcIso } = getISTDayRangeUTCISO();
+
+      let q = supabase
+        .from('bets')
+        .select('created_at, email, user_id, round_number, bet_type, choice, amount, odds, status, payout')
+        .gte('created_at', startUtcIso)
+        .lt('created_at', endUtcIso)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (emailFilter) {
+        // 包含匹配（不区分大小写）
+        q = q.ilike('email', `%${emailFilter}%`);
+      }
+
+      const { data, error } = await q;
+      if (error) {
+        container.textContent = 'Failed to load bets: ' + error.message;
+        return;
+      }
+      if (!data || data.length === 0) {
+        container.textContent = 'No bets today.';
+        return;
+      }
+
+      const rows = data.map(b => {
+        const humanBet =
+          b.bet_type === 'number' ? `Number ${b.choice ?? '-'}` :
+          b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)';
+        const payout = Number(b.payout || 0).toFixed(2);
+        const amount = Number(b.amount || 0).toFixed(2);
+        const odds = Number(b.odds || 0).toFixed(2);
+        const ts = new Date(b.created_at).toLocaleString(); // 浏览器本地显示
+        return `
+          <tr>
+            <td>${b.email || b.user_id}</td>
+            <td>${b.round_number}</td>
+            <td>${humanBet}</td>
+            <td>₹${amount}</td>
+            <td>×${odds}</td>
+            <td>${b.status}</td>
+            <td>₹${payout}</td>
+            <td>${ts}</td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Round</th>
+                <th>Bet</th>
+                <th>Amount</th>
+                <th>Odds</th>
+                <th>Status</th>
+                <th>Payout</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    document.getElementById('bets-reload').onclick = loadTodayBets;
+
   </script>
 </body>
 </html>
