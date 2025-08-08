@@ -435,7 +435,7 @@ betBtn.onclick = async ()=>{
 
   const odds = currentSide==='andar' ? ANDAR_ODDS : BAHAR_ODDS;
 
-  const { error } = await supabase.rpc('place_ab_bet_now_api', {
+  const { error } = await supabase.rpc('ab_place_bet_ist', {
     _user_id: currentUser.id,
     _email: currentUser.email,
     _side: currentSide,
