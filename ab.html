@@ -241,6 +241,9 @@ document.getElementById('quick-amt').querySelectorAll('.qchip').forEach(q=>{
 /* ===== 动画工具 ===== */
 const suits = ['♠','♥','♦','♣'];
 const ranks = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  // DB里的lead_rank是1..13；转成'A'..'K'
+const mapRank = (v) => (typeof v === 'number' ? ranks[(v - 1 + 13) % 13] : v);
+
 const color = (s)=> (s==='♥'||s==='♦')?'red':'black';
 const $el = (t,c)=>{const e=document.createElement(t); if(c) e.className=c; return e;};
 
@@ -360,7 +363,11 @@ async function refreshAndAnimate(animate=false){
 
   if (animate && side && lastAnimatedRound !== prevRound){
     lastAnimatedRound = prevRound;
-    await playRealAnimation({ winner: side, mainRank: data?.lead_rank || null, hitNth: data?.match_index || null });
+    await playRealAnimation({
+  winner: side,
+  mainRank: mapRank(data?.lead_rank) || null,
+  hitNth: data?.match_index || null
+});
   }
 }
 
