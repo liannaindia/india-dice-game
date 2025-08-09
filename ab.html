@@ -77,7 +77,6 @@
         </div>
         <div class="balance">₹<span id="balance">0</span></div>
         <div class="userbar-right">
-          <button id="demo-btn" class="btn ghost">Play Demo</button>
           <button id="lobby-btn" class="btn ghost">Lobby</button>
           <button id="logout-btn" class="btn secondary">Logout</button>
         </div>
@@ -184,7 +183,7 @@ const cntA = document.getElementById('cntA');
 const cntB = document.getElementById('cntB');
 const bannerA = document.getElementById('bannerA');
 const bannerB = document.getElementById('bannerB');
-const demoBtn = document.getElementById('demo-btn');
+
 
 document.getElementById('odds-andar').textContent = ANDAR_ODDS.toFixed(2);
 document.getElementById('odds-bahar').textContent = BAHAR_ODDS.toFixed(2);
@@ -461,10 +460,6 @@ betBtn.onclick = async ()=>{
   await loadMyBets();
 };
 
-/* ===== Demo：手动演示（不影响真实数据） ===== */
-demoBtn.onclick = async ()=>{
-  await playRealAnimation({ winner:'bahar', mainRank:'8', hitNth:7 });
-};
 </script>
 </body>
 </html>
