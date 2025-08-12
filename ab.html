@@ -376,7 +376,11 @@ async function playRealAnimation({winner, mainRank, hitNth}){
   }
 
   showMain(mainRank);
-  let aCount = 0, bCount = 0, turn = 'andar';
+let aCount = 0, bCount = 0;
+// 让第 hitNth 张必然落在 winner：
+// 奇数 -> 第一张发给 winner；偶数 -> 第一张发给另一边
+let turn = (hitNth % 2 === 1) ? winner : (winner === 'andar' ? 'bahar' : 'andar');
+
 
   await new Promise(resolve=>{
     let idx = 0;
