@@ -63,6 +63,64 @@
     .banner.show{display:block}
     .banner.andar{background:#e7f5ff;border:1px solid #b3dcff;color:#0466c8}
     .banner.bahar{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857}
+
+    /* ===== 手机端适配（直接追加到样式末尾） ===== */
+body { overflow-x: hidden; }
+
+@media (max-width: 480px) {
+  .container{ padding:12px 10px calc(120px + env(safe-area-inset-bottom)); max-width: 100%; }
+  h2{ font-size:20px; }
+
+  /* 顶部信息栅格改单列 */
+  .result-box{ grid-template-columns: 1fr; gap: 6px; }
+  .result-big{ font-size: 22px; }
+
+  /* 主牌区允许换行，压缩尺寸 */
+  .maincard-area{ gap:8px; flex-wrap: wrap; }
+  .slot{ width:64px; height:90px; }
+  .card3d, .face{ border-radius:10px; }
+  .mini{ width:44px; height:62px; }
+  .mini .front{ font-size:14px; }
+  .mini .back{ font-size:12px; }
+
+  /* 两条轨道改为单列栈叠 */
+  .ab-anim{ grid-template-columns: 1fr; gap:10px; }
+
+  /* 轨道网格缩小，并限制高度以免溢出 */
+  .rail{
+    grid-template-columns: repeat(6, 44px);
+    grid-auto-rows: 62px;
+    gap: 6px;
+    min-height: 140px;
+  }
+  .lane h4{ font-size:12px; }
+  .banner{ font-size:13px; }
+
+  /* 快捷金额/按钮/输入框尺寸 */
+  .qchip{ padding:7px 9px; }
+  .btn{ min-height:42px; padding:10px 12px; }
+  .betbar{
+    padding:8px 10px calc(10px + env(safe-area-inset-bottom));
+    gap:8px;
+  }
+  .betbar input{ height:42px; font-size:15px; }
+
+  /* 表格在手机内缩小字号并允许横向滚动（父级已有 overflow:auto） */
+  table{ min-width: 520px; }
+  th, td{ padding:6px 6px; font-size:12px; }
+}
+
+/* 极窄屏再进一步压缩（例如 360px） */
+@media (max-width: 360px){
+  .slot{ width:60px; height:86px; }
+  .mini{ width:40px; height:56px; }
+  .rail{
+    grid-template-columns: repeat(5, 40px);
+    grid-auto-rows: 56px;
+    min-height: 128px;
+  }
+}
+
   </style>
 </head>
 <body>
