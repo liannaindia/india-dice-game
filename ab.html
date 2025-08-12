@@ -118,7 +118,12 @@
       <!-- 动画区域 -->
       <div class="maincard-area">
         <div class="muted">Main Card</div>
-        <div class="slot"><div id="mainCard" class="card3d"><div id="mainFront" class="face front">AB</div><div class="face back">AB</div></div></div>
+        <div class="slot">
+          <div id="mainCard" class="card3d">
+            <div id="mainFront" class="face front">AB</div>
+            <div id="mainBack" class="face back">?</div>
+          </div>
+        </div>
         <div class="muted">Flip & deal to Andar/Bahar until hit.</div>
       </div>
       <div class="ab-anim">
@@ -177,6 +182,8 @@ const betsTbody = document.getElementById('bets-tbody');
 
 const mainCardEl = document.getElementById('mainCard');
 const mainFrontEl = document.getElementById('mainFront');
+const mainBackEl = document.getElementById('mainBack'); // ★ 新增
+
 const railA = document.getElementById('railA');
 const railB = document.getElementById('railB');
 const cntA = document.getElementById('cntA');
@@ -252,8 +259,10 @@ function resetBoard(){
   bannerB.classList.remove('show'); bannerB.textContent='';
   document.getElementById('laneA').classList.remove('winner');
   document.getElementById('laneB').classList.remove('winner');
+  // 主牌重置：正面 AB，背面 ?
   mainCardEl.classList.remove('flip');
   mainFrontEl.textContent='AB';
+  if (mainBackEl) mainBackEl.textContent='?';
 }
 
 function pushToRail(rail, node){
@@ -264,10 +273,11 @@ function pushToRail(rail, node){
 function miniCard(card){
   const root = $el('div','slot mini');
   const c = $el('div','card3d');
-  const f = $el('div','face front '+(color(card.suit)));
-  const b = $el('div','face back');
-  f.innerHTML = `<strong>${card.rank}</strong>&nbsp;<span>${card.suit}</span>`;
-  b.textContent = 'AB';
+  // 正面：AB；背面：真实牌面（翻转后可见）
+  const f = $el('div','face front');
+  const b = $el('div','face back '+(color(card.suit)));
+  f.textContent = 'AB';
+  b.innerHTML = `<strong>${card.rank}</strong>&nbsp;<span>${card.suit}</span>`;
   c.appendChild(f); c.appendChild(b); root.appendChild(c);
   setTimeout(()=> c.classList.add('flip'), 36 + Math.random()*90);
   return root;
@@ -275,7 +285,10 @@ function miniCard(card){
 
 function showMain(rank){
   const suit = suits[Math.floor(Math.random()*4)];
-  mainFrontEl.innerHTML = `<span class="${color(suit)}" style="font-weight:800">${rank || '?'}</span>&nbsp;<span>${suit}</span>`;
+  const cls = color(suit);
+  // 正面保持 AB；把真实牌面写到背面（翻转后可见）
+  mainFrontEl.textContent = 'AB';
+  mainBackEl.innerHTML = `<span class="${cls}" style="font-weight:800">${rank || '?'}</span>&nbsp;<span>${suit}</span>`;
   mainCardEl.classList.remove('flip');
   setTimeout(()=> mainCardEl.classList.add('flip'), 80);
 }
@@ -345,7 +358,7 @@ async function playRealAnimation({winner, mainRank, hitNth}){
 /* ===== 结果/倒计时 ===== */
 let lastAnimatedRound = null;
 
-// 改为：顶部“Prev Result”严格用数据库最近一条已结算期；Round 用本地 IST 分钟
+// 顶部“Prev Result”严格用数据库最近一条已结算期；Round 用本地 IST 分钟
 async function refreshHeaderAndAnim(animate=false){
   roundEl.textContent = currentRoundNo();
 
@@ -398,7 +411,7 @@ function startTicker(){
   }, 250);
 }
 
-/* ===== 我的最近10条（改为 RPC：ab_my_last_bets） ===== */
+/* ===== 我的最近10条（RPC：ab_my_last_bets） ===== */
 async function loadMyBets(){
   if (!currentUser) return;
 
