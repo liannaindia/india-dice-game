@@ -157,7 +157,7 @@ import { supabase } from './supabase-config.js';
 /* ===== Config ===== */
 const ANDAR_ODDS = 1.95;
 const BAHAR_ODDS = 1.95;
-const CLOSE_BUFFER = 10;      // 封盘秒数
+const CLOSE_BUFFER = 10;      // 封盘秒数（展示用）
 const DEAL_SPEED = 520;       // 单张翻牌间隔(ms)
 const VISIBLE_MAX = 12;       // 每边最多显示的牌数
 
@@ -184,9 +184,11 @@ const cntB = document.getElementById('cntB');
 const bannerA = document.getElementById('bannerA');
 const bannerB = document.getElementById('bannerB');
 
-
 document.getElementById('odds-andar').textContent = ANDAR_ODDS.toFixed(2);
 document.getElementById('odds-bahar').textContent = BAHAR_ODDS.toFixed(2);
+
+/* ===== 工具 ===== */
+const cap = s => !s ? '—' : s[0].toUpperCase() + s.slice(1);
 
 /* ===== 时间（IST） ===== */
 function getIST() {
@@ -200,7 +202,6 @@ function roundKey(date){
   return `${y}${m}${d}${h}${min}`;
 }
 function currentRoundNo(){ return roundKey(getIST()); }
-function prevRoundNo(){ return roundKey(new Date(getIST().getTime()-60*1000)); }
 
 /* ===== Auth ===== */
 logoutBtn.onclick = async ()=>{ await supabase.auth.signOut(); location.href='./index.html'; };
@@ -214,7 +215,7 @@ supabase.auth.getUser().then(async ({ data }) => {
     emailEl.textContent = currentUser.email;
     await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
     await loadBalance();
-    await refreshAndAnimate(true);   // 首次加载并播放上一期动画
+    await refreshHeaderAndAnim(true);   // 首次加载并播放上一期动画
     await loadMyBets();
     startTicker();
   }
@@ -240,9 +241,7 @@ document.getElementById('quick-amt').querySelectorAll('.qchip').forEach(q=>{
 /* ===== 动画工具 ===== */
 const suits = ['♠','♥','♦','♣'];
 const ranks = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-  // DB里的lead_rank是1..13；转成'A'..'K'
 const mapRank = (v) => (typeof v === 'number' ? ranks[(v - 1 + 13) % 13] : v);
-
 const color = (s)=> (s==='♥'||s==='♦')?'red':'black';
 const $el = (t,c)=>{const e=document.createElement(t); if(c) e.className=c; return e;};
 
@@ -290,7 +289,6 @@ async function playRealAnimation({winner, mainRank, hitNth}){
 
   if (!winner){ animLock = false; return; }
 
-  // 后端缺字段时的回退：只高亮胜方
   if (!mainRank || !hitNth){
     showMain('?');
     setTimeout(()=>{
@@ -347,26 +345,29 @@ async function playRealAnimation({winner, mainRank, hitNth}){
 /* ===== 结果/倒计时 ===== */
 let lastAnimatedRound = null;
 
-async function refreshAndAnimate(animate=false){
-  const prevRound = prevRoundNo();
+// 改为：顶部“Prev Result”严格用数据库最近一条已结算期；Round 用本地 IST 分钟
+async function refreshHeaderAndAnim(animate=false){
   roundEl.textContent = currentRoundNo();
 
-  const { data } = await supabase
+  // 拿最近一条已结算的期（避免错误显示）
+  const { data: prev } = await supabase
     .from('ab_rounds')
-    .select('result_side, lead_rank, match_index')
-    .eq('round_number', prevRound)
-    .maybeSingle();
+    .select('round_number, result_side, lead_rank, match_index')
+    .neq('result_side', 'pending')
+    .order('round_number', { ascending: false })
+    .limit(1)
+    .single();
 
-  const side = data?.result_side || null;
-  prevEl.textContent = side ? (side==='andar'?'Andar':'Bahar') : '—';
+  const side = prev?.result_side || null;
+  prevEl.textContent = side ? cap(side) : '—';
 
-  if (animate && side && lastAnimatedRound !== prevRound){
-    lastAnimatedRound = prevRound;
+  if (animate && side && lastAnimatedRound !== prev.round_number){
+    lastAnimatedRound = prev.round_number;
     await playRealAnimation({
-  winner: side,
-  mainRank: mapRank(data?.lead_rank) || null,
-  hitNth: data?.match_index || null
-});
+      winner: side,
+      mainRank: mapRank(prev?.lead_rank) || null,
+      hitNth: prev?.match_index || null
+    });
   }
 }
 
@@ -384,10 +385,10 @@ function startTicker(){
       betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
     }
 
-    // 只在整分触发一次
+    // 只在整分触发一次：刷新表头 + 我的下注
     if (sec === 0 && !gated){
       gated = true;
-      await refreshAndAnimate(true);
+      await refreshHeaderAndAnim(true);
       await loadBalance();
       await loadMyBets();
       setTimeout(()=> gated=false, 1100);
@@ -397,37 +398,31 @@ function startTicker(){
   }, 250);
 }
 
-/* ===== 我的最近10条 ===== */
+/* ===== 我的最近10条（改为 RPC：ab_my_last_bets） ===== */
 async function loadMyBets(){
-  const { data: bets } = await supabase
-    .from('ab_bets')
-    .select('round_number, side, amount, status, payout')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false })
-    .limit(10);
+  if (!currentUser) return;
 
-  const rounds = [...new Set((bets||[]).map(b=>b.round_number))];
-  let resultMap = {};
-  if (rounds.length){
-    const { data: rs } = await supabase
-      .from('ab_rounds')
-      .select('round_number,result_side')
-      .in('round_number', rounds);
-    (rs||[]).forEach(r=> resultMap[r.round_number]=r.result_side);
+  const { data, error } = await supabase.rpc('ab_my_last_bets', {
+    _user_id: currentUser.id,
+    _limit: 10
+  });
+  if (error) {
+    console.error('loadMyBets error:', error);
+    betsTbody.innerHTML = `<tr><td colspan="6" class="muted">Load failed.</td></tr>`;
+    return;
   }
+  const bets = data || [];
 
-  betsTbody.innerHTML = (bets||[]).map(b=>{
-    const side = b.side==='andar'?'Andar':'Bahar';
-    const res = b.status==='pending' ? '—' : (resultMap[b.round_number] ? (resultMap[b.round_number]==='andar'?'Andar':'Bahar') : '—');
+  betsTbody.innerHTML = bets.length ? bets.map(b=>{
     return `<tr>
       <td>${b.round_number}</td>
-      <td>${side}</td>
+      <td>${cap(b.side)}</td>
       <td>₹${Number(b.amount).toFixed(2)}</td>
-      <td>${res}</td>
+      <td>${b.result_side && b.result_side !== 'pending' ? cap(b.result_side) : '—'}</td>
       <td>${b.status}</td>
       <td>₹${Number(b.payout||0).toFixed(2)}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="6" class="muted">No recent bets.</td></tr>`;
+  }).join('') : `<tr><td colspan="6" class="muted">No recent bets.</td></tr>`;
 }
 
 /* ===== 下单（以服务端为准） ===== */
@@ -452,14 +447,12 @@ betBtn.onclick = async () => {
 
   const odds = currentSide === 'andar' ? ANDAR_ODDS : BAHAR_ODDS;
 
-  // UI：锁定按钮，防止多次下单
   placing = true;
   const oldText = betBtn.innerText;
   betBtn.disabled = true;
   betBtn.innerText = 'Placing...';
 
   try {
-    // 不再做本地关单判断，一切交由数据库函数 ab_place_bet_ist 校验
     const { error } = await supabase.rpc('ab_place_bet_ist', {
       _user_id: currentUser.id,
       _email: currentUser.email,
@@ -470,17 +463,12 @@ betBtn.onclick = async () => {
 
     if (error) {
       const msg = String(error.message || '');
-      if (msg.includes('BET_CLOSED')) {
-        alert('Bet closed');
-      } else if (msg.includes('INSUFFICIENT_BALANCE')) {
-        alert('Insufficient balance');
-      } else {
-        alert('Bet failed: ' + msg);
-      }
+      if (msg.includes('INSUFFICIENT_BALANCE')) alert('Insufficient balance');
+      else if (msg.includes('BET_CLOSED')) alert('Bet closed');
+      else alert('Bet failed: ' + msg);
       return;
     }
 
-    // 成功
     betAmountEl.value = '';
     alert('✅ Bet placed!');
     await loadBalance();
@@ -488,14 +476,11 @@ betBtn.onclick = async () => {
   } catch (e) {
     alert('Bet failed: ' + (e?.message || e));
   } finally {
-    // 恢复按钮
     placing = false;
     betBtn.disabled = false;
     betBtn.innerText = oldText;
   }
 };
-
-
 </script>
 </body>
 </html>
