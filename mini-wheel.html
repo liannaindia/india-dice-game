@@ -43,12 +43,13 @@
       background:#f7f9fc;border:1px solid #e6eaf2;display:flex;align-items:center;justify-content:center}
     .wheel-shadow{position:absolute;inset:10px;border-radius:50%;box-shadow:inset 0 0 0 8px #fff, 0 10px 24px rgba(0,0,0,.08)}
     .wheel-svg{width:calc(var(--wheel-size) - 28px);height:calc(var(--wheel-size) - 28px)}
-    .wheel-rot{transition:transform .2s linear; transform: rotate(0deg); transform-origin: 50% 50%;}
-    /* 指针改为朝下，指向轮盘内部 */
+    /* 不再用 CSS transform 旋转，避免中心偏移 */
+    .wheel-rot{}
+    /* 指针在顶端，指向轮盘中心（朝下） */
     .pointer{
       position:absolute; top:-6px; left:50%; transform:translateX(-50%);
       width:0;height:0; border-left:10px solid transparent;border-right:10px solid transparent;
-      border-top:18px solid #0d6efd; /* 朝下 */
+      border-top:18px solid #0d6efd;
       filter:drop-shadow(0 3px 6px rgba(13,110,253,.35));
     }
     .win-banner{margin-top:10px;padding:10px;border-radius:12px;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;font-weight:700;display:none}
@@ -163,7 +164,7 @@
 <script type="module">
 import { supabase } from './supabase-config.js';
 
-/* ===== 配置（3..18 数字 + 赔率 + 配色） ===== */
+/* ===== 配置（3..18 数字 + 赔率） ===== */
 const NUMBERS = Array.from({length:16}, (_,i)=>i+3); // 3..18
 const ODDS_MAP = new Map([
   [3,180],[18,180],
@@ -210,10 +211,6 @@ const betsTbody = document.getElementById('bets-tbody');
 const wheelG = document.getElementById('wheelG');
 const winBanner = document.getElementById('win-banner');
 
-document.getElementById('quick-amt').querySelectorAll('.chip').forEach(q=>{
-  q.onclick = ()=>{ betAmountEl.value = Number(q.dataset.v); };
-});
-
 /* ===== 时间（IST） ===== */
 function getIST() {
   const now = new Date();
@@ -241,7 +238,7 @@ supabase.auth.getUser().then(async ({ data }) => {
     await loadBalance();
     buildBetUI();
     buildWheelSVG();
-    await refreshHeaderAndAnim(true);
+    await refreshHeaderAndAnim(false);  // ← 首次加载不动画，只定位到上一期
     await loadMyBets();
     startTicker();
   }
@@ -254,6 +251,10 @@ async function loadBalance(){
 
 /* ===== 下注 UI ===== */
 function buildBetUI(){
+  document.getElementById('quick-amt').querySelectorAll('.chip').forEach(q=>{
+    q.onclick = ()=>{ betAmountEl.value = Number(q.dataset.v); };
+  });
+
   // range chips
   const seg = document.getElementById('range-seg');
   seg.querySelectorAll('.chip').forEach(ch=>{
@@ -286,7 +287,7 @@ function buildBetUI(){
 /* ===== 绘制轮盘（SVG） ===== */
 const N = NUMBERS.length;
 const THETA = 2*Math.PI / N;
-let currentRotation = 0;
+let currentRotation = 0; // 角度（deg）
 
 function polar(r, ang){ return [r*Math.cos(ang), r*Math.sin(ang)]; }
 function buildWheelSVG(){
@@ -319,10 +320,18 @@ function buildWheelSVG(){
     text.textContent = `${num}`;
     wheelG.appendChild(text);
   }
-  wheelG.style.transform = `rotate(${currentRotation}deg)`;
+  // 初始角度：用 SVG attribute 来设，保证绕 (0,0) 旋转
+  wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
 }
 
-/* ===== 轮盘动画 ===== */
+/* 直接就位到某个下标（无动画） */
+function setWheelToIndex(targetIndex){
+  const segCenterDeg = (targetIndex + 0.5) * (360 / N);
+  currentRotation = ((-segCenterDeg % 360) + 360) % 360;
+  wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
+}
+
+/* ===== 轮盘动画（用 SVG transform 属性） ===== */
 function easeInOutCubic(t){ return t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
 function spinToIndex(targetIndex){
   winBanner.classList.remove('show');
@@ -336,18 +345,19 @@ function spinToIndex(targetIndex){
     const t = Math.min(1, (now - start) / SPIN_DURATION);
     const k = easeInOutCubic(t);
     const ang = currentRotation + (finalDeg - currentRotation) * k;
-    wheelG.style.transform = `rotate(${ang}deg)`;
+    wheelG.setAttribute('transform', `rotate(${ang} 0 0)`);
     if (t < 1){
       requestAnimationFrame(tick);
     }else{
       currentRotation = ((finalDeg % 360)+360)%360;
+      wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
     }
   };
   requestAnimationFrame(tick);
 }
 
-/* ===== 刷新表头+动画（查不到行时不报错） ===== */
-let lastAnimatedRound = null;
+/* ===== 刷新表头+动画 ===== */
+let lastSeenRound = null; // 记录我们已经显示过的期
 
 async function refreshHeaderAndAnim(animate=false){
   roundEl.textContent = currentRoundNo();
@@ -365,13 +375,17 @@ async function refreshHeaderAndAnim(animate=false){
   }
 
   prevEl.textContent = `${prev.result_number}  (${prev.result_multiplier}×)`;
-  if (animate && lastAnimatedRound !== prev.round_number){
-    lastAnimatedRound = prev.round_number;
-    spinToIndex(prev.result_index);
-    setTimeout(()=>{
-      winBanner.textContent = `WIN — ${prev.result_number} • ${prev.result_multiplier}×`;
-      winBanner.classList.add('show');
-    }, SPIN_DURATION + 50);
+
+  // 只在新期号到达时才更新轮盘；首次加载如果不想转，就定位即可
+  if (lastSeenRound !== prev.round_number){
+    if (animate){
+      spinToIndex(prev.result_index);
+    }else{
+      setWheelToIndex(prev.result_index);
+    }
+    winBanner.textContent = `WIN — ${prev.result_number} • ${prev.result_multiplier}×`;
+    winBanner.classList.add('show');
+    lastSeenRound = prev.round_number;
   }
 }
 
@@ -389,6 +403,7 @@ function startTicker(){
     } else {
       betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
     }
+    // 整分刷新：这次才播放动画
     if (sec === 0 && !gated){
       gated = true;
       await refreshHeaderAndAnim(true);
@@ -416,7 +431,7 @@ async function loadMyBets(){
   betsTbody.innerHTML = bets.length ? bets.map(b=>{
     const betLabel = b.bet_type === 'range'
       ? (b.pick === 0 ? 'Small 3–10 ×1.9' : 'Big 11–18 ×1.9')
-      : (b.bet_type === 'number' ? `${b.pick} ×${oddsOf(b.pick)}` : `${b.multiplier}×`);
+      : (b.bet_type === 'number' ? `${b.pick} ×${ODDS_MAP.get(b.pick)}` : `${b.multiplier}×`);
     const resLabel = b.result_number ? `${b.result_number} (${b.result_multiplier}×)` : '—';
     return `<tr>
       <td>${b.round_number}</td>
@@ -430,14 +445,11 @@ async function loadMyBets(){
 }
 
 /* ===== 下单 ===== */
-function oddsOf(n){ return ODDS_MAP.get(n) || 0; }
-
 let placing = false;
 betBtn.onclick = async () => {
   if (!currentUser) { alert('Please login first'); return; }
   if (placing) return;
 
-  // 判定下注类型
   let bet_type = null, pick = null, odds = null;
   if (selectedRange){
     bet_type = 'range';
@@ -446,7 +458,7 @@ betBtn.onclick = async () => {
   } else if (selectedNumber != null){
     bet_type = 'number';
     pick = selectedNumber;
-    odds = oddsOf(pick);
+    odds = ODDS_MAP.get(pick);
   } else {
     alert('Please choose Small/Big or a Number');
     return;
@@ -466,7 +478,7 @@ betBtn.onclick = async () => {
     const { error } = await supabase.rpc('wheel_place_bet_ist', {
       _user_id: currentUser.id,
       _email: currentUser.email,
-      _multiplier: odds,          // 改为 numeric，可传 1.9
+      _multiplier: odds,          // numeric，可为 1.9
       _amount: amount,
       _bet_type: bet_type,
       _pick: pick
