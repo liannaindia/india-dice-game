@@ -212,17 +212,60 @@ const wheelG = document.getElementById('wheelG');
 const winBanner = document.getElementById('win-banner');
 
 /* ===== 时间（IST） ===== */
+/* ===== 时间（IST，2分钟一局） ===== */
 function getIST() {
   const now = new Date();
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
   return new Date(utcMs + 5.5 * 60 * 60 * 1000);
+}
+function bucketStart2mIST(d){         // 当前时间所在的2分钟期的起始时刻
+  const t = new Date(d);
+  const m = t.getMinutes();
+  t.setMinutes(m - (m % 2), 0, 0);    // 分钟下取偶数，并置秒=0
+  return t;
+}
+function secondsToBucketEnd(d){       // 距离本期结束还剩多少秒
+  const start = bucketStart2mIST(d);
+  const end = new Date(start.getTime() + 120000);
+  return Math.max(0, Math.ceil((end - d)/1000));
 }
 function roundKey(date){
   const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
   const h=String(date.getHours()).padStart(2,'0'), min=String(date.getMinutes()).padStart(2,'0');
   return `${y}${m}${d}${h}${min}`;
 }
-function currentRoundNo(){ return roundKey(getIST()); }
+function currentRoundNo(){            // 期号=本2分钟桶的起始分钟
+  return roundKey(bucketStart2mIST(getIST()));
+}
+
+/* ===== Ticker（按2分钟桶触发，封盘最后10s） ===== */
+let lastSeenRound = null; // 记住我们已经展示过的期号
+
+function startTicker(){
+  setInterval(async ()=>{
+    const now = getIST();
+    const remaining = secondsToBucketEnd(now);
+    countEl.textContent = `${remaining}s`;
+
+    if (remaining <= CLOSE_BUFFER) {  // CLOSE_BUFFER=10
+      betBtn.disabled = true; betBtn.textContent = 'Bet Closed';
+    } else {
+      betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
+    }
+
+    const rn = currentRoundNo();
+    roundEl.textContent = rn;
+
+    // 当期号变化（进入下一2分钟桶）时，播放新一局动画并刷新余额/下注
+    if (lastSeenRound !== rn) {
+      await refreshHeaderAndAnim(true);   // 这会拉取最近一条并spin
+      await loadBalance();
+      await loadMyBets();
+      lastSeenRound = rn;
+    }
+  }, 300);
+}
+
 
 /* ===== Auth ===== */
 logoutBtn.onclick = async ()=>{ await supabase.auth.signOut(); location.href='./index.html'; };
