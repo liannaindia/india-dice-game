@@ -1,0 +1,52 @@
+name: Deploy wheel_draw (Supabase Edge)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "supabase/functions/wheel_draw/**"  # 只有改到该函数目录才触发
+      - ".github/workflows/deploy-wheel-draw.yml"
+  workflow_dispatch:   # 允许手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROJECT_REF: gtoofdphwneqpwsmjcwl
+      SUPABASE_URL: https://gtoofdphwneqpwsmjcwl.supabase.co
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Set function secrets (safe to repeat)
+        env:
+          ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SERVICE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          export SUPABASE_ACCESS_TOKEN="$ACCESS_TOKEN"
+          # 为 Edge Runtime 设置环境变量（重复执行也没问题）
+          supabase secrets set \
+            --project-ref "$PROJECT_REF" \
+            SUPABASE_URL="$SUPABASE_URL" \
+            SUPABASE_SERVICE_ROLE_KEY="$SERVICE_KEY"
+
+      - name: Deploy Edge Function: wheel_draw
+        env:
+          ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          export SUPABASE_ACCESS_TOKEN="$ACCESS_TOKEN"
+          supabase functions deploy wheel_draw --project-ref "$PROJECT_REF" --no-verify-jwt
+
+      - name: Smoke test call (optional)
+        env:
+          URL: ${{ secrets.WHEEL_DRAW_URL }}
+          KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "POST $URL"
+          curl -sS -X POST "$URL" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -w "\nHTTP_STATUS:%{http_code}\n"
