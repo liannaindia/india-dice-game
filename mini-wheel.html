@@ -16,7 +16,7 @@
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:'Poppins',sans-serif;color:var(--text);
-      background:linear-gradient(180deg,var(--bg1),var(--bg2));padding-bottom:94px}
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));padding-bottom:94px;overflow-x:hidden}
     .container{max-width:860px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
     h2{margin:6px 0 14px;text-align:center;color:#ff6f00}
 
@@ -28,11 +28,6 @@
     .btn:active{background:var(--primary-pressed)}
     .btn.secondary{background:#eef4ff;color:#1e3a8a}
     .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
-    .seg{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{padding:10px 12px;text-align:center;border-radius:12px;background:#f7f9fc;border:1px solid var(--line);font-weight:700;cursor:pointer}
-    .chip.active{background:#eaf2ff;border-color:#cfe0ff;color:#0b5ed7}
-    .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .qchip{padding:8px 10px;border-radius:10px;background:#f2f5fa;border:1px solid #e6eaf2;cursor:pointer}
     .muted{color:var(--muted);font-size:12px}
     .result-box{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center}
     .result-big{font-size:28px;font-weight:800}
@@ -49,21 +44,37 @@
     .wheel-shadow{position:absolute;inset:10px;border-radius:50%;box-shadow:inset 0 0 0 8px #fff, 0 10px 24px rgba(0,0,0,.08)}
     .wheel-svg{width:calc(var(--wheel-size) - 28px);height:calc(var(--wheel-size) - 28px)}
     .wheel-rot{transition:transform .2s linear; transform: rotate(0deg); transform-origin: 50% 50%;}
-    .pointer{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:18px solid #0d6efd;filter:drop-shadow(0 3px 6px rgba(13,110,253,.35))}
+    /* 指针改为朝下，指向轮盘内部 */
+    .pointer{
+      position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+      width:0;height:0; border-left:10px solid transparent;border-right:10px solid transparent;
+      border-top:18px solid #0d6efd; /* 朝下 */
+      filter:drop-shadow(0 3px 6px rgba(13,110,253,.35));
+    }
     .win-banner{margin-top:10px;padding:10px;border-radius:12px;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;font-weight:700;display:none}
     .win-banner.show{display:block}
 
+    /* 下注区 */
+    .section-title{font-weight:700;margin:0 0 8px}
+    .chip{padding:10px 12px;text-align:center;border-radius:12px;background:#f7f9fc;border:1px solid #e6eaf2;font-weight:700;cursor:pointer}
+    .chip.active{background:#eaf2ff;border-color:#cfe0ff;color:#0b5ed7}
+    .seg{display:flex;flex-wrap:wrap;gap:8px}
+    .numgrid{display:grid;grid-template-columns:repeat(8, 1fr);gap:8px}
+    .cell{padding:10px 0;border-radius:10px;border:1px solid #e6eaf2;background:#fff;text-align:center;font-weight:700;cursor:pointer}
+    .cell.active{background:#eaf2ff;border-color:#cfe0ff;color:#0b5ed7}
+
     /* 手机优化 */
-    body{overflow-x:hidden}
     @media (max-width: 820px){
       :root{ --wheel-size: 280px; }
       .result-box{ grid-template-columns:1fr; gap:8px; }
       .container{ padding:12px 10px calc(120px + env(safe-area-inset-bottom)); }
       table{ min-width: 520px; }
       th, td{ font-size:12px; }
+      .numgrid{grid-template-columns:repeat(8, 1fr)}
     }
     @media (max-width: 420px){
       :root{ --wheel-size: 250px; }
+      .numgrid{grid-template-columns:repeat(4, 1fr)}
     }
   </style>
 </head>
@@ -87,15 +98,19 @@
     </div>
 
     <div class="card">
-      <h3 style="margin:0 0 8px">🎯 Select Multiplier</h3>
-      <div class="seg" id="multi-seg">
-        <!-- 会用 JS 生成：2x / 3x / 5x / 10x / 20x / 50x / 180x -->
+      <h3 class="section-title">🎯 Select Bet</h3>
+      <div class="seg" id="range-seg">
+        <div class="chip" data-range="small">Small 3–10 ×1.9</div>
+        <div class="chip" data-range="big">Big 11–18 ×1.9</div>
       </div>
-      <div class="quick" id="quick-amt">
-        <div class="qchip" data-v="100">₹100</div>
-        <div class="qchip" data-v="200">₹200</div>
-        <div class="qchip" data-v="500">₹500</div>
-        <div class="qchip" data-v="1000">₹1000</div>
+      <div style="margin-top:10px"></div>
+      <div class="numgrid" id="num-grid"><!-- 3..18 动态填充 --></div>
+
+      <div class="seg" id="quick-amt" style="margin-top:10px">
+        <div class="chip" data-v="100">₹100</div>
+        <div class="chip" data-v="200">₹200</div>
+        <div class="chip" data-v="500">₹500</div>
+        <div class="chip" data-v="1000">₹1000</div>
       </div>
     </div>
 
@@ -148,35 +163,37 @@
 <script type="module">
 import { supabase } from './supabase-config.js';
 
-/* ===== 配置 ===== */
-// 24 扇区，含 180x 金色扇区（可按需改）
-const SEGMENTS = [2,3,2,5,2,3,2,10,2,3,2,5,2,3,2,20,2,3,2,50,2,3,2,180];
-const UNIQUE = [...new Set(SEGMENTS)]; // 下注选项
-const COLORS = { // 每种倍率的扇区颜色
-  2:  '#e9f2ff',
-  3:  '#eafaf2',
-  5:  '#eae8ff',
-  10: '#ffeef3',
-  20: '#fff5e5',
-  50: '#ffe5e5',
-  180:'#fff3b0' // 金色
-};
-const TEXT = { // 文本颜色
-  2:  '#0b5ed7',
-  3:  '#117a40',
-  5:  '#5b46d6',
-  10: '#c2185b',
-  20: '#c86400',
-  50: '#b91c1c',
-  180:'#8d6a00'
-};
-const CLOSE_BUFFER = 10; // 收盘缓冲（秒）
-const SPIN_DURATION = 4800; // 动画时长(ms)
-const MIN_SPINS = 5;        // 至少转几圈
+/* ===== 配置（3..18 数字 + 赔率 + 配色） ===== */
+const NUMBERS = Array.from({length:16}, (_,i)=>i+3); // 3..18
+const ODDS_MAP = new Map([
+  [3,180],[18,180],
+  [4,60],[17,60],
+  [5,30],[16,30],
+  [6,18],[15,18],
+  [7,12],[14,12],
+  [8,9],[13,9],
+  [9,8],[12,8],
+  [10,7],[11,7],
+]);
+const COLORS_BY_ODDS = new Map([
+  [180,'#fff3b0'], [60,'#ffe5e5'], [30,'#eae8ff'],
+  [18,'#fff5e5'], [12,'#eafaf2'], [9,'#e9f2ff'],
+  [8,'#eef6ff'],  [7,'#f7f9fc']
+]);
+const TEXT_BY_ODDS = new Map([
+  [180,'#8d6a00'], [60,'#b91c1c'], [30,'#5b46d6'],
+  [18,'#c86400'], [12,'#117a40'], [9,'#0b5ed7'],
+  [8,'#0b5ed7'],  [7,'#3b4a66']
+]);
+
+const CLOSE_BUFFER = 10;
+const SPIN_DURATION = 4800;
+const MIN_SPINS = 5;
 
 /* ===== 状态/引用 ===== */
 let currentUser = null;
-let currentMultiplier = 2;
+let selectedNumber = null;  // 3..18
+let selectedRange = null;   // 'small' | 'big'
 
 const emailEl = document.getElementById('user-email');
 const balanceEl = document.getElementById('balance');
@@ -193,7 +210,7 @@ const betsTbody = document.getElementById('bets-tbody');
 const wheelG = document.getElementById('wheelG');
 const winBanner = document.getElementById('win-banner');
 
-document.getElementById('quick-amt').querySelectorAll('.qchip').forEach(q=>{
+document.getElementById('quick-amt').querySelectorAll('.chip').forEach(q=>{
   q.onclick = ()=>{ betAmountEl.value = Number(q.dataset.v); };
 });
 
@@ -222,9 +239,9 @@ supabase.auth.getUser().then(async ({ data }) => {
     emailEl.textContent = currentUser.email;
     await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
     await loadBalance();
-    buildBetChips();
+    buildBetUI();
     buildWheelSVG();
-    await refreshHeaderAndAnim(true);   // 首次播放上一期
+    await refreshHeaderAndAnim(true);
     await loadMyBets();
     startTicker();
   }
@@ -235,76 +252,82 @@ async function loadBalance(){
   balanceEl.textContent = data?.balance || 0;
 }
 
-/* ===== 下注选项 ===== */
-function buildBetChips(){
-  const seg = document.getElementById('multi-seg');
-  seg.innerHTML = '';
-  UNIQUE.sort((a,b)=>a-b).forEach(m=>{
-    const c = document.createElement('div');
-    c.className = 'chip' + (m===currentMultiplier ? ' active' : '');
-    c.dataset.m = m;
-    c.style.borderColor = '#e6eaf2';
-    c.textContent = `${m}×`;
-    c.onclick = ()=>{
-      currentMultiplier = m;
+/* ===== 下注 UI ===== */
+function buildBetUI(){
+  // range chips
+  const seg = document.getElementById('range-seg');
+  seg.querySelectorAll('.chip').forEach(ch=>{
+    ch.onclick = ()=>{
+      selectedRange = ch.dataset.range; selectedNumber = null;
       seg.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
-      c.classList.add('active');
+      ch.classList.add('active');
+      document.querySelectorAll('#num-grid .cell').forEach(x=>x.classList.remove('active'));
     };
-    seg.appendChild(c);
+  });
+
+  // number grid
+  const grid = document.getElementById('num-grid');
+  grid.innerHTML = '';
+  NUMBERS.forEach(n=>{
+    const odds = ODDS_MAP.get(n);
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.innerHTML = `<div>${n}</div><div class="muted" style="font-size:12px">${odds}×</div>`;
+    cell.onclick = ()=>{
+      selectedNumber = n; selectedRange = null;
+      document.querySelectorAll('#range-seg .chip').forEach(x=>x.classList.remove('active'));
+      grid.querySelectorAll('.cell').forEach(x=>x.classList.remove('active'));
+      cell.classList.add('active');
+    };
+    grid.appendChild(cell);
   });
 }
 
 /* ===== 绘制轮盘（SVG） ===== */
-const N = SEGMENTS.length;
+const N = NUMBERS.length;
 const THETA = 2*Math.PI / N;
-let currentRotation = 0; // deg
+let currentRotation = 0;
 
 function polar(r, ang){ return [r*Math.cos(ang), r*Math.sin(ang)]; }
 function buildWheelSVG(){
   wheelG.innerHTML = '';
   for(let i=0;i<N;i++){
-    const m = SEGMENTS[i];
-    const a1 = i*THETA - Math.PI/2; // 从上方开始
+    const num = NUMBERS[i];
+    const odds = ODDS_MAP.get(num);
+    const a1 = i*THETA - Math.PI/2;
     const a2 = (i+1)*THETA - Math.PI/2;
     const [x1,y1] = polar(135, a1);
     const [x2,y2] = polar(135, a2);
-    const largeArc = (THETA > Math.PI) ? 1 : 0;
 
-    // slice
     const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d', `M 0 0 L ${x1.toFixed(3)} ${y1.toFixed(3)} A 135 135 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z`);
-    path.setAttribute('fill', COLORS[m] || '#eee');
+    path.setAttribute('d', `M 0 0 L ${x1.toFixed(3)} ${y1.toFixed(3)} A 135 135 0 0 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z`);
+    path.setAttribute('fill', COLORS_BY_ODDS.get(odds) || '#eee');
     path.setAttribute('stroke', '#e6eaf2');
     path.setAttribute('stroke-width', '1');
     wheelG.appendChild(path);
 
-    // label
     const mid = (a1+a2)/2;
     const [tx,ty] = polar(85, mid);
     const text = document.createElementNS('http://www.w3.org/2000/svg','text');
     text.setAttribute('x', tx.toFixed(1));
     text.setAttribute('y', ty.toFixed(1));
-    text.setAttribute('fill', TEXT[m] || '#333');
+    text.setAttribute('fill', TEXT_BY_ODDS.get(odds) || '#333');
     text.setAttribute('font-size', '16');
     text.setAttribute('font-weight', '700');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'middle');
-    text.textContent = `${m}×`;
+    text.textContent = `${num}`;
     wheelG.appendChild(text);
   }
-  // 初始角度
   wheelG.style.transform = `rotate(${currentRotation}deg)`;
 }
 
 /* ===== 轮盘动画 ===== */
 function easeInOutCubic(t){ return t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
-
-/** 让 pointer 指向目标下标的中心 */
 function spinToIndex(targetIndex){
   winBanner.classList.remove('show');
   const segCenterDeg = (targetIndex + 0.5) * (360 / N);
-  const rawTarget = -segCenterDeg; // 使该中心到顶部（pointer）
-  // 让目标角度比当前角度多 MIN_SPINS 圈以上
+  const rawTarget = -segCenterDeg;
   let finalDeg = rawTarget;
   while(finalDeg - currentRotation < MIN_SPINS*360) finalDeg += 360;
   const start = performance.now();
@@ -317,37 +340,36 @@ function spinToIndex(targetIndex){
     if (t < 1){
       requestAnimationFrame(tick);
     }else{
-      currentRotation = finalDeg % 360; // 归一化
+      currentRotation = ((finalDeg % 360)+360)%360;
     }
   };
   requestAnimationFrame(tick);
 }
 
-/* ===== 刷新表头+动画 ===== */
+/* ===== 刷新表头+动画（查不到行时不报错） ===== */
 let lastAnimatedRound = null;
 
 async function refreshHeaderAndAnim(animate=false){
   roundEl.textContent = currentRoundNo();
 
-  // 拿最近一条已结算期
   const { data: prev } = await supabase
     .from('wheel_rounds')
-    .select('round_number, result_index, result_multiplier')
+    .select('round_number, result_index, result_multiplier, result_number')
     .order('round_number', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (!prev){
+  if (!prev || prev.result_index == null){
     prevEl.textContent = '—';
     return;
   }
 
-  prevEl.textContent = prev.result_multiplier ? `${prev.result_multiplier}×` : `#${prev.result_index}`;
+  prevEl.textContent = `${prev.result_number}  (${prev.result_multiplier}×)`;
   if (animate && lastAnimatedRound !== prev.round_number){
     lastAnimatedRound = prev.round_number;
     spinToIndex(prev.result_index);
     setTimeout(()=>{
-      winBanner.textContent = `WIN — ${prev.result_multiplier}×`;
+      winBanner.textContent = `WIN — ${prev.result_number} • ${prev.result_multiplier}×`;
       winBanner.classList.add('show');
     }, SPIN_DURATION + 50);
   }
@@ -378,7 +400,7 @@ function startTicker(){
   }, 250);
 }
 
-/* ===== 最近下注 ===== */
+/* ===== 最近下注（显示 bet_type & pick） ===== */
 async function loadMyBets(){
   if (!currentUser) return;
   const { data, error } = await supabase.rpc('wheel_my_last_bets', {
@@ -392,11 +414,15 @@ async function loadMyBets(){
   }
   const bets = data || [];
   betsTbody.innerHTML = bets.length ? bets.map(b=>{
+    const betLabel = b.bet_type === 'range'
+      ? (b.pick === 0 ? 'Small 3–10 ×1.9' : 'Big 11–18 ×1.9')
+      : (b.bet_type === 'number' ? `${b.pick} ×${oddsOf(b.pick)}` : `${b.multiplier}×`);
+    const resLabel = b.result_number ? `${b.result_number} (${b.result_multiplier}×)` : '—';
     return `<tr>
       <td>${b.round_number}</td>
-      <td>${b.multiplier}×</td>
+      <td>${betLabel}</td>
       <td>₹${Number(b.amount).toFixed(2)}</td>
-      <td>${b.result_multiplier ? (b.result_multiplier + '×') : '—'}</td>
+      <td>${resLabel}</td>
       <td>${b.status}</td>
       <td>₹${Number(b.payout||0).toFixed(2)}</td>
     </tr>`;
@@ -404,10 +430,27 @@ async function loadMyBets(){
 }
 
 /* ===== 下单 ===== */
+function oddsOf(n){ return ODDS_MAP.get(n) || 0; }
+
 let placing = false;
 betBtn.onclick = async () => {
   if (!currentUser) { alert('Please login first'); return; }
   if (placing) return;
+
+  // 判定下注类型
+  let bet_type = null, pick = null, odds = null;
+  if (selectedRange){
+    bet_type = 'range';
+    pick = (selectedRange === 'small') ? 0 : 1; // 0=small,1=big
+    odds = 1.9;
+  } else if (selectedNumber != null){
+    bet_type = 'number';
+    pick = selectedNumber;
+    odds = oddsOf(pick);
+  } else {
+    alert('Please choose Small/Big or a Number');
+    return;
+  }
 
   const amount = Number(betAmountEl.value);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -423,8 +466,10 @@ betBtn.onclick = async () => {
     const { error } = await supabase.rpc('wheel_place_bet_ist', {
       _user_id: currentUser.id,
       _email: currentUser.email,
-      _multiplier: currentMultiplier,
-      _amount: amount
+      _multiplier: odds,          // 改为 numeric，可传 1.9
+      _amount: amount,
+      _bet_type: bet_type,
+      _pick: pick
     });
 
     if (error) {
