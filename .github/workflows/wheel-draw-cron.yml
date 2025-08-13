@@ -1,0 +1,38 @@
+name: Auto Trigger Wheel Draw
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    concurrency:
+      group: wheel-draw-cron
+      cancel-in-progress: false
+    steps:
+      - name: Call wheel_draw edge function (with retries)
+        env:
+          URL: ${{ secrets.WHEEL_DRAW_URL }}
+          KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+          echo "POST $URL"
+          for i in 1 2 3; do
+            RESP=$(curl -sS -X POST "$URL" \
+              -H "Authorization: Bearer $KEY" \
+              -H "Content-Type: application/json" \
+              --max-time 15 -w "\nHTTP_STATUS:%{http_code}\n")
+            echo "$RESP"
+            STATUS=$(echo "$RESP" | sed -n 's/HTTP_STATUS://p')
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ wheel_draw OK"
+              exit 0
+            fi
+            echo "Retry $i failed (status=$STATUS), sleep 5s..."
+            sleep 5
+          done
+          echo "❌ wheel_draw failed after retries"
+          exit 1
