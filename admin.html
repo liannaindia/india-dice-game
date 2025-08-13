@@ -33,7 +33,7 @@
     .sidebar{width:240px;background:var(--sidebar);color:var(--sidebar-text);padding:16px 12px;height:auto;}
     .brand{display:flex;gap:10px;align-items:center;color:#fff;font-weight:700;margin:8px 8px 16px}
     .menu{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-    .menu button{width:100%;text-align:left;background:transparent;border:1px solid transparent;color:var(--sidebar-text);padding:10px 12px;border-radius:10px}
+    .menu button{width:100%;text-align:left;background:transparent;border:1px solid透明;color:var(--sidebar-text);padding:10px 12px;border-radius:10px}
     .menu button:hover{background:rgba(255,255,255,.06)}
     .menu button.active{background:var(--sidebar-active);color:#fff}
 
@@ -72,7 +72,7 @@
         <button data-tab="withdraw">💸 Withdraw Requests</button>
         <button data-tab="bets">📜 Today’s Bets (IST)</button>
         <button data-tab="manual">🎯 Manual Result (Old Dice)</button>
-        <button data-tab="wheel">🎡 Wheel Control</button><!-- 新增 -->
+        <button data-tab="wheel">🎡 Wheel Control</button>
         <button data-tab="users">👥 Users</button>
       </div>
     </aside>
@@ -138,7 +138,7 @@
         </div>
       </section>
 
-      <!-- Wheel Control（新增） -->
+      <!-- Wheel Control（仅保留表单） -->
       <section id="tab-wheel" class="tab hidden">
         <div class="card">
           <h3>🎡 Mini Wheel — Manual Result</h3>
@@ -165,16 +165,8 @@
           </div>
           <p class="muted" style="margin-top:8px">
             保存后写入 <code>wheel_rounds</code>：<code>{ round_number, result_index, result_number, result_multiplier, is_manual:true }</code>。
+            <br/>要彻底防止自动覆盖，请在数据库加触发器并让 Edge 写入使用 <code>ON CONFLICT DO NOTHING</code> 或 <code>... WHERE is_manual=false</code>。
           </p>
-        </div>
-
-        <div class="card">
-          <h3>🧩 Recent Rounds</h3>
-          <div class="toolbar">
-            <button id="wheel-reload" style="width:auto">Reload</button>
-            <button id="wheel-auto-btn" style="width:auto;background:#0ea5e9">⚙️ Run Auto Draw (Edge)</button>
-          </div>
-          <div id="wheel-recent" style="margin-top:8px">Loading...</div>
         </div>
       </section>
 
@@ -226,7 +218,7 @@
           if (tab==='withdraw') loadWithdrawRequests();
           if (tab==='bets')     loadTodayBets();
           if (tab==='users')    loadUsers();
-          if (tab==='wheel')    { refreshWheelTimes(); loadWheelRecent(); }
+          if (tab==='wheel')    { refreshWheelTimes(); }
         };
       });
     }
@@ -243,7 +235,6 @@
       loadRechargeRequests();
       loadWithdrawRequests();
       loadTodayBets();
-      // 预计算一次 Wheel 时间（方便管理员点进去就能用）
       refreshWheelTimes();
     }
 
@@ -440,8 +431,7 @@
       }
     };
 
-    // ======= Wheel Control（新增逻辑）=======
-    // 与前端一致的 3..18 + 赔率
+    // ======= Wheel Control（精简：仅表单）=======
     const W_NUMBERS = Array.from({length:16}, (_,i)=>i+3);
     const W_ODDS = new Map([
       [3,180],[18,180],
@@ -454,7 +444,6 @@
       [10,7],[11,7],
     ]);
 
-    // IST 时间与回合号（2 分钟桶）
     function getIST(){
       const now = new Date();
       const utc = now.getTime() + now.getTimezoneOffset()*60000;
@@ -481,7 +470,6 @@
       return roundKey(new Date(currStart.getTime() + 120000));
     }
 
-    // UI refs
     const wheelIstNowEl   = document.getElementById('wheel-ist-now');
     const wheelPrevEl     = document.getElementById('wheel-prev');
     const wheelCurrEl     = document.getElementById('wheel-curr');
@@ -490,7 +478,6 @@
     const wheelNumInput   = document.getElementById('wheel-number-input');
     const wheelMultInput  = document.getElementById('wheel-multiplier');
     const wheelIndexInput = document.getElementById('wheel-index');
-    const wheelRecentBox  = document.getElementById('wheel-recent');
 
     function refreshWheelTimes(){
       const now = getIST();
@@ -498,15 +485,13 @@
       wheelPrevEl.textContent = previousRoundNo();
       wheelCurrEl.textContent = currentRoundNo();
       wheelNextEl.textContent = nextRoundNo();
-      // 默认把“上一期”填到输入框，避免误操作当前/下一期
-      wheelRoundInput.value = wheelPrevEl.textContent;
+      wheelRoundInput.value = wheelPrevEl.textContent; // 默认填“上一期”
     }
     document.getElementById('wheel-refresh-times').onclick = refreshWheelTimes;
     document.getElementById('wheel-fill-prev').onclick = ()=> wheelRoundInput.value = wheelPrevEl.textContent;
     document.getElementById('wheel-fill-curr').onclick = ()=> wheelRoundInput.value = wheelCurrEl.textContent;
     document.getElementById('wheel-fill-next').onclick = ()=> wheelRoundInput.value = wheelNextEl.textContent;
 
-    // 自动计算赔率与 index
     function recalcWheelFields(){
       const n = parseInt(wheelNumInput.value);
       if (Number.isFinite(n) && n>=3 && n<=18){
@@ -520,7 +505,6 @@
     }
     wheelNumInput.addEventListener('input', recalcWheelFields);
 
-    // 保存手动结果
     document.getElementById('wheel-save').onclick = async ()=>{
       const round = (wheelRoundInput.value || '').trim();
       const n = parseInt(wheelNumInput.value);
@@ -541,65 +525,6 @@
       const { error } = await supabase.from('wheel_rounds').upsert([row]);
       if (error) return alert('Save failed: ' + error.message);
       alert(`✅ Saved: ${round} → ${n} (×${mult})`);
-      loadWheelRecent();
-    };
-
-    // 最近结果
-    async function loadWheelRecent(){
-      const { data, error } = await supabase
-        .from('wheel_rounds')
-        .select('round_number, result_number, result_multiplier, result_index, is_manual, created_at')
-        .order('round_number', { ascending:false })
-        .limit(30);
-      if (error){ wheelRecentBox.textContent = 'Load failed: ' + error.message; return; }
-      if (!data || !data.length){ wheelRecentBox.textContent = 'No rounds yet.'; return; }
-
-      const rows = data.map(r=>{
-        const ts = r.created_at ? new Date(r.created_at).toLocaleString() : '-';
-        const manual = r.is_manual ? `<span class="pill green">manual</span>` : `<span class="pill gray">auto</span>`;
-        const res = (r.result_number!=null) ? `${r.result_number} (×${r.result_multiplier})` : '—';
-        return `<tr>
-          <td class="mono">${r.round_number}</td>
-          <td>${res}</td>
-          <td>${r.result_index ?? '-'}</td>
-          <td>${manual}</td>
-          <td>${ts}</td>
-          <td><button style="width:auto" onclick="wheelOverride('${r.round_number}', ${r.result_number ?? 'null'})">Override</button></td>
-        </tr>`;
-      }).join('');
-
-      wheelRecentBox.innerHTML = `
-        <div style="overflow:auto">
-          <table>
-            <thead>
-              <tr><th>Round</th><th>Result</th><th>Index</th><th>Mode</th><th>Created</th><th>Action</th></tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      `;
-    }
-    window.wheelOverride = (round, num)=>{
-      wheelRoundInput.value = round;
-      if (Number.isFinite(num)) {
-        wheelNumInput.value = String(num);
-        recalcWheelFields();
-      }
-      alert('Form filled. Edit number if needed, then click Save.');
-    };
-    document.getElementById('wheel-reload').onclick = loadWheelRecent;
-
-    // 调用 Edge Function（可选，用于自动补齐缺失期数）
-    document.getElementById('wheel-auto-btn').onclick = async ()=>{
-      try{
-        // 需要你已经部署名为 wheel_draw 的函数
-        const { data, error } = await supabase.functions.invoke('wheel_draw', { body: {} });
-        if (error) throw error;
-        alert('Edge executed: ' + JSON.stringify(data));
-        loadWheelRecent();
-      }catch(e){
-        alert('Edge call failed: ' + (e?.message || e));
-      }
     };
 
     // ===== Users =====
@@ -654,13 +579,11 @@
     }
     document.getElementById('users-reload').onclick = loadUsers;
 
-    // 余额调整
     window.adjustBalance = async (user_id, action) => {
       let val = prompt(action === 'add' ? 'Enter amount to ADD:' : 'Enter amount to DEDUCT:');
       if (val === null) return;
       const amt = Number(val);
       if (!amt || amt <= 0) return alert('Invalid amount');
-
       const adjustRollover = confirm('Also adjust turnover requirement?');
 
       const { data: urow, error: rerr } = await supabase
@@ -687,7 +610,6 @@
       loadUsers();
     };
 
-    // 设置 VIP
     window.setVipLevel = async (user_id, currentVip) => {
       let val = prompt(`Set VIP level (current: ${currentVip}). Enter 0-99:`, String(currentVip));
       if (val === null) return;
