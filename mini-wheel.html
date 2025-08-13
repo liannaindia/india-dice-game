@@ -43,7 +43,7 @@
       background:#f7f9fc;border:1px solid #e6eaf2;display:flex;align-items:center;justify-content:center}
     .wheel-shadow{position:absolute;inset:10px;border-radius:50%;box-shadow:inset 0 0 0 8px #fff, 0 10px 24px rgba(0,0,0,.08)}
     .wheel-svg{width:calc(var(--wheel-size) - 28px);height:calc(var(--wheel-size) - 28px)}
-    .wheel-rot{} /* 不用 CSS 旋转，靠 SVG 属性旋转 */
+    .wheel-rot{} /* JS 驱动旋转 */
     .pointer{
       position:absolute; top:-6px; left:50%; transform:translateX(-50%);
       width:0;height:0; border-left:10px solid transparent;border-right:10px solid transparent;
@@ -62,7 +62,6 @@
     .cell{padding:10px 0;border-radius:10px;border:1px solid #e6eaf2;background:#fff;text-align:center;font-weight:700;cursor:pointer}
     .cell.active{background:#eaf2ff;border-color:#cfe0ff;color:#0b5ed7}
 
-    /* 手机优化 */
     @media (max-width: 820px){
       :root{ --wheel-size: 280px; }
       .result-box{ grid-template-columns:1fr; gap:8px; }
@@ -103,7 +102,7 @@
         <div class="chip" data-range="big">Big 11–18 ×1.9</div>
       </div>
       <div style="margin-top:10px"></div>
-      <div class="numgrid" id="num-grid"><!-- 3..18 动态填充 --></div>
+      <div class="numgrid" id="num-grid"></div>
 
       <div class="seg" id="quick-amt" style="margin-top:10px">
         <div class="chip" data-v="100">₹100</div>
@@ -129,7 +128,6 @@
         </div>
       </div>
 
-      <!-- 轮盘 -->
       <div class="wheel-wrap">
         <div class="wheel-box">
           <div class="wheel-shadow"></div>
@@ -185,24 +183,26 @@ const TEXT_BY_ODDS = new Map([
   [8,'#0b5ed7'],  [7,'#3b4a66']
 ]);
 
-const CLOSE_BUFFER = 10;
-const SPIN_DURATION = 4800;
-const MIN_SPINS = 5;
+const CLOSE_BUFFER = 10;         // 封盘缓冲
+const PRE_SPIN_SEC  = 5;         // 到期前 N 秒开始匀速转
+const FETCH_MS      = 1000;      // 轮询数据库间隔
+const SETTLE_MS     = 1500;      // 收尾动画时长
+const ROLL_RPS      = 1.2;       // 匀速转动速度：每秒 1.2 圈
 
 /* ===== 状态/引用 ===== */
 let currentUser = null;
 let selectedNumber = null;  // 3..18
-let selectedRange = null;   // 'small' | 'big'
+let selectedRange  = null;  // 'small' | 'big'
 
 const emailEl = document.getElementById('user-email');
 const balanceEl = document.getElementById('balance');
 const logoutBtn = document.getElementById('logout-btn');
-const lobbyBtn = document.getElementById('lobby-btn');
+const lobbyBtn  = document.getElementById('lobby-btn');
 const betBtn = document.getElementById('bet-btn');
 const betAmountEl = document.getElementById('bet-amount');
 
 const roundEl = document.getElementById('round-number');
-const prevEl = document.getElementById('prev-result');
+const prevEl  = document.getElementById('prev-result');
 const countEl = document.getElementById('countdown');
 const betsTbody = document.getElementById('bets-tbody');
 
@@ -210,15 +210,15 @@ const wheelG = document.getElementById('wheelG');
 const winBanner = document.getElementById('win-banner');
 
 /* ===== 时间（IST，2分钟一局） ===== */
-function getIST() {
+function getIST(){
   const now = new Date();
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utcMs + 5.5 * 60 * 60 * 1000);
+  const utc = now.getTime() + now.getTimezoneOffset()*60000;
+  return new Date(utc + 5.5*3600*1000);
 }
 function bucketStart2mIST(d){
   const t = new Date(d);
   const m = t.getMinutes();
-  t.setMinutes(m - (m % 2), 0, 0); // 落到偶数分钟开始
+  t.setMinutes(m - (m % 2), 0, 0);
   return t;
 }
 function secondsToBucketEnd(d){
@@ -232,6 +232,10 @@ function roundKey(date){
   return `${y}${m}${d}${h}${min}`;
 }
 function currentRoundNo(){ return roundKey(bucketStart2mIST(getIST())); }
+function previousRoundNo(){
+  const currStart = bucketStart2mIST(getIST());
+  return roundKey(new Date(currStart.getTime() - 120000));
+}
 
 /* ===== Auth ===== */
 logoutBtn.onclick = async ()=>{ await supabase.auth.signOut(); location.href='./index.html'; };
@@ -247,9 +251,10 @@ supabase.auth.getUser().then(async ({ data }) => {
     await loadBalance();
     buildBetUI();
     buildWheelSVG();
-    await refreshPrevAndMaybeSpin(false); // 首次只定位，不动画
+    // 首次：直接显示上一期结果，不做动画
+    await ensurePrevShown(false);
     await loadMyBets();
-    startTicker();                         // 2 分钟版本
+    startTicker();
   }
 });
 
@@ -291,10 +296,10 @@ function buildBetUI(){
   });
 }
 
-/* ===== 绘制轮盘（SVG） ===== */
+/* ===== 轮盘绘制与动画 ===== */
 const N = NUMBERS.length;
 const THETA = 2*Math.PI / N;
-let currentRotation = 0; // 角度（deg）
+let currentRotation = 0; // deg
 
 function polar(r, ang){ return [r*Math.cos(ang), r*Math.sin(ang)]; }
 function buildWheelSVG(){
@@ -330,96 +335,119 @@ function buildWheelSVG(){
   wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
 }
 
-/* 无动画定位到某段 */
+/* --- 定位到某分段（无动画） --- */
 function setWheelToIndex(targetIndex){
   const segCenterDeg = (targetIndex + 0.5) * (360 / N);
   currentRotation = ((-segCenterDeg % 360) + 360) % 360;
   wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
 }
 
-/* 动画旋转到某段 */
-function easeInOutCubic(t){ return t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
-function spinToIndex(targetIndex){
+/* --- 匀速转动（到期前预转） --- */
+let rolling = false, rollingRAF = null, rollingRoundKey = null;
+function startRollingFor(roundKey){
+  if (rolling && rollingRoundKey === roundKey) return;
+  stopRolling();
+  rolling = true;
+  rollingRoundKey = roundKey;
+  let last = performance.now();
+  const speed = 360 * ROLL_RPS; // deg/sec
+  const loop = (now)=>{
+    if (!rolling) return;
+    const dt = (now - last)/1000;
+    last = now;
+    currentRotation = (currentRotation + speed*dt) % 360;
+    wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
+    rollingRAF = requestAnimationFrame(loop);
+  };
+  rollingRAF = requestAnimationFrame(loop);
+}
+function stopRolling(){
+  rolling = false;
+  if (rollingRAF) cancelAnimationFrame(rollingRAF);
+  rollingRAF = null;
+}
+
+/* --- 收尾到目标分段（缓动） --- */
+function settleToIndex(targetIndex){
+  stopRolling();
   winBanner.classList.remove('show');
   const segCenterDeg = (targetIndex + 0.5) * (360 / N);
-  const rawTarget = -segCenterDeg;
-  let finalDeg = rawTarget;
-  while(finalDeg - currentRotation < MIN_SPINS*360) finalDeg += 360;
+  let targetDeg = -segCenterDeg;
+  while (targetDeg - currentRotation < 2*360) targetDeg += 360; // 至少两圈
   const start = performance.now();
-
-  const tick = (now)=>{
-    const t = Math.min(1, (now - start) / SPIN_DURATION);
-    const k = easeInOutCubic(t);
-    const ang = currentRotation + (finalDeg - currentRotation) * k;
+  const ease = t => 1 - Math.pow(1 - t, 3); // easeOutCubic
+  const step = (now)=>{
+    const t = Math.min(1, (now - start)/SETTLE_MS);
+    const ang = currentRotation + (targetDeg - currentRotation) * ease(t);
     wheelG.setAttribute('transform', `rotate(${ang} 0 0)`);
-    if (t < 1){
-      requestAnimationFrame(tick);
-    }else{
-      currentRotation = ((finalDeg % 360)+360)%360;
+    if (t < 1) requestAnimationFrame(step);
+    else {
+      currentRotation = ((targetDeg % 360)+360)%360;
       wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
     }
   };
-  requestAnimationFrame(tick);
+  requestAnimationFrame(step);
 }
 
-/* ===== 结果刷新：与视口无关，按结果变更驱动 ===== */
-let lastPrevRound = null;        // 已动画/显示过的上一期回合号
-let lastShownRoundKey = null;    // 当前进行中的回合号（只用于页头显示）
-let lastFetchTs = 0;             // 拉取节流（>=1s）
+/* ===== 结果展示与轮询（严格按“上一期回合号”） ===== */
+let shownPrevRound = null;   // 已展示的上一期（用于避免重复）
+let lastFetchTs = 0;
 
-async function refreshPrevAndMaybeSpin(animate=false){
-  const nowTs = Date.now();
-  if (animate && nowTs - lastFetchTs < 1000) return; // 1s 节流（动画阶段）
-  lastFetchTs = nowTs;
+async function ensurePrevShown(animateIfNew){
+  const prevRound = previousRoundNo();
+  const now = Date.now();
+  if (now - lastFetchTs < FETCH_MS) return; // 轮询节流
+  lastFetchTs = now;
 
-  const { data: prev } = await supabase
+  const { data: row } = await supabase
     .from('wheel_rounds')
     .select('round_number, result_index, result_multiplier, result_number')
-    .order('round_number', { ascending: false })
-    .limit(1)
+    .eq('round_number', prevRound)      // 关键：锁定上一期
     .maybeSingle();
 
-  if (!prev || prev.result_index == null){
-    prevEl.textContent = '—';
-    return;
-  }
+  if (!row || row.result_index == null) return;
 
-  // 更新上一期显示
-  prevEl.textContent = `${prev.result_number}  (${prev.result_multiplier}×)`;
+  // 更新“上一期结果”UI
+  prevEl.textContent = `${row.result_number}  (${row.result_multiplier}×)`;
 
-  // 只有当“上一期回合号”变化时才（可选）触发动画
-  if (lastPrevRound !== prev.round_number){
-    if (animate){ spinToIndex(prev.result_index); }
-    else { setWheelToIndex(prev.result_index); }
-    winBanner.textContent = `WIN — ${prev.result_number} • ${prev.result_multiplier}×`;
+  // 如果是新的一期结果，展示（滚动状态下收尾，不滚动则直接定位）
+  if (shownPrevRound !== row.round_number) {
+    if (animateIfNew || rolling) settleToIndex(row.result_index);
+    else setWheelToIndex(row.result_index);
+
+    winBanner.textContent = `WIN — ${row.result_number} • ${row.result_multiplier}×`;
     winBanner.classList.add('show');
-    lastPrevRound = prev.round_number;
+    shownPrevRound = row.round_number;
   }
 }
 
-/* ===== 2分钟桶的 Ticker（唯一版本） ===== */
+/* ===== 主 Ticker ===== */
 function startTicker(){
   setInterval(async ()=>{
     const now = getIST();
     const remaining = secondsToBucketEnd(now);
     countEl.textContent = `${remaining}s`;
 
+    // 按钮开关
     if (remaining <= CLOSE_BUFFER) {
       betBtn.disabled = true; betBtn.textContent = 'Bet Closed';
     } else {
       betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
     }
 
+    // 当前回合号
     const rn = currentRoundNo();
-    if (lastShownRoundKey !== rn) {
-      roundEl.textContent = rn;
-      lastShownRoundKey = rn;
+    roundEl.textContent = rn;
+
+    // 到期前 PRE_SPIN_SEC 秒：强制进入预转（与视口无关）
+    if (remaining <= PRE_SPIN_SEC) {
+      startRollingFor(previousRoundNo()); // 为“将要结算的上一期”预转
     }
 
-    // 每秒左右检查一次是否出现了新“上一期”结果，若有则动画
-    await refreshPrevAndMaybeSpin(true);
+    // 轮询上一期结果；若已到达则收尾停住
+    await ensurePrevShown(true);
 
-    // 可选：新回合开始时刷新余额和我的下注
+    // 新回合刚开始时刷新余额/我的下注（避免高频）
     if (remaining >= 118 && remaining <= 119) {
       await loadBalance();
       await loadMyBets();
