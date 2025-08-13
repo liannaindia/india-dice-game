@@ -247,9 +247,9 @@ supabase.auth.getUser().then(async ({ data }) => {
     await loadBalance();
     buildBetUI();
     buildWheelSVG();
-    await refreshHeaderAndAnim(false); // 首次只定位
+    await refreshPrevAndMaybeSpin(false); // 首次只定位，不动画
     await loadMyBets();
-    startTicker();                     // 2 分钟版本
+    startTicker();                         // 2 分钟版本
   }
 });
 
@@ -362,11 +362,15 @@ function spinToIndex(targetIndex){
   requestAnimationFrame(tick);
 }
 
-/* ===== 刷新表头+动画（全局只这一处声明） ===== */
-let lastSeenRound = null;
+/* ===== 结果刷新：与视口无关，按结果变更驱动 ===== */
+let lastPrevRound = null;        // 已动画/显示过的上一期回合号
+let lastShownRoundKey = null;    // 当前进行中的回合号（只用于页头显示）
+let lastFetchTs = 0;             // 拉取节流（>=1s）
 
-async function refreshHeaderAndAnim(animate=false){
-  roundEl.textContent = currentRoundNo();
+async function refreshPrevAndMaybeSpin(animate=false){
+  const nowTs = Date.now();
+  if (animate && nowTs - lastFetchTs < 1000) return; // 1s 节流（动画阶段）
+  lastFetchTs = nowTs;
 
   const { data: prev } = await supabase
     .from('wheel_rounds')
@@ -380,14 +384,16 @@ async function refreshHeaderAndAnim(animate=false){
     return;
   }
 
+  // 更新上一期显示
   prevEl.textContent = `${prev.result_number}  (${prev.result_multiplier}×)`;
 
-  if (lastSeenRound !== prev.round_number){
+  // 只有当“上一期回合号”变化时才（可选）触发动画
+  if (lastPrevRound !== prev.round_number){
     if (animate){ spinToIndex(prev.result_index); }
     else { setWheelToIndex(prev.result_index); }
     winBanner.textContent = `WIN — ${prev.result_number} • ${prev.result_multiplier}×`;
     winBanner.classList.add('show');
-    lastSeenRound = prev.round_number;
+    lastPrevRound = prev.round_number;
   }
 }
 
@@ -405,13 +411,18 @@ function startTicker(){
     }
 
     const rn = currentRoundNo();
-    roundEl.textContent = rn;
+    if (lastShownRoundKey !== rn) {
+      roundEl.textContent = rn;
+      lastShownRoundKey = rn;
+    }
 
-    if (lastSeenRound !== rn) {
-      await refreshHeaderAndAnim(true);
+    // 每秒左右检查一次是否出现了新“上一期”结果，若有则动画
+    await refreshPrevAndMaybeSpin(true);
+
+    // 可选：新回合开始时刷新余额和我的下注
+    if (remaining >= 118 && remaining <= 119) {
       await loadBalance();
       await loadMyBets();
-      lastSeenRound = rn;
     }
   }, 300);
 }
