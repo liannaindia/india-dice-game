@@ -1,9 +1,9 @@
-name: Auto Trigger Wheel Draw
+name: Auto Trigger Wheel Draw (2m)
 
 on:
   schedule:
-    - cron: '*/1 * * * *'
-  workflow_dispatch:
+    - cron: '*/2 * * * *'   # 每2分钟触发一次（UTC）
+  workflow_dispatch:         # 允许手动运行
 
 jobs:
   trigger:
@@ -13,7 +13,7 @@ jobs:
       group: wheel-draw-cron
       cancel-in-progress: false
     steps:
-      - name: Call wheel_draw edge function (with retries)
+      - name: Call wheel_draw edge function (2-minute bucket)
         env:
           URL: ${{ secrets.WHEEL_DRAW_URL }}
           KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -24,11 +24,11 @@ jobs:
             RESP=$(curl -sS -X POST "$URL" \
               -H "Authorization: Bearer $KEY" \
               -H "Content-Type: application/json" \
-              --max-time 15 -w "\nHTTP_STATUS:%{http_code}\n")
+              --max-time 20 -w "\nHTTP_STATUS:%{http_code}\n")
             echo "$RESP"
             STATUS=$(echo "$RESP" | sed -n 's/HTTP_STATUS://p')
-            if [ "$STATUS" = "200" ]; then
-              echo "✅ wheel_draw OK"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ]; then
+              echo "✅ wheel_draw OK (HTTP $STATUS)"
               exit 0
             fi
             echo "Retry $i failed (status=$STATUS), sleep 5s..."
