@@ -4,12 +4,8 @@
   <meta charset="UTF-8" />
   <title>Mini Wheel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <!-- 你现有的 Supabase 初始化文件 -->
   <script type="module" src="./supabase-config.js"></script>
-
-  <!-- 字体（可留可去） -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-
   <style>
     :root{
       --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#222;
@@ -19,45 +15,31 @@
       --wheel-size: 320px;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0;font-family:'Poppins',sans-serif;color:var(--text);
-      background:linear-gradient(180deg,var(--bg1),var(--bg2));
-      padding-bottom:94px;overflow-x:hidden
-    }
+    body{margin:0;font-family:'Poppins',sans-serif;color:var(--text);
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));padding-bottom:94px;overflow-x:hidden}
     .container{max-width:860px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
     h2{margin:6px 0 14px;text-align:center;color:#ff6f00}
 
-    .card{
-      background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
-      padding:14px;margin-bottom:14px;border:1px solid var(--line)
-    }
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+      padding:14px;margin-bottom:14px;border:1px solid var(--line)}
     .userbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
     .balance{font-weight:700;color:var(--success)}
-    .btn{
-      display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:12px;border:0;cursor:pointer;background:var(--primary);color:#fff;font-weight:700;min-height:42px
-    }
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:12px;border:0;cursor:pointer;background:var(--primary);color:#fff;font-weight:700;min-height:42px}
     .btn:active{background:var(--primary-pressed)}
     .btn.secondary{background:#eef4ff;color:#1e3a8a}
     .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
     .muted{color:var(--muted);font-size:12px}
-
     .result-box{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center}
     .result-big{font-size:28px;font-weight:800}
-
-    .betbar{
-      position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-      background:rgba(255,255,255,.85);backdrop-filter: blur(10px);border-top:1px solid #e8edf6;display:flex;gap:10px;align-items:center
-    }
+    .betbar{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+      background:rgba(255,255,255,.85);backdrop-filter: blur(10px);border-top:1px solid #e8edf6;display:flex;gap:10px;align-items:center}
     .betbar input{flex:1;height:46px;border-radius:12px;border:1px solid #e1e6f0;padding:0 12px;font-size:16px;background:#fff}
     table{width:100%;border-collapse:collapse}
     th,td{padding:8px 6px;border-bottom:1px solid #eee;font-size:14px;text-align:left}
 
-    /* ===== Wheel ===== */
     .wheel-wrap{display:flex;align-items:center;justify-content:center;margin-top:8px}
-    .wheel-box{
-      position:relative;width:var(--wheel-size);height:var(--wheel-size);border-radius:50%;
-      background:#f7f9fc;border:1px solid #e6eaf2;display:flex;align-items:center;justify-content:center
-    }
+    .wheel-box{position:relative;width:var(--wheel-size);height:var(--wheel-size);border-radius:50%;
+      background:#f7f9fc;border:1px solid #e6eaf2;display:flex;align-items:center;justify-content:center}
     .wheel-shadow{position:absolute;inset:10px;border-radius:50%;box-shadow:inset 0 0 0 8px #fff, 0 10px 24px rgba(0,0,0,.08)}
     .wheel-svg{width:calc(var(--wheel-size) - 28px);height:calc(var(--wheel-size) - 28px)}
     .pointer{
@@ -69,7 +51,6 @@
     .win-banner{margin-top:10px;padding:10px;border-radius:12px;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;font-weight:700;display:none}
     .win-banner.show{display:block}
 
-    /* 下注区 */
     .section-title{font-weight:700;margin:0 0 8px}
     .chip{padding:10px 12px;text-align:center;border-radius:12px;background:#f7f9fc;border:1px solid #e6eaf2;font-weight:700;cursor:pointer}
     .chip.active{background:#eaf2ff;border-color:#cfe0ff;color:#0b5ed7}
@@ -108,7 +89,7 @@
           <button id="logout-btn" class="btn secondary">Logout</button>
         </div>
       </div>
-      <div class="muted" style="margin-top:8px">* 每局 2 分钟（按 IST 对齐），最后 10 秒锁盘。倒计时与期号由服务器计算。</div>
+      <div class="muted" style="margin-top:8px">* 每局 2 分钟（IST），最后 10 秒锁盘。倒计时只用服务器给的 seconds_left。</div>
     </div>
 
     <div class="card">
@@ -162,7 +143,7 @@
       <div style="overflow:auto">
         <table>
           <thead><tr><th>Round</th><th>Bet</th><th>Amount</th><th>Result</th><th>Status</th><th>Payout</th></tr></thead>
-        <tbody id="bets-tbody"></tbody>
+          <tbody id="bets-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -214,11 +195,15 @@ const betsTbody = document.getElementById('bets-tbody');
 const wheelG = document.getElementById('wheelG');
 const winBanner = document.getElementById('win-banner');
 
-/* ===== 服务器状态（只用 wheel_state()） ===== */
-let STATE = null;       // { current_round, start_time, lock_time, end_time, now_ts, seconds_left, locked, last_* }
-let offsetMs = 0;       // server now - local now
-let endTimeMs = 0;
+/* ===== 服务器状态（只用 wheel_state） ===== */
+let STATE = null;         // wheel_state() 返回
+let offsetMs = 0;         // serverNow - localNow （用于其它动画）
+let endTimeMs = 0;        // 可选：用于预转
 let lastShownRound = null;
+
+// 新增：以服务器 seconds_left 为锚的“本地秒表”
+let leftAtSyncSec = 0;    // 同步瞬间的剩余秒数
+let syncLocalMs = 0;      // 本地同步的时间戳（ms）
 
 /* ===== 轮盘绘制与动画 ===== */
 const N = NUMBERS.length;
@@ -306,7 +291,7 @@ function settleToIndex(idx){
   requestAnimationFrame(step);
 }
 
-/* ===== 服务器状态（唯一权威） ===== */
+/* ===== 服务器状态（只依赖 seconds_left） ===== */
 function serverNow(){ return new Date(Date.now() + offsetMs); }
 
 async function fetchState(){
@@ -316,9 +301,20 @@ async function fetchState(){
   const s = data[0];
   STATE = s;
 
-  // 对齐时间
-  offsetMs = new Date(s.now_ts).getTime() - Date.now();
-  endTimeMs = new Date(s.end_time).getTime();
+  // 用服务器 now_ts 估算偏移（可用于动画，但倒计时不使用它直接算）
+  const serverNowMs = Date.parse(s.now_ts);
+  offsetMs = serverNowMs - Date.now();
+
+  // 关键：以 seconds_left 作为锚点，记下同步时间
+  const left = typeof s.seconds_left === 'number'
+    ? s.seconds_left
+    : Math.max(0, Math.floor((Date.parse(s.end_time) - serverNowMs)/1000));
+
+  leftAtSyncSec = left;
+  syncLocalMs = Date.now();
+
+  // 可选：用于预转的绝对 endTime
+  endTimeMs = serverNowMs + left * 1000;
 
   // 更新 UI
   roundEl.textContent = s.current_round;
@@ -328,11 +324,18 @@ async function fetchState(){
   return true;
 }
 
+// 基于“同步时的剩余秒数 + 本地流逝秒数”来显示，完全不受时区解析影响
+function getLeftSecSinceSync(){
+  const elapsed = Math.max(0, Math.floor((Date.now() - syncLocalMs)/1000));
+  return Math.max(0, leftAtSyncSec - elapsed);
+}
+
 function updateCountdown(){
   if (!STATE) { countEl.textContent = '—'; return; }
-  const left = Math.max(0, Math.floor( (endTimeMs - serverNow().getTime()) / 1000 ));
+  const left = getLeftSecSinceSync();
   countEl.textContent = `${left}s`;
-  if (STATE.locked) {
+
+  if (STATE.locked || left <= 10) {  // 服务器锁盘为准；这里也把最后10秒视为不可下
     betBtn.disabled = true; betBtn.textContent = 'Bet Closed';
   } else {
     betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
@@ -345,8 +348,9 @@ async function tick(){
 
   updateCountdown();
 
-  const left = Math.max(0, Math.floor( (endTimeMs - serverNow().getTime()) / 1000 ));
-  if (left <= 5) startRolling(STATE.current_round); else stopRolling();
+  const left = getLeftSecSinceSync();
+  if (left <= 5) startRolling(STATE.current_round);
+  else stopRolling();
 
   if (STATE.last_round && lastShownRound !== STATE.last_round && STATE.last_result_index != null){
     settleToIndex(STATE.last_result_index);
@@ -359,8 +363,8 @@ async function tick(){
 }
 
 function startTicker(){
-  setInterval(tick, 1500);     // 服务器状态
-  setInterval(updateCountdown, 250); // 本地倒计时刷新（基于服务器时间）
+  setInterval(tick, 1500);        // 1.5s 同步一次服务器状态（刷新 seconds_left）
+  setInterval(updateCountdown, 250); // 本地每 250ms 刷一下显示
 }
 
 /* ===== Auth ===== */
@@ -372,15 +376,14 @@ supabase.auth.getUser().then(async ({ data }) => {
   currentUser = data.user;
   emailEl.textContent = currentUser.email;
 
-  // 确保 users 表有一行（若你已有触发器可移除）
   await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
 
   await loadBalance();
   buildBetUI();
   buildWheelSVG();
 
-  await fetchState();         // 首次状态
-  updateCountdown();          // 立即刷新倒计时
+  await fetchState();         // 首次状态（抓到 seconds_left）
+  updateCountdown();          // 立即根据 seconds_left 显示
   startTicker();              // 启动轮询
   await loadMyBets();
 });
@@ -449,7 +452,7 @@ async function loadMyBets(){
   }).join('') : `<tr><td colspan="6" class="muted">No recent bets.</td></tr>`;
 }
 
-/* ===== 下单（严格以服务器 locked 判断；参数名对齐后端） ===== */
+/* ===== 下单（以服务器锁盘为准） ===== */
 let placing = false;
 betBtn.onclick = async () => {
   if (!currentUser) { alert('Please login first'); return; }
@@ -472,9 +475,10 @@ betBtn.onclick = async () => {
   const amount = Number(betAmountEl.value);
   if (!Number.isFinite(amount) || amount <= 0) { alert('Enter amount'); return; }
 
-  // 下注前：以服务器状态校验锁盘（完全不看本机时间）
+  // 下单前：再按服务器 seconds_left 校验
   await fetchState();
-  if (STATE?.locked) { alert('Bet closed'); return; }
+  const left = getLeftSecSinceSync();
+  if (STATE?.locked || left <= 10) { alert('Bet closed'); return; }
 
   placing = true;
   const oldText = betBtn.innerText;
@@ -482,12 +486,11 @@ betBtn.onclick = async () => {
   betBtn.innerText = 'Placing...';
 
   try {
-    // 关键：参数名 = 你的后端签名（不带下划线）
     const { error } = await supabase.rpc('wheel_place_bet_ist', {
-      bet_type,         // 'number' | 'range'
-      pick,             // 3..18 或 0/1
-      amount,           // 金额
-      multiplier: odds  // 赔率（数字盘按上表，大小盘1.9）
+      bet_type,
+      pick,
+      amount,
+      multiplier: odds
     });
 
     if (error) {
