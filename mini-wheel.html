@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <title>Mini Wheel</title>
@@ -92,11 +92,11 @@
           <button id="logout-btn" class="btn secondary">Logout</button>
         </div>
       </div>
-      <div class="muted" style="margin-top:8px">* Bets close in the last 10 seconds of each 2-minute round (IST).</div>
+      <div class="muted" style="margin-top:8px">* 每局 2 分钟（IST），最后 10 秒锁盘。前端只用服务器的 wheel_state。</div>
     </div>
 
     <div class="card">
-      <h3 class="section-title">🎯 Select Bet</h3>
+      <h3 class="section-title">🎯 下注</h3>
       <div class="seg" id="range-seg">
         <div class="chip" data-range="small">Small 3–10 ×1.9</div>
         <div class="chip" data-range="big">Big 11–18 ×1.9</div>
@@ -142,7 +142,7 @@
     </div>
 
     <div class="card">
-      <h3 style="margin:0 0 8px">🧾 My Last 10 Bets</h3>
+      <h3 style="margin:0 0 8px">🧾 我最近的 10 笔</h3>
       <div style="overflow:auto">
         <table>
           <thead><tr><th>Round</th><th>Bet</th><th>Amount</th><th>Result</th><th>Status</th><th>Payout</th></tr></thead>
@@ -160,17 +160,12 @@
 <script type="module">
 import { supabase } from './supabase-config.js';
 
-/* ===== 配置（3..18 数字 + 赔率） ===== */
-const NUMBERS = Array.from({length:16}, (_,i)=>i+3); // 3..18
+/* ===== 数字与赔率（3..18） ===== */
+const NUMBERS = Array.from({length:16}, (_,i)=>i+3);
 const ODDS_MAP = new Map([
-  [3,180],[18,180],
-  [4,60],[17,60],
-  [5,30],[16,30],
-  [6,18],[15,18],
-  [7,12],[14,12],
-  [8,9],[13,9],
-  [9,8],[12,8],
-  [10,7],[11,7],
+  [3,180],[18,180],[4,60],[17,60],[5,30],[16,30],
+  [6,18],[15,18],[7,12],[14,12],[8,9],[13,9],
+  [9,8],[12,8],[10,7],[11,7],
 ]);
 const COLORS_BY_ODDS = new Map([
   [180,'#fff3b0'], [60,'#ffe5e5'], [30,'#eae8ff'],
@@ -183,13 +178,7 @@ const TEXT_BY_ODDS = new Map([
   [8,'#0b5ed7'],  [7,'#3b4a66']
 ]);
 
-const CLOSE_BUFFER = 10;         // 封盘缓冲
-const PRE_SPIN_SEC  = 5;         // 到期前 N 秒开始匀速转
-const FETCH_MS      = 1000;      // 轮询数据库间隔
-const SETTLE_MS     = 1500;      // 收尾动画时长
-const ROLL_RPS      = 1.2;       // 匀速转动速度：每秒 1.2 圈
-
-/* ===== 状态/引用 ===== */
+/* ===== DOM ===== */
 let currentUser = null;
 let selectedNumber = null;  // 3..18
 let selectedRange  = null;  // 'small' | 'big'
@@ -209,97 +198,17 @@ const betsTbody = document.getElementById('bets-tbody');
 const wheelG = document.getElementById('wheelG');
 const winBanner = document.getElementById('win-banner');
 
-/* ===== 时间（IST，2分钟一局） ===== */
-function getIST(){
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset()*60000;
-  return new Date(utc + 5.5*3600*1000);
-}
-function bucketStart2mIST(d){
-  const t = new Date(d);
-  const m = t.getMinutes();
-  t.setMinutes(m - (m % 2), 0, 0);
-  return t;
-}
-function secondsToBucketEnd(d){
-  const start = bucketStart2mIST(d);
-  const end = new Date(start.getTime() + 120000);
-  return Math.max(0, Math.ceil((end - d)/1000));
-}
-function roundKey(date){
-  const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
-  const h=String(date.getHours()).padStart(2,'0'), min=String(date.getMinutes()).padStart(2,'0');
-  return `${y}${m}${d}${h}${min}`;
-}
-function currentRoundNo(){ return roundKey(bucketStart2mIST(getIST())); }
-function previousRoundNo(){
-  const currStart = bucketStart2mIST(getIST());
-  return roundKey(new Date(currStart.getTime() - 120000));
-}
-
-/* ===== Auth ===== */
-logoutBtn.onclick = async ()=>{ await supabase.auth.signOut(); location.href='./index.html'; };
-lobbyBtn.onclick = ()=> location.href='./index.html';
-
-supabase.auth.getUser().then(async ({ data }) => {
-  if (!data?.user) {
-    alert('Please login first.'); location.href = './index.html';
-  } else {
-    currentUser = data.user;
-    emailEl.textContent = currentUser.email;
-    await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
-    await loadBalance();
-    buildBetUI();
-    buildWheelSVG();
-    // 首次：直接显示上一期结果，不做动画
-    await ensurePrevShown(false);
-    await loadMyBets();
-    startTicker();
-  }
-});
-
-async function loadBalance(){
-  const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
-  balanceEl.textContent = data?.balance || 0;
-}
-
-/* ===== 下注 UI ===== */
-function buildBetUI(){
-  document.getElementById('quick-amt').querySelectorAll('.chip').forEach(q=>{
-    q.onclick = ()=>{ betAmountEl.value = Number(q.dataset.v); };
-  });
-
-  const seg = document.getElementById('range-seg');
-  seg.querySelectorAll('.chip').forEach(ch=>{
-    ch.onclick = ()=>{
-      selectedRange = ch.dataset.range; selectedNumber = null;
-      seg.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
-      ch.classList.add('active');
-      document.querySelectorAll('#num-grid .cell').forEach(x=>x.classList.remove('active'));
-    };
-  });
-
-  const grid = document.getElementById('num-grid');
-  grid.innerHTML = '';
-  NUMBERS.forEach(n=>{
-    const odds = ODDS_MAP.get(n);
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    cell.innerHTML = `<div>${n}</div><div class="muted" style="font-size:12px">${odds}×</div>`;
-    cell.onclick = ()=>{
-      selectedNumber = n; selectedRange = null;
-      document.querySelectorAll('#range-seg .chip').forEach(x=>x.classList.remove('active'));
-      grid.querySelectorAll('.cell').forEach(x=>x.classList.remove('active'));
-      cell.classList.add('active');
-    };
-    grid.appendChild(cell);
-  });
-}
+/* ===== 只用服务器 wheel_state ===== */
+let STATE = null;
+let leftAtSyncSec = 0;      // 同步瞬间的 seconds_left
+let syncLocalMs   = 0;      // 本地同步时间
+let lastShownRound = null;  // 已展示过的上一期（避免重复）
 
 /* ===== 轮盘绘制与动画 ===== */
 const N = NUMBERS.length;
 const THETA = 2*Math.PI / N;
 let currentRotation = 0; // deg
+let rolling = false, rollingRAF = null, rollingForRound = null;
 
 function polar(r, ang){ return [r*Math.cos(ang), r*Math.sin(ang)]; }
 function buildWheelSVG(){
@@ -334,27 +243,20 @@ function buildWheelSVG(){
   }
   wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
 }
-
-/* --- 定位到某分段（无动画） --- */
-function setWheelToIndex(targetIndex){
-  const segCenterDeg = (targetIndex + 0.5) * (360 / N);
+function setWheelToIndex(idx){
+  const segCenterDeg = (idx + 0.5) * (360 / N);
   currentRotation = ((-segCenterDeg % 360) + 360) % 360;
   wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
 }
-
-/* --- 匀速转动（到期前预转） --- */
-let rolling = false, rollingRAF = null, rollingRoundKey = null;
-function startRollingFor(roundKey){
-  if (rolling && rollingRoundKey === roundKey) return;
+function startRolling(roundId){
+  if (rolling && rollingForRound === roundId) return;
   stopRolling();
-  rolling = true;
-  rollingRoundKey = roundKey;
+  rolling = true; rollingForRound = roundId;
   let last = performance.now();
-  const speed = 360 * ROLL_RPS; // deg/sec
+  const speed = 360 * 1.2; // deg/s
   const loop = (now)=>{
     if (!rolling) return;
-    const dt = (now - last)/1000;
-    last = now;
+    const dt = (now - last)/1000; last = now;
     currentRotation = (currentRotation + speed*dt) % 360;
     wheelG.setAttribute('transform', `rotate(${currentRotation} 0 0)`);
     rollingRAF = requestAnimationFrame(loop);
@@ -366,18 +268,16 @@ function stopRolling(){
   if (rollingRAF) cancelAnimationFrame(rollingRAF);
   rollingRAF = null;
 }
-
-/* --- 收尾到目标分段（缓动） --- */
-function settleToIndex(targetIndex){
+function settleToIndex(idx){
   stopRolling();
   winBanner.classList.remove('show');
-  const segCenterDeg = (targetIndex + 0.5) * (360 / N);
+  const segCenterDeg = (idx + 0.5) * (360 / N);
   let targetDeg = -segCenterDeg;
-  while (targetDeg - currentRotation < 2*360) targetDeg += 360; // 至少两圈
+  while (targetDeg - currentRotation < 720) targetDeg += 360; // 至少两圈
   const start = performance.now();
-  const ease = t => 1 - Math.pow(1 - t, 3); // easeOutCubic
+  const ease = t => 1 - Math.pow(1 - t, 3);
   const step = (now)=>{
-    const t = Math.min(1, (now - start)/SETTLE_MS);
+    const t = Math.min(1, (now - start)/1500);
     const ang = currentRotation + (targetDeg - currentRotation) * ease(t);
     wheelG.setAttribute('transform', `rotate(${ang} 0 0)`);
     if (t < 1) requestAnimationFrame(step);
@@ -389,73 +289,123 @@ function settleToIndex(targetIndex){
   requestAnimationFrame(step);
 }
 
-/* ===== 结果展示与轮询（严格按“上一期回合号”） ===== */
-let shownPrevRound = null;   // 已展示的上一期（用于避免重复）
-let lastFetchTs = 0;
+/* ===== 服务器状态 ===== */
+async function fetchState(){
+  const { data, error } = await supabase.rpc('wheel_state');
+  if (error || !data || !data[0]) return false;
 
-async function ensurePrevShown(animateIfNew){
-  const prevRound = previousRoundNo();
-  const now = Date.now();
-  if (now - lastFetchTs < FETCH_MS) return; // 轮询节流
-  lastFetchTs = now;
+  const s = data[0];
+  STATE = s;
 
-  const { data: row } = await supabase
-    .from('wheel_rounds')
-    .select('round_number, result_index, result_multiplier, result_number')
-    .eq('round_number', prevRound)      // 关键：锁定上一期
-    .maybeSingle();
+  // 以服务器 seconds_left 为锚点，在本地减秒，不再解析时间字符串
+  leftAtSyncSec = Number.isFinite(s.seconds_left) ? s.seconds_left : 0;
+  syncLocalMs = Date.now();
 
-  if (!row || row.result_index == null) return;
+  // UI
+  roundEl.textContent = s.current_round || '—';
+  if (s.last_result_number != null) {
+    prevEl.textContent = `${s.last_result_number} (${s.last_result_multiplier}×)`;
+  }
 
-  // 更新“上一期结果”UI
-  prevEl.textContent = `${row.result_number}  (${row.result_multiplier}×)`;
-
-  // 如果是新的一期结果，展示（滚动状态下收尾，不滚动则直接定位）
-  if (shownPrevRound !== row.round_number) {
-    if (animateIfNew || rolling) settleToIndex(row.result_index);
-    else setWheelToIndex(row.result_index);
-
-    winBanner.textContent = `WIN — ${row.result_number} • ${row.result_multiplier}×`;
-    winBanner.classList.add('show');
-    shownPrevRound = row.round_number;
+  return true;
+}
+function leftNow(){
+  const elapsed = Math.floor((Date.now() - syncLocalMs)/1000);
+  return Math.max(0, leftAtSyncSec - elapsed);
+}
+function updateCountdown(){
+  if (!STATE) { countEl.textContent = '—'; return; }
+  const left = leftNow();
+  countEl.textContent = `${left}s`;
+  if (STATE.locked || left <= 10) {
+    betBtn.disabled = true; betBtn.textContent = 'Bet Closed';
+  } else {
+    betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
   }
 }
+async function tick(){
+  const ok = await fetchState();
+  if (!ok) return;
 
-/* ===== 主 Ticker ===== */
+  updateCountdown();
+
+  const left = leftNow();
+  if (left <= 5) startRolling(STATE.current_round);
+  else stopRolling();
+
+  if (STATE.last_round && lastShownRound !== STATE.last_round && STATE.last_result_index != null){
+    settleToIndex(STATE.last_result_index);
+    winBanner.textContent = `WIN — ${STATE.last_result_number} • ${STATE.last_result_multiplier}×`;
+    winBanner.classList.add('show');
+    lastShownRound = STATE.last_round;
+    await loadBalance();
+    await loadMyBets();
+  }
+}
 function startTicker(){
-  setInterval(async ()=>{
-    const now = getIST();
-    const remaining = secondsToBucketEnd(now);
-    countEl.textContent = `${remaining}s`;
-
-    // 按钮开关
-    if (remaining <= CLOSE_BUFFER) {
-      betBtn.disabled = true; betBtn.textContent = 'Bet Closed';
-    } else {
-      betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
-    }
-
-    // 当前回合号
-    const rn = currentRoundNo();
-    roundEl.textContent = rn;
-
-    // 到期前 PRE_SPIN_SEC 秒：强制进入预转（与视口无关）
-    if (remaining <= PRE_SPIN_SEC) {
-      startRollingFor(previousRoundNo()); // 为“将要结算的上一期”预转
-    }
-
-    // 轮询上一期结果；若已到达则收尾停住
-    await ensurePrevShown(true);
-
-    // 新回合刚开始时刷新余额/我的下注（避免高频）
-    if (remaining >= 118 && remaining <= 119) {
-      await loadBalance();
-      await loadMyBets();
-    }
-  }, 300);
+  setInterval(tick, 1500);      // 同步服务器状态
+  setInterval(updateCountdown, 250); // 本地显示平滑
 }
 
-/* ===== 最近下注 ===== */
+/* ===== Auth & 初始化 ===== */
+logoutBtn.onclick = async ()=>{ await supabase.auth.signOut(); location.href='./index.html'; };
+lobbyBtn.onclick = ()=> location.href='./index.html';
+
+supabase.auth.getUser().then(async ({ data }) => {
+  if (!data?.user) { alert('Please login first.'); location.href = './index.html'; return; }
+  currentUser = data.user;
+  emailEl.textContent = currentUser.email;
+
+  await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+  await loadBalance();
+  buildBetUI();
+  buildWheelSVG();
+
+  await fetchState();
+  updateCountdown();
+  startTicker();
+
+  await loadMyBets();
+});
+
+/* ===== 下注区 ===== */
+function buildBetUI(){
+  document.getElementById('quick-amt').querySelectorAll('.chip').forEach(q=>{
+    q.onclick = ()=>{ betAmountEl.value = Number(q.dataset.v); };
+  });
+
+  const seg = document.getElementById('range-seg');
+  seg.querySelectorAll('.chip').forEach(ch=>{
+    ch.onclick = ()=>{
+      selectedRange = ch.dataset.range; selectedNumber = null;
+      seg.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+      ch.classList.add('active');
+      document.querySelectorAll('#num-grid .cell').forEach(x=>x.classList.remove('active'));
+    };
+  });
+
+  const grid = document.getElementById('num-grid');
+  grid.innerHTML = '';
+  NUMBERS.forEach(n=>{
+    const odds = ODDS_MAP.get(n);
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.innerHTML = `<div>${n}</div><div class="muted" style="font-size:12px">${odds}×</div>`;
+    cell.onclick = ()=>{
+      selectedNumber = n; selectedRange = null;
+      document.querySelectorAll('#range-seg .chip').forEach(x=>x.classList.remove('active'));
+      grid.querySelectorAll('.cell').forEach(x=>x.classList.remove('active'));
+      cell.classList.add('active');
+    };
+    grid.appendChild(cell);
+  });
+}
+
+/* ===== 余额 & 下注记录 ===== */
+async function loadBalance(){
+  const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+  balanceEl.textContent = data?.balance ?? 0;
+}
 async function loadMyBets(){
   if (!currentUser) return;
   const { data, error } = await supabase.rpc('wheel_my_last_bets', {
@@ -467,14 +417,16 @@ async function loadMyBets(){
     betsTbody.innerHTML = `<tr><td colspan="6" class="muted">Load failed.</td></tr>`;
     return;
   }
-  const bets = data || [];
-  betsTbody.innerHTML = bets.length ? bets.map(b=>{
+  const rows = data || [];
+  betsTbody.innerHTML = rows.length ? rows.map(b=>{
     const betLabel = b.bet_type === 'range'
       ? (b.pick === 0 ? 'Small 3–10 ×1.9' : 'Big 11–18 ×1.9')
       : (b.bet_type === 'number' ? `${b.pick} ×${ODDS_MAP.get(b.pick)}` : `${b.multiplier}×`);
-    const resLabel = b.result_number ? `${b.result_number} (${b.result_multiplier}×)` : '—';
+    const resLabel = (b.result_number!=null && b.result_multiplier!=null)
+      ? `${b.result_number} (${b.result_multiplier}×)` : '—';
+    const rn = String(b.round_number||'').slice(0,12);
     return `<tr>
-      <td>${b.round_number}</td>
+      <td>${rn}</td>
       <td>${betLabel}</td>
       <td>₹${Number(b.amount).toFixed(2)}</td>
       <td>${resLabel}</td>
@@ -484,30 +436,33 @@ async function loadMyBets(){
   }).join('') : `<tr><td colspan="6" class="muted">No recent bets.</td></tr>`;
 }
 
-/* ===== 下单 ===== */
+/* ===== 下单（服务器锁盘为准；参数名保持你现有的下划线版本） ===== */
 let placing = false;
 betBtn.onclick = async () => {
   if (!currentUser) { alert('Please login first'); return; }
   if (placing) return;
 
-  let bet_type = null, pick = null, odds = null;
+  let _bet_type = null, _pick = null, _multiplier = null;
   if (selectedRange){
-    bet_type = 'range';
-    pick = (selectedRange === 'small') ? 0 : 1; // 0=small,1=big
-    odds = 1.9;
+    _bet_type = 'range';
+    _pick = (selectedRange === 'small') ? 0 : 1; // 0=small(3–10), 1=big(11–18)
+    _multiplier = 1.9;
   } else if (selectedNumber != null){
-    bet_type = 'number';
-    pick = selectedNumber;
-    odds = ODDS_MAP.get(pick);
+    _bet_type = 'number';
+    _pick = selectedNumber;
+    _multiplier = ODDS_MAP.get(_pick);
+    if (!_multiplier){ alert('Pick a valid number'); return; }
   } else {
-    alert('Please choose Small/Big or a Number');
-    return;
+    alert('Please choose Small/Big or a Number'); return;
   }
 
-  const amount = Number(betAmountEl.value);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    alert('Enter amount'); return;
-  }
+  const _amount = Number(betAmountEl.value);
+  if (!Number.isFinite(_amount) || _amount <= 0) { alert('Enter amount'); return; }
+
+  // 下单前：再拉一次状态，完全按服务器秒数与 locked 判断
+  const ok = await fetchState();
+  if (!ok) { alert('Server state unavailable'); return; }
+  if (STATE?.locked || leftNow() <= 10) { alert('Bet closed'); return; }
 
   placing = true;
   const oldText = betBtn.innerText;
@@ -518,24 +473,24 @@ betBtn.onclick = async () => {
     const { error } = await supabase.rpc('wheel_place_bet_ist', {
       _user_id: currentUser.id,
       _email: currentUser.email,
-      _multiplier: odds,
-      _amount: amount,
-      _bet_type: bet_type,
-      _pick: pick
+      _bet_type,      // 'number' | 'range'
+      _pick,          // 3..18 或 0/1
+      _amount,        // 金额
+      _multiplier     // 赔率
     });
 
     if (error) {
       const msg = String(error.message || '');
-      if (msg.includes('INSUFFICIENT_BALANCE')) alert('Insufficient balance');
-      else if (msg.includes('BET_CLOSED')) alert('Bet closed');
+      if (msg.includes('INSUFFICIENT') || msg.toLowerCase().includes('insufficient')) alert('Insufficient balance');
+      else if (msg.includes('CLOSED') || msg.toLowerCase().includes('locked')) alert('Bet closed');
       else alert('Bet failed: ' + msg);
       return;
     }
 
     betAmountEl.value = '';
-    alert('✅ Bet placed!');
     await loadBalance();
     await loadMyBets();
+    alert('✅ Bet placed!');
   } catch (e) {
     alert('Bet failed: ' + (e?.message || e));
   } finally {
