@@ -43,7 +43,6 @@
       background:#f7f9fc;border:1px solid #e6eaf2;display:flex;align-items:center;justify-content:center}
     .wheel-shadow{position:absolute;inset:10px;border-radius:50%;box-shadow:inset 0 0 0 8px #fff, 0 10px 24px rgba(0,0,0,.08)}
     .wheel-svg{width:calc(var(--wheel-size) - 28px);height:calc(var(--wheel-size) - 28px)}
-    .wheel-rot{} /* JS 驱动旋转 */
     .pointer{
       position:absolute; top:-6px; left:50%; transform:translateX(-50%);
       width:0;height:0; border-left:10px solid transparent;border-right:10px solid transparent;
@@ -178,10 +177,9 @@ const TEXT_BY_ODDS = new Map([
   [8,'#0b5ed7'],  [7,'#3b4a66']
 ]);
 
-const CLOSE_BUFFER = 10;     // 服务器会在最后10秒封盘
 const PRE_SPIN_SEC  = 5;     // 到期前 N 秒预转
 const SETTLE_MS     = 1500;  // 收尾动画时长
-const ROLL_RPS      = 1.2;   // 匀速转动速度（圈/秒）
+const ROLL_RPS      = 1.2;   // 匀速转速（圈/秒）
 
 /* ===== DOM ===== */
 let currentUser = null;
@@ -203,57 +201,109 @@ const betsTbody = document.getElementById('bets-tbody');
 const wheelG = document.getElementById('wheelG');
 const winBanner = document.getElementById('win-banner');
 
-/* ===== 服务器状态（对齐时间） ===== */
-let STATE = null;       // 来自 wheel_state()
+/* ===== 服务器状态（优先 wheel_state；否则降级） ===== */
+let STATE = null;       // { current_round, start/end/lock_time, now_ts, last_* , locked }
 let offsetMs = 0;       // serverNow - localNow
 let endTimeMs = 0;
 let shownPrevRound = null;
 
 async function fetchState(){
-  const { data, error } = await supabase.rpc('wheel_state');
-  if (error || !data || !data[0]) return false;
-  STATE = data[0];
-
-  // 服务器时间对齐
-  const serverNow = new Date(STATE.now_ts).getTime();
-  offsetMs = serverNow - Date.now();
-  endTimeMs = new Date(STATE.end_time).getTime();
-
-  // Round & Prev
-  roundEl.textContent = STATE.current_round;
-  if (STATE.last_result_number != null){
-    prevEl.textContent = `${STATE.last_result_number} (${STATE.last_result_multiplier}×)`;
+  // 1) 优先 wheel_state（最稳）
+  let r1 = await supabase.rpc('wheel_state');
+  if (!r1.error && r1.data && r1.data[0]) {
+    const s = r1.data[0];
+    STATE = s;
+    const serverNow = new Date(s.now_ts).getTime();
+    offsetMs = serverNow - Date.now();
+    endTimeMs = new Date(s.end_time).getTime();
+    roundEl.textContent = s.current_round;
+    if (s.last_result_number != null){
+      prevEl.textContent = `${s.last_result_number} (${s.last_result_multiplier}×)`;
+    }
+    return true;
   }
+
+  // 2) 降级：分别调用当前时间窗/期号/最近结果
+  const [t1, t2, t3] = await Promise.allSettled([
+    supabase.rpc('wheel_current_times'),
+    supabase.rpc('wheel_current_round_id'),
+    supabase.rpc('wheel_last_result')
+  ]);
+  const ct = (t1.status==='fulfilled' && t1.value?.data) ? (t1.value.data[0] || t1.value.data) : null;
+  const rid = (t2.status==='fulfilled') ? t2.value?.data : null;
+  const lr  = (t3.status==='fulfilled') ? (t3.value?.data || null) : null;
+  if (ct && rid){
+    endTimeMs = new Date(ct.end_time).getTime();
+    offsetMs = 0; // 无法拿到服务器 now，只能靠 end_time 校准
+    STATE = {
+      current_round: rid,
+      start_time: ct.start_time,
+      end_time: ct.end_time,
+      lock_time: ct.lock_time,
+      now_ts: new Date().toISOString(),
+      seconds_left: Math.max(0, Math.floor((endTimeMs - Date.now())/1000)),
+      locked: Date.now() >= new Date(ct.lock_time).getTime(),
+      last_round: lr?.round_number || null,
+      last_result_index: lr?.result_index ?? null,
+      last_result_number: lr?.result_number ?? null,
+      last_result_multiplier: lr?.result_multiplier ?? null
+    };
+    roundEl.textContent = rid;
+    if (lr?.result_number != null){
+      prevEl.textContent = `${lr.result_number} (${lr.result_multiplier}×)`;
+    }
+    return true;
+  }
+
+  // 3) 兜底：本机 IST（仅在上面都不可用时）
+  const d = new Date();
+  const utc = d.getTime() + d.getTimezoneOffset()*60000;
+  const ist = new Date(utc + 5.5*3600*1000);
+  const start = new Date(ist); start.setMinutes(start.getMinutes() - (start.getMinutes() % 2), 0, 0);
+  const end   = new Date(start.getTime() + 120000);
+  endTimeMs = end.getTime();
+  STATE = {
+    current_round: formatRound(start),
+    start_time: start.toISOString(),
+    end_time: end.toISOString(),
+    lock_time: new Date(end.getTime()-10000).toISOString(),
+    now_ts: new Date().toISOString(),
+    seconds_left: Math.max(0, Math.floor((end - ist)/1000)),
+    locked: ist >= new Date(end.getTime()-10000)
+  };
+  roundEl.textContent = STATE.current_round;
   return true;
 }
 
 function serverNowMs(){ return Date.now() + offsetMs; }
+function formatRound(dateOrString){
+  if (typeof dateOrString === 'string') return String(dateOrString).slice(0,12);
+  const y=dateOrString.getFullYear(), m=String(dateOrString.getMonth()+1).padStart(2,'0'), d=String(dateOrString.getDate()).padStart(2,'0');
+  const h=String(dateOrString.getHours()).padStart(2,'0'), min=String(dateOrString.getMinutes()).padStart(2,'0');
+  return `${y}${m}${d}${h}${min}`;
+}
 
 /* ===== Auth ===== */
 logoutBtn.onclick = async ()=>{ await supabase.auth.signOut(); location.href='./index.html'; };
 lobbyBtn.onclick = ()=> location.href='./index.html';
 
 supabase.auth.getUser().then(async ({ data }) => {
-  if (!data?.user) {
-    alert('Please login first.'); location.href = './index.html';
-  } else {
-    currentUser = data.user;
-    emailEl.textContent = currentUser.email;
-    // 确保有一行用户
-    await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
-    await loadBalance();
-    buildBetUI();
-    buildWheelSVG();
-    await fetchState();         // 首次拉状态
-    updateCountdown();          // 立刻刷新倒计时
-    startTicker();              // 启动轮询/动画
-    await loadMyBets();
-  }
+  if (!data?.user) { alert('Please login first.'); location.href = './index.html'; return; }
+  currentUser = data.user;
+  emailEl.textContent = currentUser.email;
+  await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+  await loadBalance();
+  buildBetUI();
+  buildWheelSVG();
+  await fetchState();         // 首次拉状态
+  updateCountdown();          // 立刻刷新倒计时
+  startTicker();              // 启动轮询/动画
+  await loadMyBets();
 });
 
 async function loadBalance(){
   const { data } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
-  balanceEl.textContent = data?.balance || 0;
+  balanceEl.textContent = data?.balance ?? 0;
 }
 
 /* ===== 下注 UI ===== */
@@ -376,66 +426,79 @@ function settleToIndex(targetIndex){
   requestAnimationFrame(step);
 }
 
-/* ===== 倒计时 & 结果（完全以服务器为准） ===== */
+/* ===== 倒计时 & 结果（以服务器为准，带降级） ===== */
 function updateCountdown(){
   if (!endTimeMs) { countEl.textContent = '—'; return; }
   const left = Math.max(0, Math.floor((endTimeMs - serverNowMs())/1000));
   countEl.textContent = `${left}s`;
-  // 更新按钮可用态
-  if (STATE && STATE.locked) { betBtn.disabled = true; betBtn.textContent = 'Bet Closed'; }
-  else { betBtn.disabled = false; betBtn.textContent = 'Submit Bet'; }
+  if (STATE && (STATE.locked || (STATE.lock_time && serverNowMs() >= new Date(STATE.lock_time).getTime()))) {
+    betBtn.disabled = true; betBtn.textContent = 'Bet Closed';
+  } else {
+    betBtn.disabled = false; betBtn.textContent = 'Submit Bet';
+  }
 }
 
 async function tick(){
-  const ok = await fetchState();       // 每次都以服务器为准
+  const ok = await fetchState();
   if (!ok) return;
 
   // 到期前预转
   const left = Math.max(0, Math.floor((endTimeMs - serverNowMs())/1000));
   updateCountdown();
-  if (left <= PRE_SPIN_SEC) startRolling(STATE.last_round || 'prev');
+  if (left <= PRE_SPIN_SEC) startRolling(STATE.current_round);
   else stopRolling();
 
-  // 如果上一期新结算了，就展示并收尾
-  if (STATE.last_round && shownPrevRound !== STATE.last_round && STATE.last_result_index != null){
-    settleToIndex(STATE.last_result_index);
-    winBanner.textContent = `WIN — ${STATE.last_result_number} • ${STATE.last_result_multiplier}×`;
-    winBanner.classList.add('show');
-    shownPrevRound = STATE.last_round;
-    // 新回合开始时刷新余额与下注列表
-    await loadBalance();
-    await loadMyBets();
+  // 最近已结算结果（按期号倒序取 1 条）
+  const { data: lastRow } = await supabase
+    .from('wheel_rounds')
+    .select('round_number, result_index, result_number, result_multiplier')
+    .not('result_index','is',null)
+    .order('round_number', { ascending:false })
+    .limit(1)
+    .maybeSingle();
+
+  if (lastRow && lastRow.result_index != null) {
+    prevEl.textContent = `${lastRow.result_number} (${lastRow.result_multiplier}×)`;
+    if (shownPrevRound !== lastRow.round_number) {
+      settleToIndex(lastRow.result_index);
+      winBanner.textContent = `WIN — ${lastRow.result_number} • ${lastRow.result_multiplier}×`;
+      winBanner.classList.add('show');
+      shownPrevRound = lastRow.round_number;
+      await loadBalance();
+      await loadMyBets();
+    }
   }
 }
 
 function startTicker(){
-  // 快速本地刷新倒计时，降低抖动
-  setInterval(updateCountdown, 250);
-  // 服务器状态节流刷新
-  setInterval(tick, 1500);
+  setInterval(updateCountdown, 250); // 快速更新倒计时
+  setInterval(tick, 1500);           // 服务器状态与结果
 }
 
-/* ===== 最近下注 ===== */
+/* ===== 最近下注（自适应有参/无参） ===== */
 async function loadMyBets(){
   if (!currentUser) return;
-  const { data, error } = await supabase.rpc('wheel_my_last_bets', {
-    _user_id: currentUser.id,
-    _limit: 10
-  });
+  // 先试 p_limit 版本
+  let res = await supabase.rpc('wheel_my_last_bets', { p_limit: 10 });
+  if (res.error) {
+    // 再试无参数版本
+    res = await supabase.rpc('wheel_my_last_bets');
+  }
+  const error = res.error;
+  const bets = res.data || [];
   if (error) {
     console.error('loadMyBets error:', error);
     betsTbody.innerHTML = `<tr><td colspan="6" class="muted">Load failed.</td></tr>`;
     return;
   }
-  const bets = data || [];
   betsTbody.innerHTML = bets.length ? bets.map(b=>{
     const betLabel = b.bet_type === 'range'
       ? (b.pick === 0 ? 'Small 3–10 ×1.9' : 'Big 11–18 ×1.9')
       : (b.bet_type === 'number' ? `${b.pick} ×${ODDS_MAP.get(b.pick)}` : `${b.multiplier}×`);
     const resLabel = b.result_number ? `${b.result_number} (${b.result_multiplier}×)` : '—';
-    const round = String(b.round_number||'').slice(0,12); // 保险：只显示12位
+    const rn = String(b.round_number||'').slice(0,12);
     return `<tr>
-      <td>${round}</td>
+      <td>${rn}</td>
       <td>${betLabel}</td>
       <td>₹${Number(b.amount).toFixed(2)}</td>
       <td>${resLabel}</td>
@@ -445,7 +508,7 @@ async function loadMyBets(){
   }).join('') : `<tr><td colspan="6" class="muted">No recent bets.</td></tr>`;
 }
 
-/* ===== 下单（先向服务器确认未锁盘，再下单） ===== */
+/* ===== 下单（严格用服务器锁盘判断；修正参数名） ===== */
 let placing = false;
 betBtn.onclick = async () => {
   if (!currentUser) { alert('Please login first'); return; }
@@ -454,7 +517,7 @@ betBtn.onclick = async () => {
   let bet_type = null, pick = null, odds = null;
   if (selectedRange){
     bet_type = 'range';
-    pick = (selectedRange === 'small') ? 0 : 1; // 0=small,1=big
+    pick = (selectedRange === 'small') ? 0 : 1; // 0=small 3-10, 1=big 11-18
     odds = 1.9;
   } else if (selectedNumber != null){
     bet_type = 'number';
@@ -468,10 +531,11 @@ betBtn.onclick = async () => {
   const amount = Number(betAmountEl.value);
   if (!Number.isFinite(amount) || amount <= 0) { alert('Enter amount'); return; }
 
-  // 下单前硬校验：以服务器为准
+  // 下单前：以服务器状态硬校验锁盘
   await fetchState();
-  if (!STATE){ alert('Network busy, try again.'); return; }
-  if (STATE.locked){ alert('Bet closed'); return; }
+  if (STATE && (STATE.locked || (STATE.lock_time && serverNowMs() >= new Date(STATE.lock_time).getTime()))) {
+    alert('Bet closed'); return;
+  }
 
   placing = true;
   const oldText = betBtn.innerText;
@@ -479,20 +543,19 @@ betBtn.onclick = async () => {
   betBtn.innerText = 'Placing...';
 
   try {
+    // 关键：参数名换为后端签名（不带下划线）
     const { error } = await supabase.rpc('wheel_place_bet_ist', {
-      _user_id: currentUser.id,
-      _email: currentUser.email,
-      _multiplier: odds,   // 保持你的后端签名；倍率按前端映射传入
-      _amount: amount,
-      _bet_type: bet_type,
-      _pick: pick
+      bet_type,         // 'number' | 'range'
+      pick,             // 3..18 或 0/1
+      amount,           // 金额
+      multiplier: odds  // 赔率
     });
 
     if (error) {
-      const msg = String(error.message || '');
-      if (msg.toLowerCase().includes('insufficient')) alert('Insufficient balance');
-      else if (msg.toLowerCase().includes('locked') || msg.toLowerCase().includes('closed')) alert('Bet closed');
-      else alert('Bet failed: ' + msg);
+      const msg = String(error.message || '').toLowerCase();
+      if (msg.includes('insufficient')) alert('Insufficient balance');
+      else if (msg.includes('locked') || msg.includes('closed')) alert('Bet closed');
+      else alert('Bet failed: ' + (error.message || ''));
       await fetchState();
       return;
     }
