@@ -92,7 +92,8 @@
           <button id="logout-btn" class="btn secondary">Logout</button>
         </div>
       </div>
-      <div class="muted" style="margin-top:8px">* Bets close in the last 10 seconds of each 2-minute round (IST).</div>
+      <!-- 修改文案：10s -> 30s -->
+      <div class="muted" style="margin-top:8px">* Bets close in the last 30 seconds of each 2-minute round (IST).</div>
     </div>
 
     <div class="card">
@@ -183,7 +184,8 @@ const TEXT_BY_ODDS = new Map([
   [8,'#0b5ed7'],  [7,'#3b4a66']
 ]);
 
-const CLOSE_BUFFER = 10;         // 封盘缓冲
+// 修改：封盘时间由 10s -> 30s
+const CLOSE_BUFFER = 30;         // 封盘缓冲（最后 30 秒不能下注）
 const PRE_SPIN_SEC  = 5;         // 到期前 N 秒开始匀速转
 const FETCH_MS      = 1000;      // 轮询数据库间隔
 const SETTLE_MS     = 1500;      // 收尾动画时长
@@ -428,7 +430,7 @@ function startTicker(){
     const remaining = secondsToBucketEnd(now);
     countEl.textContent = `${remaining}s`;
 
-    // 按钮开关
+    // 按钮开关（30 秒封盘）
     if (remaining <= CLOSE_BUFFER) {
       betBtn.disabled = true; betBtn.textContent = 'Bet Closed';
     } else {
@@ -489,6 +491,13 @@ let placing = false;
 betBtn.onclick = async () => {
   if (!currentUser) { alert('Please login first'); return; }
   if (placing) return;
+
+  // 新增：点击时再次校验是否处于封盘的最后 30 秒
+  const remainingNow = secondsToBucketEnd(getIST());
+  if (remainingNow <= CLOSE_BUFFER) {
+    alert('Bet closed');
+    return;
+  }
 
   let bet_type = null, pick = null, odds = null;
   if (selectedRange){
