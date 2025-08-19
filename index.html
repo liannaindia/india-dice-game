@@ -75,6 +75,15 @@
       padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
       color:#b45309;font-weight:700;font-size:12px
     }
+
+    /* 记录表格 */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid var(--line);font-size:14px}
+    th{background:#fafafa;text-align:left}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
+    .tag.pending{background:#fff7ed;color:#b45309;border-color:#fed7aa}
+    .tag.approved{background:#ecfdf5;color:#065f46;border-color:#bbf7d0}
+    .tag.rejected{background:#fef2f2;color:#991b1b;border-color:#fecaca}
   </style>
 </head>
 <body>
@@ -102,6 +111,8 @@
           <div class="quick">
             <button id="open-deposit" class="btn primary">Deposit</button>
             <button id="open-withdraw" class="btn">Withdraw</button>
+            <!-- 新增：修改密码按钮 -->
+            <button id="open-chpass" class="btn ghost">Change Password</button>
           </div>
         </div>
         <div class="balance">
@@ -112,18 +123,73 @@
       </div>
     </div>
 
+    <!-- 新增：我的记录（最近 3 天） -->
+    <div class="card" id="history-card" style="margin-top:14px; display:none;">
+      <div class="inner">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="font-weight:800">📒 My Records (Last 3 Days)</div>
+          <div class="muted" id="history-range-tip">Showing recent 3 days</div>
+        </div>
+
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr;gap:16px">
+          <!-- 存款记录 -->
+          <div>
+            <div style="font-weight:700;margin:6px 0 8px 0">Deposits</div>
+            <div class="card" style="border-radius:12px">
+              <div class="inner" style="padding:0">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>UTR</th>
+                      <th>Amount (₹)</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="deposits-tbody">
+                    <tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 提款记录 -->
+          <div>
+            <div style="font-weight:700;margin:6px 0 8px 0">Withdrawals</div>
+            <div class="card" style="border-radius:12px">
+              <div class="inner" style="padding:0">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Amount (₹)</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="withdrawals-tbody">
+                    <tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <!-- 游戏区 -->
-    <div class="card">
+    <div class="card" style="margin-top:14px">
       <div class="inner">
         <div style="font-weight:800;margin-bottom:10px">🎮 Select a Game</div>
           <div class="game">
-  <div class="thumb">🎡</div>
-  <div class="title">Mini Wheel</div>
-  <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
-  <a class="btn primary" href="./mini-wheel.html">Play</a>
-</div> 
+            <div class="thumb">🎡</div>
+            <div class="title">Mini Wheel</div>
+            <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
+            <a class="btn primary" href="./mini-wheel.html">Play</a>
+          </div>
 
-      
         <div class="games">
           <div class="game">
             <div class="thumb">🎲</div>
@@ -131,15 +197,13 @@
             <div class="desc">Bet on Big/Small or exact number. Results every minute (IST).</div>
             <a class="btn primary" href="./dice.html">Play</a>
           </div>
-          <!-- 放在 Lucky Dice 那张卡片旁边 -->
-<div class="game">
-  <div class="thumb">🃏</div>
-  <div class="title">Andar Bahar</div>
-  <div class="desc">Bet on Andar or Bahar. Result every minute (IST).</div>
-  <a class="btn primary" href="./ab.html">Play</a>
-</div> 
 
-       
+          <div class="game">
+            <div class="thumb">🃏</div>
+            <div class="title">Andar Bahar</div>
+            <div class="desc">Bet on Andar or Bahar. Result every minute (IST).</div>
+            <a class="btn primary" href="./ab.html">Play</a>
+          </div>
 
           <div class="game">
             <div class="thumb">🧧</div>
@@ -232,6 +296,25 @@
     </div>
   </div>
 
+  <!-- 新增：修改密码 Modal -->
+  <div id="chpass-modal" class="modal-bg">
+    <div class="modal">
+      <header>Change Password</header>
+      <div class="body">
+        <div class="form">
+          <input id="old-pass" type="password" placeholder="Current Password" />
+          <input id="new-pass" type="password" placeholder="New Password (min 6 chars)" />
+          <input id="new-pass2" type="password" placeholder="Confirm New Password" />
+          <div class="muted">We will verify your current password before updating.</div>
+        </div>
+      </div>
+      <footer>
+        <button id="chpass-cancel" class="btn">Cancel</button>
+        <button id="chpass-submit" class="btn primary">Update Password</button>
+      </footer>
+    </div>
+  </div>
+
   <script type="module">
     import { supabase } from './supabase-config.js';
 
@@ -239,6 +322,13 @@
     const show = (el,on=true)=> el.style.display = on ? 'flex' : 'none';
     const toast = (m)=>alert(m);
     const fmt2 = (n)=> Number(n ?? 0).toFixed(2);
+    const fmtTime = (iso)=> {
+      try{
+        const d = new Date(iso);
+        // 显示本地时间 YYYY-MM-DD HH:mm
+        return d.toLocaleString(undefined,{ year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+      }catch{ return iso || '—'; }
+    };
 
     const openLogin = $('open-login');
     const logoutBtn = $('logout-btn');
@@ -257,6 +347,18 @@
           wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
           wdAmount = $('wd-amount'), wdSave = $('wd-save'), rolloverVal = $('rollover-val');
 
+    // 新增：记录区元素
+    const historyCard = $('history-card');
+    const depositsTbody = $('deposits-tbody');
+    const withdrawalsTbody = $('withdrawals-tbody');
+
+    // 新增：修改密码
+    const openChpass = $('open-chpass');
+    const chpassModal = $('chpass-modal');
+    const chpassCancel = $('chpass-cancel');
+    const chpassSubmit = $('chpass-submit');
+    const oldPass = $('old-pass'), newPass = $('new-pass'), newPass2 = $('new-pass2');
+
     $('open-deposit').onclick = async()=>{ await loadBankInfoIntoDeposit(); show(depModal,true); };
     $('open-withdraw').onclick = async()=>{ await loadWithdrawProfileIntoModal(); show(wdModal,true); };
     openLogin.onclick = ()=> show(loginModal,true);
@@ -264,10 +366,15 @@
     depCancel.onclick = ()=> show(depModal,false);
     wdCancel.onclick = ()=> show(wdModal,false);
 
+    // 打开/关闭修改密码
+    openChpass.onclick = ()=> show(chpassModal, true);
+    chpassCancel.onclick = ()=> show(chpassModal, false);
+
     let currentUser = null;
     function setAuthUI(loggedIn){
       $('open-login').style.display = loggedIn ? 'none' : '';
       logoutBtn.style.display = loggedIn ? '' : 'none';
+      historyCard.style.display = loggedIn ? '' : 'none'; // 登录后显示记录卡
     }
 
     // 登录/注册
@@ -290,6 +397,9 @@
     logoutBtn.onclick = async ()=>{
       await supabase.auth.signOut();
       currentUser = null; userEmail.textContent = '—'; balanceEl.textContent = '0'; vipBadge.textContent='VIP 0'; setAuthUI(false);
+      // 清空记录表
+      depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>`;
+      withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>`;
     };
 
     async function afterLogin(){
@@ -297,6 +407,7 @@
       userEmail.textContent = currentUser.email || '—';
       await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
       await refreshUserSummary();
+      await loadRecentRecords(); // 登录后加载最近 3 天记录
     }
     async function refreshUserSummary(){
       const { data } = await supabase.from('users')
@@ -340,6 +451,7 @@
       if (error) return toast('Submit failed: ' + error.message);
       show(depModal,false);
       toast('✅ Recharge request submitted.');
+      await loadRecentRecords(); // 刚提交后刷新列表
     };
 
     wdSave.onclick = async ()=>{
@@ -381,6 +493,85 @@
 
       show(wdModal,false);
       toast('✅ Withdraw request submitted.');
+      await loadRecentRecords(); // 刚提交后刷新列表
+    };
+
+    // 新增：加载最近 3 天存提记录
+    async function loadRecentRecords(){
+      if(!currentUser){ return; }
+      const since = new Date(Date.now() - 3*24*60*60*1000).toISOString();
+
+      // 存款记录：recharge_requests
+      const { data: dep, error: depErr } = await supabase
+        .from('recharge_requests')
+        .select('created_at, utr, amount, status')
+        .eq('user_id', currentUser.id)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (depErr) {
+        depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">Load failed: ${depErr.message}</td></tr>`;
+      } else if (!dep || dep.length === 0){
+        depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
+      } else {
+        depositsTbody.innerHTML = dep.map(r => `
+          <tr>
+            <td>${fmtTime(r.created_at)}</td>
+            <td>${r.utr ?? '—'}</td>
+            <td>${fmt2(r.amount)}</td>
+            <td><span class="tag ${String(r.status).toLowerCase()}">${r.status}</span></td>
+          </tr>
+        `).join('');
+      }
+
+      // 提款记录：withdraw_requests
+      const { data: wd, error: wdErr } = await supabase
+        .from('withdraw_requests')
+        .select('created_at, amount, status')
+        .eq('user_id', currentUser.id)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (wdErr) {
+        withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">Load failed: ${wdErr.message}</td></tr>`;
+      } else if (!wd || wd.length === 0){
+        withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
+      } else {
+        withdrawalsTbody.innerHTML = wd.map(r => `
+          <tr>
+            <td>${fmtTime(r.created_at)}</td>
+            <td>${fmt2(r.amount)}</td>
+            <td><span class="tag ${String(r.status).toLowerCase()}">${r.status}</span></td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // 新增：修改密码提交逻辑
+    chpassSubmit.onclick = async ()=>{
+      try{
+        if (!currentUser) return toast('Please login first');
+        const email = currentUser.email;
+        const oldP = oldPass.value, np = newPass.value, np2 = newPass2.value;
+        if (!oldP || !np || !np2) return toast('Fill all fields');
+        if (np.length < 6) return toast('New password must be at least 6 characters');
+        if (np !== np2) return toast('New passwords do not match');
+
+        // 先校验旧密码
+        const { error: reauthErr } = await supabase.auth.signInWithPassword({ email, password: oldP });
+        if (reauthErr) return toast('Current password is incorrect');
+
+        // 更新新密码
+        const { error: updErr } = await supabase.auth.updateUser({ password: np });
+        if (updErr) return toast('Update failed: ' + updErr.message);
+
+        // 清空输入并关闭
+        oldPass.value = newPass.value = newPass2.value = '';
+        show(chpassModal, false);
+        toast('✅ Password updated');
+      }catch(e){
+        toast('Update failed: ' + (e?.message || e));
+      }
     };
 
     (async ()=>{
