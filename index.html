@@ -8,171 +8,84 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#0b1220;              /* 深色底更能衬托亮色卡片 */
-      --bg2:#0e152b;
-      --card:rgba(255,255,255,.9);
-      --text:#0f172a;
-      --muted:#64748b;
-      --line:rgba(15,23,42,.08);
-      --primary:#ff6f00;
-      --primary-press:#e65f00;
-      --green:#16a34a;
-      --blue:#2563eb;
-      --radius:18px;
-      --shadow:0 20px 60px rgba(0,0,0,.22);
-      --glass:backdrop-filter:saturate(160%) blur(14px);
-      --ring:0 0 0 3px rgba(255,111,0,.18), 0 10px 30px rgba(255,111,0,.28);
+      --bg:#f6f9fc; --card:#fff; --text:#0f172a; --muted:#64748b;
+      --line:#e2e8f0; --primary:#ff6f00; --primary-press:#e65f00;
+      --green:#16a34a; --blue:#2563eb; --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial; color:var(--text);
       background:
-        radial-gradient(1200px 700px at 100% -10%, #1b2b59 0%, transparent 60%),
-        radial-gradient(1200px 700px at -10% 0%, #2a3b1f 0%, transparent 55%),
-        linear-gradient(180deg,var(--bg),var(--bg2));
+        radial-gradient(900px 450px at 100% -10%, #ffe7c6 0%, transparent 60%),
+        radial-gradient(900px 450px at -10% 0%, #e0f2ff 0%, transparent 55%),
+        #f6f9fc;
     }
 
-    /* 顶部条：玻璃+渐变边框 */
-    .nav{
-      position:sticky; top:0; z-index:50; border-bottom:1px solid rgba(255,255,255,.06);
-      background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));
-      --glass; -webkit-backdrop-filter:saturate(160%) blur(14px); backdrop-filter:saturate(160%) blur(14px);
-    }
-    .nav-inner{max-width:1180px; margin:0 auto; padding:12px 18px;
+    .nav{position:sticky; top:0; z-index:50; backdrop-filter:saturate(160%) blur(12px);
+      background:rgba(246,249,252,.85); border-bottom:1px solid var(--line);}
+    .nav-inner{max-width:1080px; margin:0 auto; padding:12px 16px;
       display:flex; align-items:center; justify-content:space-between; gap:12px;}
-    .brand{display:flex; align-items:center; gap:12px; font-weight:800; color:#fff}
-    .logo{
-      width:40px;height:40px;border-radius:14px;display:grid;place-items:center;
-      background:conic-gradient(from 180deg, #ffd5a1, #fff,#ffe6c1,#ffd5a1);
-      border:1px solid rgba(255,255,255,.5); box-shadow:inset 0 1px 0 #fff, 0 6px 20px rgba(0,0,0,.25)
-    }
-    .actions{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{
-      display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 16px;
-      border-radius:14px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);cursor:pointer;
-      font-weight:700;color:#fff;letter-spacing:.2px; transition:all .18s ease;
-    }
-    .btn:hover{ transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,0,0,.28) }
-    .btn.primary{background:linear-gradient(180deg,#ff7f1a,#ff6f00); border:0; box-shadow:var(--ring)}
-    .btn.primary:active{transform:translateY(0); filter:saturate(1.1)}
-    .btn.ghost{background:rgba(255,255,255,.1)}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800;}
+    .logo{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;
+      border:1px solid #ffd7aa; background:linear-gradient(135deg,#ffe2bd,#fff); box-shadow:inset 0 1px 0 #fff}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 14px;
+      border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700}
+    .btn.primary{background:var(--primary);color:#fff;border:0}
+    .btn.primary:active{background:var(--primary-press)}
+    .btn.ghost{background:#fff}
     a.btn{text-decoration:none;color:inherit}
 
-    .hero{
-      position:relative; overflow:hidden;
-      max-width:1180px;margin:18px auto 0 auto;padding:18px;
-    }
-    .hero-inner{
-      border-radius:22px; padding:26px 24px; display:grid; grid-template-columns:1.1fr .9fr; gap:18px;
-      background:
-        radial-gradient(800px 380px at 0% 10%, rgba(255,255,255,.94) 0%, rgba(255,255,255,.9) 60%, rgba(255,255,255,.86) 100%),
-        url('https://images.unsplash.com/photo-1603297631959-9a4a8e2a3a4b?q=80&w=2400&auto=format&fit=crop') center/cover no-repeat;
-      border:1px solid rgba(255,255,255,.5); box-shadow:var(--shadow)
-    }
-    .hero h1{margin:4px 0 6px 0; font-size:28px; letter-spacing:.2px}
-    .hero p{margin:0; color:#475569}
-    .hero .cta{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
-
-    .wrap{max-width:1180px;margin:18px auto;padding:0 18px}
-    .card{
-      background:rgba(255,255,255,.92); border:1px solid rgba(15,23,42,.06);
-      border-radius:var(--radius); box-shadow:var(--shadow)
-    }
+    .wrap{max-width:1080px;margin:0 auto;padding:16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
     .inner{padding:16px}
 
     .user{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
-    .hello{font-size:13px;color:#64748b}
-    .balance{
-      font-weight:800;color:#22c55e;font-size:24px;display:flex;align-items:center;gap:10px;
-      text-shadow:0 1px 0 rgba(255,255,255,.8)
-    }
-    .balance .shine{
-      position:relative; padding:6px 10px; border-radius:12px;
-      background:linear-gradient(180deg,#ecffe8,#f6fff5);
-      box-shadow:inset 0 1px 0 #fff, 0 6px 20px rgba(16,185,129,.18);
-    }
-    .quick{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-
-    .games{display:grid;gap:16px;grid-template-columns:1fr}
-    @media(min-width:760px){ .games{grid-template-columns:repeat(3,1fr)} }
-    .game{
-      display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:16px;
+    .hello{font-size:13px;color:var(--muted)}
+    .balance{font-weight:800;color:var(--green);font-size:22px;display:flex;align-items:center;gap:10px}
+    .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .games{display:grid;gap:14px;grid-template-columns:1fr}
+    @media(min-width:700px){ .games{grid-template-columns:repeat(3,1fr)} }
+    .game{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;
       background:linear-gradient(180deg,#ffffff,#fffef9);border:1px solid var(--line);
-      transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-    }
-    .game:hover{ transform:translateY(-3px); box-shadow:0 14px 28px rgba(0,0,0,.08); border-color:#ffe4c7 }
-    .thumb{
-      height:130px;border-radius:14px;background:
-        radial-gradient(120px 80px at 30% 20%, #fff 0%, #ffe7c6 60%, #ffd9a6 100%);
-      border:1px solid #ffe4c7;display:grid;place-items:center;font-size:46px
-    }
+      transition:transform .15s ease, box-shadow .15s ease;}
+    .game:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.06); }
+    .thumb{height:120px;border-radius:12px;background:linear-gradient(135deg,#ffedd5,#fff);
+      border:1px solid #ffe4c7;display:grid;place-items:center;font-size:46px}
     .title{font-weight:800}
-    .desc{color:#61708c;font-size:13px}
+    .desc{color:var(--muted);font-size:13px}
     .game .btn{width:100%; margin-top:auto}
 
-    /* Modal 玻璃风 */
-    .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.42);z-index:100}
-    .modal{
-      width:min(96vw,760px);
-      background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.92));
-      border-radius:20px;border:1px solid rgba(15,23,42,.08);box-shadow:var(--shadow)
-    }
-    .modal header{padding:14px 18px;border-bottom:1px solid rgba(15,23,42,.06);font-weight:800}
+    .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.3);z-index:100}
+    .modal{width:min(96vw,720px);background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .modal header{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:800}
     .modal .body{padding:16px}
-    .modal footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 18px;border-top:1px solid rgba(15,23,42,.06)}
+    .modal footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
     .form{display:grid;gap:10px}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    input{
-      width:100%;height:46px;border-radius:12px;border:1px solid #e8eef6;padding:0 12px;font-size:15px;background:#fff;
-      transition:border-color .15s ease, box-shadow .15s ease
-    }
-    input:focus{outline:none;border-color:#cbd5e1; box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-    .muted{color:#64748b}
-    .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed #e8eef6;border-radius:12px;background:#fcfdff}
-    .kv .k{color:#7a8aa6} .kv .v{font-weight:700}
+    input{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);padding:0 12px;font-size:15px;background:#fff}
+    .muted{color:var(--muted)}
+    .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed var(--line);border-radius:12px}
+    .kv .k{color:var(--muted)} .kv .v{font-weight:700}
 
-    /* VIP 徽章 */
-    .vip-badge{
-      display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
-      color:#b45309;font-weight:700;font-size:12px; box-shadow:inset 0 1px 0 #fff
-    }
-
-    /* 表格优化：斑马纹 + 圆角表身 */
-    table{width:100%;border-collapse:separate;border-spacing:0 0}
-    thead th{padding:12px;border-bottom:1px solid #eef2f7;background:#fafbfd;text-align:left;font-weight:700}
-    tbody td{padding:12px;border-bottom:1px solid #eef2f7}
-    tbody tr:nth-child(odd){background:#fff}
-    tbody tr:nth-child(even){background:#fcfdff}
-    .tag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid var(--line);font-size:14px}
+    th{background:#fafafa;text-align:left}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
     .tag.pending{background:#fff7ed;color:#b45309;border-color:#fed7aa}
     .tag.approved{background:#ecfdf5;color:#065f46;border-color:#bbf7d0}
     .tag.rejected{background:#fef2f2;color:#991b1b;border-color:#fecaca}
 
-    /* 小提示条 */
-    .tipbar{
-      margin-top:10px;padding:10px 12px;border:1px dashed #e8eef6;border-radius:12px;background:#fcfdff;color:#64748b;font-size:13px
+    /* VIP 徽章 */
+    .vip-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
+      color:#b45309;font-weight:700;font-size:12px
     }
   </style>
 </head>
 <body>
-  <!-- 顶部 Hero 宣传区（可删） -->
-  <div class="hero">
-    <div class="hero-inner">
-      <div>
-        <div class="vip-badge">🎉 Welcome</div>
-        <h1>Ganeshcasino Game Lobby</h1>
-        <p>Play India-style classics with synchronized rounds and secure wallet.</p>
-        <div class="cta">
-          <a class="btn primary" href="./mini-wheel.html">Start Mini Wheel</a>
-          <a class="btn ghost" href="https://t.me/customerservice7777777" target="_blank">💬 Customer Service</a>
-        </div>
-      </div>
-      <div class="tipbar">💡 Tip: Deposit, Withdraw, My Records and Change Password are in the user panel below after login.</div>
-    </div>
-  </div>
-
-  <!-- 顶部导航（保持原交互） -->
   <div class="nav">
     <div class="nav-inner">
       <div class="brand">
@@ -193,34 +106,35 @@
       <div class="inner user">
         <div>
           <div class="hello">Logged in as</div>
-          <div id="user-email" style="font-weight:800;color:#0b1220">—</div>
+          <div id="user-email" style="font-weight:800">—</div>
           <div class="quick">
             <button id="open-deposit" class="btn primary">Deposit</button>
             <button id="open-withdraw" class="btn">Withdraw</button>
+            <!-- 新增：My Records 按钮（放在 Change Password 前面） -->
             <button id="open-history" class="btn">My Records</button>
             <button id="open-chpass" class="btn ghost">Change Password</button>
           </div>
         </div>
         <div class="balance">
-          <span class="shine">₹<span id="balance">0</span></span>
+          ₹<span id="balance">0</span>
+          <!-- VIP 徽章 -->
           <span id="vip-badge" class="vip-badge" title="VIP Level">VIP 0</span>
         </div>
       </div>
     </div>
 
     <!-- 游戏区 -->
-    <div class="card" style="margin-top:18px">
+    <div class="card" style="margin-top:14px">
       <div class="inner">
-        <div style="font-weight:800;margin-bottom:12px">🎮 Select a Game</div>
+        <div style="font-weight:800;margin-bottom:10px">🎮 Select a Game</div>
+        <div class="game">
+          <div class="thumb">🎡</div>
+          <div class="title">Mini Wheel</div>
+          <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
+          <a class="btn primary" href="./mini-wheel.html">Play</a>
+        </div>
 
         <div class="games">
-          <div class="game">
-            <div class="thumb">🎡</div>
-            <div class="title">Mini Wheel</div>
-            <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
-            <a class="btn primary" href="./mini-wheel.html">Play</a>
-          </div>
-
           <div class="game">
             <div class="thumb">🎲</div>
             <div class="title">Lucky Dice</div>
@@ -241,19 +155,11 @@
             <div class="desc">More India-style games are on the way.</div>
             <button class="btn" disabled>Stay tuned</button>
           </div>
-
           <div class="game">
             <div class="thumb">💎</div>
             <div class="title">Coming Soon</div>
             <div class="desc">Unlock new experiences for your players.</div>
             <button class="btn" disabled>Stay tuned</button>
-          </div>
-
-          <div class="game">
-            <div class="thumb">🎁</div>
-            <div class="title">Events & Offers</div>
-            <div class="desc">Festival bonuses & cashback promos.</div>
-            <button class="btn" disabled>Coming soon</button>
           </div>
         </div>
       </div>
@@ -304,7 +210,7 @@
     </div>
   </div>
 
-  <!-- 提款 Modal -->
+  <!-- 提款 Modal（含打码量显示） -->
   <div id="wd-modal" class="modal-bg">
     <div class="modal">
       <header>Withdraw</header>
@@ -334,36 +240,52 @@
     </div>
   </div>
 
-  <!-- My Records Modal -->
+  <!-- 新增：My Records Modal -->
   <div id="history-modal" class="modal-bg">
     <div class="modal">
       <header>My Records (Last 3 Days)</header>
       <div class="body">
         <div class="muted" style="margin-bottom:10px">Showing recent 3 days</div>
 
-        <div style="display:grid;grid-template-columns:1fr;gap:16px">
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr;gap:16px">
+          <!-- 存款记录 -->
           <div>
             <div style="font-weight:700;margin:6px 0 8px 0">Deposits</div>
-            <div class="card" style="border-radius:14px">
+            <div class="card" style="border-radius:12px">
               <div class="inner" style="padding:0">
                 <table>
                   <thead>
-                    <tr><th>Time</th><th>UTR</th><th>Amount (₹)</th><th>Status</th></tr>
+                    <tr>
+                      <th>Time</th>
+                      <th>UTR</th>
+                      <th>Amount (₹)</th>
+                      <th>Status</th>
+                    </tr>
                   </thead>
-                  <tbody id="deposits-tbody"><tr><td colspan="4" class="muted" style="padding:14px">—</td></tr></tbody>
+                  <tbody id="deposits-tbody">
+                    <tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>
+                  </tbody>
                 </table>
               </div>
             </div>
           </div>
+
+          <!-- 提款记录 -->
           <div>
             <div style="font-weight:700;margin:6px 0 8px 0">Withdrawals</div>
-            <div class="card" style="border-radius:14px">
+            <div class="card" style="border-radius:12px">
               <div class="inner" style="padding:0">
                 <table>
                   <thead>
-                    <tr><th>Time</th><th>Amount (₹)</th><th>Status</th></tr>
+                    <tr>
+                      <th>Time</th>
+                      <th>Amount (₹)</th>
+                      <th>Status</th>
+                    </tr>
                   </thead>
-                  <tbody id="withdrawals-tbody"><tr><td colspan="3" class="muted" style="padding:14px">—</td></tr></tbody>
+                  <tbody id="withdrawals-tbody">
+                    <tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>
+                  </tbody>
                 </table>
               </div>
             </div>
@@ -377,7 +299,7 @@
     </div>
   </div>
 
-  <!-- 修改密码 Modal -->
+  <!-- 新增：修改密码 Modal -->
   <div id="chpass-modal" class="modal-bg">
     <div class="modal">
       <header>Change Password</header>
@@ -398,41 +320,48 @@
 
   <script type="module">
     import { supabase } from './supabase-config.js';
+
     const $ = (id)=>document.getElementById(id);
     const show = (el,on=true)=> el.style.display = on ? 'flex' : 'none';
     const toast = (m)=>alert(m);
     const fmt2 = (n)=> Number(n ?? 0).toFixed(2);
-    const fmtTime = (iso)=>{ try{ const d=new Date(iso); return d.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch{return iso||'—';}};
+    const fmtTime = (iso)=> {
+      try{
+        const d = new Date(iso);
+        return d.toLocaleString(undefined,{ year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+      }catch{ return iso || '—'; }
+    };
 
-    // 顶部按钮
     const openLogin = $('open-login');
     const logoutBtn = $('logout-btn');
     const userEmail = $('user-email');
     const balanceEl = $('balance');
     const vipBadge  = $('vip-badge');
 
-    // 登录
     const loginModal = $('login-modal'), loginCancel = $('login-cancel'),
           signupBtn = $('signup-btn'), loginBtn = $('login-btn'),
           loginEmail = $('login-email'), loginPass = $('login-pass');
 
-    // 存款
     const depModal = $('dep-modal'), depCancel = $('dep-cancel'), depSubmit = $('dep-submit'),
           depUtr = $('dep-utr'), depAmount = $('dep-amount'), depBank = $('dep-bank');
 
-    // 提款
     const wdModal = $('wd-modal'), wdCancel = $('wd-cancel'), wdSubmit = $('wd-submit'),
           wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
           wdAmount = $('wd-amount'), wdSave = $('wd-save'), rolloverVal = $('rollover-val');
 
-    // 记录
-    const historyModal = $('history-modal'), historyOpen = $('open-history'), historyClose = $('history-close');
-    const depositsTbody = $('deposits-tbody'), withdrawalsTbody = $('withdrawals-tbody');
+    // My Records 弹窗元素
+    const historyModal = $('history-modal');
+    const historyOpen = $('open-history');
+    const historyClose = $('history-close');
+    const depositsTbody = $('deposits-tbody');
+    const withdrawalsTbody = $('withdrawals-tbody');
 
-    // 改密
-    const openChpass = $('open-chpass'), chpassModal = $('chpass-modal'),
-          chpassCancel = $('chpass-cancel'), chpassSubmit = $('chpass-submit'),
-          oldPass = $('old-pass'), newPass = $('new-pass'), newPass2 = $('new-pass2');
+    // 修改密码
+    const openChpass = $('open-chpass');
+    const chpassModal = $('chpass-modal');
+    const chpassCancel = $('chpass-cancel');
+    const chpassSubmit = $('chpass-submit');
+    const oldPass = $('old-pass'), newPass = $('new-pass'), newPass2 = $('new-pass2');
 
     $('open-deposit').onclick = async()=>{ await loadBankInfoIntoDeposit(); show(depModal,true); };
     $('open-withdraw').onclick = async()=>{ await loadWithdrawProfileIntoModal(); show(wdModal,true); };
@@ -441,9 +370,11 @@
     depCancel.onclick = ()=> show(depModal,false);
     wdCancel.onclick = ()=> show(wdModal,false);
 
+    // My Records 打开/关闭
     historyOpen.onclick = async ()=>{ await loadRecentRecords(); show(historyModal, true); };
     historyClose.onclick = ()=> show(historyModal, false);
 
+    // 打开/关闭修改密码
     openChpass.onclick = ()=> show(chpassModal, true);
     chpassCancel.onclick = ()=> show(chpassModal, false);
 
@@ -453,7 +384,7 @@
       logoutBtn.style.display = loggedIn ? '' : 'none';
     }
 
-    // 注册/登录/退出
+    // 登录/注册
     signupBtn.onclick = async ()=>{
       const email = loginEmail.value.trim(), pass = loginPass.value;
       if(!email || !pass) return toast('Enter email & password');
@@ -473,6 +404,7 @@
     logoutBtn.onclick = async ()=>{
       await supabase.auth.signOut();
       currentUser = null; userEmail.textContent = '—'; balanceEl.textContent = '0'; vipBadge.textContent='VIP 0'; setAuthUI(false);
+      // 清空记录表
       depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>`;
       withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>`;
     };
@@ -497,7 +429,7 @@
         ['Name', data?.name], ['AC', data?.ac], ['IFSC', data?.ifsc],
         ['UPI', data?.upi], ['Crypto', data?.crypto_address]
       ];
-      depBank.innerHTML = items.map(([k,v])=>`
+      document.getElementById('dep-bank').innerHTML = items.map(([k,v])=>`
         <div class="kv"><div class="k">${k}</div><div class="v">${v || '—'}</div></div>
       `).join('');
     }
@@ -506,18 +438,18 @@
       const { data } = await supabase.from('users')
         .select('name,ac,ifsc,upi,turnover_remaining')
         .eq('id', currentUser.id).single();
-      wName.value = data?.name || '';
-      wAc.value   = data?.ac || '';
-      wIfsc.value = data?.ifsc || '';
-      wUpi.value  = data?.upi || '';
-      wdAmount.value = '';
-      rolloverVal.textContent = fmt2(data?.turnover_remaining);
+      $('w-name').value = data?.name || '';
+      $('w-ac').value   = data?.ac || '';
+      $('w-ifsc').value = data?.ifsc || '';
+      $('w-upi').value  = data?.upi || '';
+      $('wd-amount').value = '';
+      $('rollover-val').textContent = fmt2(data?.turnover_remaining);
     }
 
     depSubmit.onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
-      const utr = depUtr.value.trim();
-      const amount = Number(depAmount.value);
+      const utr = $('dep-utr').value.trim();
+      const amount = Number($('dep-amount').value);
       if (!utr || !amount || amount <= 0) return toast('Enter UTR & amount');
       const { error } = await supabase.from('recharge_requests').insert([{
         user_id: currentUser.id, email: currentUser.email, utr, amount, status: 'pending'
@@ -525,12 +457,13 @@
       if (error) return toast('Submit failed: ' + error.message);
       show(depModal,false);
       toast('✅ Recharge request submitted.');
+      // 如果记录弹窗打开着，刷新
       if (historyModal.style.display === 'flex') await loadRecentRecords();
     };
 
-    wdSave.onclick = async ()=>{
+    $('wd-save').onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
-      const payload = { name:wName.value.trim(), ac:wAc.value.trim(), ifsc:wIfsc.value.trim(), upi:wUpi.value.trim() };
+      const payload = { name:$('w-name').value.trim(), ac:$('w-ac').value.trim(), ifsc:$('w-ifsc').value.trim(), upi:$('w-upi').value.trim() };
       if (!payload.name || !payload.ac || !payload.ifsc) return toast('Fill Name / AC / IFSC');
       const { error } = await supabase.from('users').update(payload).eq('id', currentUser.id);
       if (error) return toast('Save failed: ' + error.message);
@@ -539,10 +472,10 @@
 
     wdSubmit.onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
-      const amount = Number(wdAmount.value);
+      const amount = Number($('wd-amount').value);
       if (!amount || amount <= 0) return toast('Enter amount');
 
-      if (!wName.value.trim() || !wAc.value.trim() || !wIfsc.value.trim()) {
+      if (!$('w-name').value.trim() || !$('w-ac').value.trim() || !$('w-ifsc').value.trim()) {
         return toast('Please complete withdrawal profile (Name / AC / IFSC).');
       }
 
@@ -570,57 +503,63 @@
       if (historyModal.style.display === 'flex') await loadRecentRecords();
     };
 
+    // 加载最近 3 天存提记录（供弹窗使用）
     async function loadRecentRecords(){
-      if(!currentUser) return;
+      if(!currentUser){ return; }
       const since = new Date(Date.now() - 3*24*60*60*1000).toISOString();
 
+      // 存款记录：recharge_requests
       const { data: dep, error: depErr } = await supabase
         .from('recharge_requests')
         .select('created_at, utr, amount, status')
         .eq('user_id', currentUser.id)
         .gte('created_at', since)
-        .order('created_at', { ascending:false })
+        .order('created_at', { ascending: false })
         .limit(100);
       if (depErr) {
         depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">Load failed: ${depErr.message}</td></tr>`;
-      } else if (!dep || dep.length===0){
+      } else if (!dep || dep.length === 0){
         depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
       } else {
-        depositsTbody.innerHTML = dep.map(r=>`
+        depositsTbody.innerHTML = dep.map(r => `
           <tr>
             <td>${fmtTime(r.created_at)}</td>
             <td>${r.utr ?? '—'}</td>
             <td>${fmt2(r.amount)}</td>
             <td><span class="tag ${String(r.status).toLowerCase()}">${r.status}</span></td>
-          </tr>`).join('');
+          </tr>
+        `).join('');
       }
 
+      // 提款记录：withdraw_requests
       const { data: wd, error: wdErr } = await supabase
         .from('withdraw_requests')
         .select('created_at, amount, status')
         .eq('user_id', currentUser.id)
         .gte('created_at', since)
-        .order('created_at', { ascending:false })
+        .order('created_at', { ascending: false })
         .limit(100);
       if (wdErr) {
         withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">Load failed: ${wdErr.message}</td></tr>`;
-      } else if (!wd || wd.length===0){
+      } else if (!wd || wd.length === 0){
         withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
       } else {
-        withdrawalsTbody.innerHTML = wd.map(r=>`
+        withdrawalsTbody.innerHTML = wd.map(r => `
           <tr>
             <td>${fmtTime(r.created_at)}</td>
             <td>${fmt2(r.amount)}</td>
             <td><span class="tag ${String(r.status).toLowerCase()}">${r.status}</span></td>
-          </tr>`).join('');
+          </tr>
+        `).join('');
       }
     }
 
+    // 修改密码
     chpassSubmit.onclick = async ()=>{
       try{
         if (!currentUser) return toast('Please login first');
         const email = currentUser.email;
-        const oldP = oldPass.value, np = newPass.value, np2 = newPass2.value;
+        const oldP = $('old-pass').value, np = $('new-pass').value, np2 = $('new-pass2').value;
         if (!oldP || !np || !np2) return toast('Fill all fields');
         if (np.length < 6) return toast('New password must be at least 6 characters');
         if (np !== np2) return toast('New passwords do not match');
@@ -631,7 +570,7 @@
         const { error: updErr } = await supabase.auth.updateUser({ password: np });
         if (updErr) return toast('Update failed: ' + updErr.message);
 
-        oldPass.value = newPass.value = newPass2.value = '';
+        $('old-pass').value = $('new-pass').value = $('new-pass2').value = '';
         show(chpassModal, false);
         toast('✅ Password updated');
       }catch(e){
