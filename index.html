@@ -58,7 +58,7 @@
     .game .btn{width:100%; margin-top:auto}
 
     .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.3);z-index:100}
-    .modal{width:min(96vw,560px);background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .modal{width:min(96vw,720px);background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow)}
     .modal header{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:800}
     .modal .body{padding:16px}
     .modal footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
@@ -69,14 +69,6 @@
     .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed var(--line);border-radius:12px}
     .kv .k{color:var(--muted)} .kv .v{font-weight:700}
 
-    /* VIP 徽章 */
-    .vip-badge{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
-      color:#b45309;font-weight:700;font-size:12px
-    }
-
-    /* 记录表格 */
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px;border-bottom:1px solid var(--line);font-size:14px}
     th{background:#fafafa;text-align:left}
@@ -84,6 +76,13 @@
     .tag.pending{background:#fff7ed;color:#b45309;border-color:#fed7aa}
     .tag.approved{background:#ecfdf5;color:#065f46;border-color:#bbf7d0}
     .tag.rejected{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+
+    /* VIP 徽章 */
+    .vip-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
+      color:#b45309;font-weight:700;font-size:12px
+    }
   </style>
 </head>
 <body>
@@ -111,7 +110,8 @@
           <div class="quick">
             <button id="open-deposit" class="btn primary">Deposit</button>
             <button id="open-withdraw" class="btn">Withdraw</button>
-            <!-- 新增：修改密码按钮 -->
+            <!-- 新增：My Records 按钮（放在 Change Password 前面） -->
+            <button id="open-history" class="btn">My Records</button>
             <button id="open-chpass" class="btn ghost">Change Password</button>
           </div>
         </div>
@@ -123,72 +123,16 @@
       </div>
     </div>
 
-    <!-- 新增：我的记录（最近 3 天） -->
-    <div class="card" id="history-card" style="margin-top:14px; display:none;">
-      <div class="inner">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div style="font-weight:800">📒 My Records (Last 3 Days)</div>
-          <div class="muted" id="history-range-tip">Showing recent 3 days</div>
-        </div>
-
-        <div style="margin-top:12px;display:grid;grid-template-columns:1fr;gap:16px">
-          <!-- 存款记录 -->
-          <div>
-            <div style="font-weight:700;margin:6px 0 8px 0">Deposits</div>
-            <div class="card" style="border-radius:12px">
-              <div class="inner" style="padding:0">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>UTR</th>
-                      <th>Amount (₹)</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="deposits-tbody">
-                    <tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- 提款记录 -->
-          <div>
-            <div style="font-weight:700;margin:6px 0 8px 0">Withdrawals</div>
-            <div class="card" style="border-radius:12px">
-              <div class="inner" style="padding:0">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>Amount (₹)</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="withdrawals-tbody">
-                    <tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
     <!-- 游戏区 -->
     <div class="card" style="margin-top:14px">
       <div class="inner">
         <div style="font-weight:800;margin-bottom:10px">🎮 Select a Game</div>
-          <div class="game">
-            <div class="thumb">🎡</div>
-            <div class="title">Mini Wheel</div>
-            <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
-            <a class="btn primary" href="./mini-wheel.html">Play</a>
-          </div>
+        <div class="game">
+          <div class="thumb">🎡</div>
+          <div class="title">Mini Wheel</div>
+          <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
+          <a class="btn primary" href="./mini-wheel.html">Play</a>
+        </div>
 
         <div class="games">
           <div class="game">
@@ -296,6 +240,65 @@
     </div>
   </div>
 
+  <!-- 新增：My Records Modal -->
+  <div id="history-modal" class="modal-bg">
+    <div class="modal">
+      <header>My Records (Last 3 Days)</header>
+      <div class="body">
+        <div class="muted" style="margin-bottom:10px">Showing recent 3 days</div>
+
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr;gap:16px">
+          <!-- 存款记录 -->
+          <div>
+            <div style="font-weight:700;margin:6px 0 8px 0">Deposits</div>
+            <div class="card" style="border-radius:12px">
+              <div class="inner" style="padding:0">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>UTR</th>
+                      <th>Amount (₹)</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="deposits-tbody">
+                    <tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 提款记录 -->
+          <div>
+            <div style="font-weight:700;margin:6px 0 8px 0">Withdrawals</div>
+            <div class="card" style="border-radius:12px">
+              <div class="inner" style="padding:0">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Amount (₹)</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="withdrawals-tbody">
+                    <tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <footer>
+        <button id="history-close" class="btn">Close</button>
+      </footer>
+    </div>
+  </div>
+
   <!-- 新增：修改密码 Modal -->
   <div id="chpass-modal" class="modal-bg">
     <div class="modal">
@@ -325,7 +328,6 @@
     const fmtTime = (iso)=> {
       try{
         const d = new Date(iso);
-        // 显示本地时间 YYYY-MM-DD HH:mm
         return d.toLocaleString(undefined,{ year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
       }catch{ return iso || '—'; }
     };
@@ -347,12 +349,14 @@
           wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
           wdAmount = $('wd-amount'), wdSave = $('wd-save'), rolloverVal = $('rollover-val');
 
-    // 新增：记录区元素
-    const historyCard = $('history-card');
+    // My Records 弹窗元素
+    const historyModal = $('history-modal');
+    const historyOpen = $('open-history');
+    const historyClose = $('history-close');
     const depositsTbody = $('deposits-tbody');
     const withdrawalsTbody = $('withdrawals-tbody');
 
-    // 新增：修改密码
+    // 修改密码
     const openChpass = $('open-chpass');
     const chpassModal = $('chpass-modal');
     const chpassCancel = $('chpass-cancel');
@@ -366,6 +370,10 @@
     depCancel.onclick = ()=> show(depModal,false);
     wdCancel.onclick = ()=> show(wdModal,false);
 
+    // My Records 打开/关闭
+    historyOpen.onclick = async ()=>{ await loadRecentRecords(); show(historyModal, true); };
+    historyClose.onclick = ()=> show(historyModal, false);
+
     // 打开/关闭修改密码
     openChpass.onclick = ()=> show(chpassModal, true);
     chpassCancel.onclick = ()=> show(chpassModal, false);
@@ -374,7 +382,6 @@
     function setAuthUI(loggedIn){
       $('open-login').style.display = loggedIn ? 'none' : '';
       logoutBtn.style.display = loggedIn ? '' : 'none';
-      historyCard.style.display = loggedIn ? '' : 'none'; // 登录后显示记录卡
     }
 
     // 登录/注册
@@ -407,7 +414,6 @@
       userEmail.textContent = currentUser.email || '—';
       await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
       await refreshUserSummary();
-      await loadRecentRecords(); // 登录后加载最近 3 天记录
     }
     async function refreshUserSummary(){
       const { data } = await supabase.from('users')
@@ -423,7 +429,7 @@
         ['Name', data?.name], ['AC', data?.ac], ['IFSC', data?.ifsc],
         ['UPI', data?.upi], ['Crypto', data?.crypto_address]
       ];
-      depBank.innerHTML = items.map(([k,v])=>`
+      document.getElementById('dep-bank').innerHTML = items.map(([k,v])=>`
         <div class="kv"><div class="k">${k}</div><div class="v">${v || '—'}</div></div>
       `).join('');
     }
@@ -432,18 +438,18 @@
       const { data } = await supabase.from('users')
         .select('name,ac,ifsc,upi,turnover_remaining')
         .eq('id', currentUser.id).single();
-      wName.value = data?.name || '';
-      wAc.value   = data?.ac || '';
-      wIfsc.value = data?.ifsc || '';
-      wUpi.value  = data?.upi || '';
-      wdAmount.value = '';
-      rolloverVal.textContent = fmt2(data?.turnover_remaining);
+      $('w-name').value = data?.name || '';
+      $('w-ac').value   = data?.ac || '';
+      $('w-ifsc').value = data?.ifsc || '';
+      $('w-upi').value  = data?.upi || '';
+      $('wd-amount').value = '';
+      $('rollover-val').textContent = fmt2(data?.turnover_remaining);
     }
 
     depSubmit.onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
-      const utr = depUtr.value.trim();
-      const amount = Number(depAmount.value);
+      const utr = $('dep-utr').value.trim();
+      const amount = Number($('dep-amount').value);
       if (!utr || !amount || amount <= 0) return toast('Enter UTR & amount');
       const { error } = await supabase.from('recharge_requests').insert([{
         user_id: currentUser.id, email: currentUser.email, utr, amount, status: 'pending'
@@ -451,12 +457,13 @@
       if (error) return toast('Submit failed: ' + error.message);
       show(depModal,false);
       toast('✅ Recharge request submitted.');
-      await loadRecentRecords(); // 刚提交后刷新列表
+      // 如果记录弹窗打开着，刷新
+      if (historyModal.style.display === 'flex') await loadRecentRecords();
     };
 
-    wdSave.onclick = async ()=>{
+    $('wd-save').onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
-      const payload = { name:wName.value.trim(), ac:wAc.value.trim(), ifsc:wIfsc.value.trim(), upi:wUpi.value.trim() };
+      const payload = { name:$('w-name').value.trim(), ac:$('w-ac').value.trim(), ifsc:$('w-ifsc').value.trim(), upi:$('w-upi').value.trim() };
       if (!payload.name || !payload.ac || !payload.ifsc) return toast('Fill Name / AC / IFSC');
       const { error } = await supabase.from('users').update(payload).eq('id', currentUser.id);
       if (error) return toast('Save failed: ' + error.message);
@@ -465,10 +472,10 @@
 
     wdSubmit.onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
-      const amount = Number(wdAmount.value);
+      const amount = Number($('wd-amount').value);
       if (!amount || amount <= 0) return toast('Enter amount');
 
-      if (!wName.value.trim() || !wAc.value.trim() || !wIfsc.value.trim()) {
+      if (!$('w-name').value.trim() || !$('w-ac').value.trim() || !$('w-ifsc').value.trim()) {
         return toast('Please complete withdrawal profile (Name / AC / IFSC).');
       }
 
@@ -493,10 +500,10 @@
 
       show(wdModal,false);
       toast('✅ Withdraw request submitted.');
-      await loadRecentRecords(); // 刚提交后刷新列表
+      if (historyModal.style.display === 'flex') await loadRecentRecords();
     };
 
-    // 新增：加载最近 3 天存提记录
+    // 加载最近 3 天存提记录（供弹窗使用）
     async function loadRecentRecords(){
       if(!currentUser){ return; }
       const since = new Date(Date.now() - 3*24*60*60*1000).toISOString();
@@ -547,26 +554,23 @@
       }
     }
 
-    // 新增：修改密码提交逻辑
+    // 修改密码
     chpassSubmit.onclick = async ()=>{
       try{
         if (!currentUser) return toast('Please login first');
         const email = currentUser.email;
-        const oldP = oldPass.value, np = newPass.value, np2 = newPass2.value;
+        const oldP = $('old-pass').value, np = $('new-pass').value, np2 = $('new-pass2').value;
         if (!oldP || !np || !np2) return toast('Fill all fields');
         if (np.length < 6) return toast('New password must be at least 6 characters');
         if (np !== np2) return toast('New passwords do not match');
 
-        // 先校验旧密码
         const { error: reauthErr } = await supabase.auth.signInWithPassword({ email, password: oldP });
         if (reauthErr) return toast('Current password is incorrect');
 
-        // 更新新密码
         const { error: updErr } = await supabase.auth.updateUser({ password: np });
         if (updErr) return toast('Update failed: ' + updErr.message);
 
-        // 清空输入并关闭
-        oldPass.value = newPass.value = newPass2.value = '';
+        $('old-pass').value = $('new-pass').value = $('new-pass2').value = '';
         show(chpassModal, false);
         toast('✅ Password updated');
       }catch(e){
