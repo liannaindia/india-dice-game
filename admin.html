@@ -615,6 +615,7 @@
               <button style="width:auto" onclick="adjustBalance('${u.id}', 'add')">➕ Add</button>
               <button style="width:auto;background:#ef4444" onclick="adjustBalance('${u.id}', 'sub')">➖ Deduct</button>
               <button style="width:auto;background:#92400e" onclick="setVipLevel('${u.id}', ${Number(u.vip_level||0)})">⭐ Set VIP</button>
+              <button style="width:auto;background:#0ea5e9" onclick="adjustTurnover('${u.id}')">🔁 Turnover +/-</button>
             </div>
           </td>
         </tr>
@@ -662,7 +663,39 @@
 
       alert('Updated.'); loadUsers();
     };
+window.adjustTurnover = async (user_id) => {
+  // 1) 读入增减数：正数=增加，负数=减少
+  let val = prompt('Enter turnover delta (positive = increase, negative = decrease):');
+  if (val === null) return; // 用户取消
+  const delta = parseFloat(val);
+  if (!Number.isFinite(delta) || delta === 0) return alert('Invalid number');
 
+  // 2) 读取当前 turnover_remaining
+  const { data: urow, error: rerr } = await supabase
+    .from('users').select('turnover_remaining').eq('id', user_id).single();
+  if (rerr) return alert('Load user failed: ' + rerr.message);
+
+  const curr = Number(urow?.turnover_remaining || 0);
+  let next = curr + delta;
+
+  // 3) 不允许为负
+  if (next < 0) next = 0;
+
+  // 4) 二次确认
+  if (!confirm(`Confirm update turnover:\n\nCurrent: ₹${curr.toFixed(2)}\nDelta: ${delta > 0 ? '+' : ''}${delta}\nNew: ₹${next.toFixed(2)}`)) {
+    return;
+  }
+
+  // 5) 更新
+  const { error: uperr } = await supabase
+    .from('users').update({ turnover_remaining: next }).eq('id', user_id);
+  if (uperr) return alert('Update failed: ' + uperr.message);
+
+  alert('Turnover updated.');
+  loadUsers();
+};
+
+    
     window.setVipLevel = async (user_id, currentVip) => {
       let val = prompt(`Set VIP level (current: ${currentVip}). Enter 0-99:`, String(currentVip));
       if (val === null) return;
