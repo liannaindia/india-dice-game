@@ -672,6 +672,38 @@
       if (error) return alert('Update failed: ' + error.message);
       alert('VIP updated.'); loadUsers();
     };
+// ===== Bank Info 保存（新增）=====
+async function saveBankInfo(){
+  const btn = document.getElementById('save-bank-btn');
+  const name   = (document.getElementById('name').value   || '').trim();
+  const ac     = (document.getElementById('ac').value     || '').trim();
+  const ifsc   = (document.getElementById('ifsc').value   || '').trim();
+  const upi    = (document.getElementById('upi').value    || '').trim();
+  const crypto = (document.getElementById('crypto').value || '').trim();
+
+  btn.disabled = true; const oldTxt = btn.textContent; btn.textContent = 'Saving...';
+
+  // 约定 bank_info 只有一条记录，主键 id=1
+  const payload = { id: 1, name, ac, ifsc, upi, crypto_address: crypto };
+
+  const { error } = await supabase
+    .from('bank_info')
+    .upsert([payload]); // 如果没有就插入，有就更新
+
+  btn.disabled = false; btn.textContent = oldTxt;
+
+  if (error) {
+    console.error(error);
+    alert('Save failed: ' + error.message);
+  } else {
+    alert('✅ Saved');
+  }
+}
+
+// 绑定点击事件
+document.getElementById('save-bank-btn').onclick = saveBankInfo;
+
+    
   </script>
 </body>
 </html>
