@@ -2,123 +2,123 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Color 2-Min Game (Interactive)</title>
+  <title>Color 2-Min Game · Car Race Edition</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0d6efd">
   <script type="module" src="./supabase-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#1f2937; --muted:#667085;
-      --primary:#0d6efd; --line:#e5e7eb; --radius:16px; --shadow:0 8px 22px rgba(0,0,0,.10);
-      --red:#e11d48; --green:#16a34a; --violet:#7c3aed; --danger:#dc2626; --warning:#f59e0b; --ok:#16a34a;
+      --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#1f2937; --muted:#667085; --line:#e5e7eb;
+      --radius:16px; --shadow:0 8px 22px rgba(0,0,0,.10);
+      --primary:#0d6efd; --ok:#16a34a; --danger:#dc2626;
+      --red:#ef4444; --green:#16a34a; --violet:#7c3aed;
     }
     *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0; font-family:'Poppins',sans-serif; background:linear-gradient(180deg,var(--bg1),var(--bg2)); color:var(--text); -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
-    .wrap{max-width:1100px; margin:0 auto; padding:16px; padding-bottom:150px;}
-    header{display:flex; gap:12px; justify-content:space-between; align-items:center; margin-bottom:12px;}
-    .back{display:inline-flex; align-items:center; gap:8px; text-decoration:none; background:#eef2ff; color:#1d4ed8; padding:10px 14px; border-radius:999px; font-weight:800; box-shadow:var(--shadow);}
+    body{margin:0;font-family:'Poppins',sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px;padding-bottom:160px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .back{display:inline-flex;align-items:center;gap:8px;background:#eef2ff;color:#1d4ed8;text-decoration:none;padding:10px 14px;border-radius:999px;font-weight:800;box-shadow:var(--shadow)}
     .back:active{transform:scale(.98)}
-    .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px;}
-    .row{display:grid; grid-template-columns:1.35fr 1fr; gap:16px; margin-bottom:16px;}
-    @media (max-width:768px){ .row{grid-template-columns:1fr;} }
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+    .row{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px}
+    @media (max-width:768px){.row{grid-template-columns:1fr}}
+    .pill{padding:6px 10px;border-radius:999px;background:#f1f5f9;color:#111;font-weight:700}
+    .section-title{font-weight:800;margin:8px 0 12px 0;font-size:16px}
 
-    .stat{display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:14px; color:var(--muted);}
-    .pill{padding:6px 10px; border-radius:999px; background:#f1f5f9; color:#111; font-weight:700;}
-    .section-title{font-weight:800; margin:8px 0 12px 0; font-size:16px}
-
-    /* ===== Countdown (数字 + 进度条) ===== */
-    .cd{display:grid; gap:6px; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 16px; min-width:270px;}
-    .cd-top{display:flex; justify-content:space-between; align-items:center; gap:10px;}
-    .cd-time{font-size:28px; font-weight:800; letter-spacing:1px; font-variant-numeric:tabular-nums;}
-    .badge{padding:4px 8px; border-radius:8px; font-size:12px; font-weight:800; color:#fff; background:var(--ok)}
+    /* countdown */
+    .cd{display:grid;gap:6px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;min-width:270px}
+    .cd-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .cd-time{font-size:28px;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums}
+    .badge{padding:4px 8px;border-radius:8px;font-size:12px;font-weight:800;color:#fff;background:var(--ok)}
     .badge.closed{background:var(--danger)}
-    .bar{height:10px; background:#eef2ff; border-radius:999px; overflow:hidden; position:relative}
-    .bar > i{display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--primary),#60a5fa); transition:width .25s linear}
+    .bar{height:10px;background:#eef2ff;border-radius:999px;overflow:hidden}
+    .bar>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#60a5fa);transition:width .25s linear}
 
-    .card-min{margin-bottom:12px;}
-    .bubble{ text-align:center; padding:10px 0; border-radius:12px; font-size:14px; font-weight:900; border:1px solid var(--line); background:#fff;
-      transform:translateY(12px); opacity:0; animation: slideUp .25s ease forwards;}
-    @keyframes slideUp{to{transform:translateY(0);opacity:1}}
-    .bubble.red{background:#fee2e2; color:#b91c1c}
-    .bubble.green{background:#dcfce7; color:#166534}
-    .bubble.violet{background:#ede9fe; color:#5b21b6}
-    .result-list{display:grid; grid-template-columns:repeat(10,1fr); gap:8px}
-    @media (max-width:900px){ .result-list{grid-template-columns:repeat(8,1fr);} }
-    @media (max-width:600px){ .result-list{grid-template-columns:repeat(6,1fr);} }
-
-    /* ===== Choices + Drag target ===== */
-    .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
-    .choice{
-      position:relative; border-radius:18px; padding:18px 8px; color:#fff; cursor:pointer; user-select:none;
-      text-align:center; font-weight:900; font-size:18px; transition:transform .06s ease, filter .2s; overflow:hidden;
+    /* race track */
+    .track-card{position:relative;padding:0;overflow:hidden}
+    .track{
+      position:relative; width:100%; height:260px; padding:16px;
+      background:repeating-linear-gradient(#90a4ae 0 24px, #607d8b 24px 48px);
+      border-radius:var(--radius);
     }
-    .choice:active{transform:scale(.98)}
-    .choice small{display:block; opacity:.95; font-weight:700}
+    .lane{position:relative; height:64px; margin:8px 0; background:repeating-linear-gradient(90deg,#cbd5e1 0 16px, #e2e8f0 16px 32px);
+      border-radius:12px; box-shadow: inset 0 2px 6px rgba(0,0,0,.12)}
+    .lane .flag {position:absolute; right:8px; top:50%; transform:translateY(-50%); width:28px; height:28px;
+      background:linear-gradient(45deg,#000 25%,#fff 25% 50%,#000 50% 75%,#fff 75%); background-size:12px 12px; border-radius:4px; opacity:.9}
+    .car{
+      position:absolute; left:6px; top:50%; transform:translateY(-50%); width:86px; height:32px; border-radius:8px; color:#fff;
+      display:grid; grid-template-columns:auto 18px; align-items:center; font-weight:900; letter-spacing:1px; text-shadow:0 1px 2px rgba(0,0,0,.4);
+      box-shadow:0 6px 12px rgba(0,0,0,.25)
+    }
+    .car .body{height:100%; border-radius:8px 0 0 8px; display:grid; place-items:center}
+    .car .rear{height:100%; border-radius:0 8px 8px 0; background:rgba(255,255,255,.18)}
+    .car.red   .body{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+    .car.green .body{background:linear-gradient(135deg,#22c55e,#15803d)}
+    .car.violet .body{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+    .wheel{position:absolute; bottom:-7px; width:18px; height:18px; background:#111; border-radius:50%; box-shadow: inset 0 0 0 3px #333, 0 1px 0 #fff4}
+    .wheel::after{content:''; position:absolute; inset:4px; background:#888; border-radius:50%}
+    .w1{left:10px} .w2{right:10px}
+    .lights{position:absolute; left:-8px; top:50%; transform:translateY(-50%); display:flex; gap:4px}
+    .light{width:10px;height:10px;border-radius:50%;background:#9ca3af;box-shadow:0 0 0 2px #0003 inset}
+    .go .light.on{background:#22c55e; box-shadow:0 0 12px 2px #22c55e88}
+    .startbox{position:absolute; left:16px; top:12px; display:flex; gap:6px; padding:6px 8px; background:#111a; color:#fff; border-radius:10px; font-size:12px; font-weight:800; align-items:center}
+    .startbox span{opacity:.8}
+
+    /* choices & confirm */
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .choice{border-radius:18px;padding:18px 8px;color:#fff;text-align:center;font-weight:900;cursor:pointer}
+    .choice small{display:block;opacity:.95;font-weight:700}
     .choice.red{background:linear-gradient(135deg,#ef4444,#b91c1c)}
     .choice.green{background:linear-gradient(135deg,#22c55e,#15803d)}
     .choice.violet{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
     .choice.selected{box-shadow:0 0 0 3px rgba(255,255,255,.95) inset, 0 8px 18px rgba(0,0,0,.2)}
-    .choice.disabled{filter:grayscale(.4) brightness(.9); pointer-events:none;}
-    .choice.disabled::after{
-      content:'LOCKED'; position:absolute; inset:0; display:grid; place-items:center; font-size:14px; font-weight:800; letter-spacing:1px;
-      color:#111; background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px); mix-blend-mode:luminosity; opacity:.9;
-    }
-    .drop-hint{position:absolute; inset:0; border:3px dashed rgba(255,255,255,.85); border-radius:16px; display:none;}
-    .choice.drag-over .drop-hint{display:block}
-
-    .amount-box{display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap}
-    .amt{border:1px solid var(--line); border-radius:12px; padding:12px 14px; min-width:150px; outline:none; font-size:16px;}
-    .chip{background:#f1f5f9; border:1px solid var(--line); padding:10px 14px; border-radius:999px; cursor:pointer; font-weight:800; user-select:none}
+    .choice.disabled{filter:grayscale(.4) brightness(.9);pointer-events:none}
+    .amount-box{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+    .amt{border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:150px;outline:none;font-size:16px}
+    .chip{background:#f1f5f9;border:1px solid var(--line);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:800}
     .chip:active{transform:scale(.98)}
-    .chips{display:flex; gap:8px; flex-wrap:wrap}
-    .btn{padding:12px 16px; border:none; border-radius:12px; background:var(--primary); color:#fff; font-weight:800; cursor:pointer; box-shadow:0 6px 16px rgba(13,110,253,.3)}
+    .btn{padding:12px 16px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(13,110,253,.3)}
     .btn:active{transform:scale(.98)}
-    .btn[disabled]{opacity:.6; cursor:not-allowed}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
     .shake{animation:shake .4s linear}
-    @keyframes shake { 10%,90%{transform:translateX(-1px)} 20%,80%{transform:translateX(2px)} 30%,50%,70%{transform:translateX(-4px)} 40%,60%{transform:translateX(4px)} }
+    @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
 
-    /* ===== Reveal (开奖洗牌/揭晓) ===== */
-    .reveal{display:none; margin-bottom:12px;}
-    .reveal.show{display:block;}
-    .slots{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
-    .slot{
-      border-radius:14px; padding:12px 0; text-align:center; font-weight:900; color:#fff; letter-spacing:1px; user-select:none;
-      background:#9ca3af;
-    }
-    .slot.red{background:#ef4444} .slot.green{background:#16a34a} .slot.violet{background:#7c3aed}
-    .slot.spin{animation:flash .2s linear infinite}
-    @keyframes flash{0%{filter:brightness(1)}50%{filter:brightness(1.25)}100%{filter:brightness(1)}}
+    /* results bubbles */
+    .result-list{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
+    @media (max-width:900px){.result-list{grid-template-columns:repeat(8,1fr)}} @media (max-width:600px){.result-list{grid-template-columns:repeat(6,1fr)}}
+    .bubble{ text-align:center; padding:10px 0; border-radius:12px; font-size:14px; font-weight:900; border:1px solid var(--line); background:#fff;
+      transform:translateY(12px); opacity:0; animation: slideUp .25s ease forwards}
+    @keyframes slideUp{to{transform:translateY(0);opacity:1}}
+    .bubble.red{background:#fee2e2;color:#b91c1c}
+    .bubble.green{background:#dcfce7;color:#166534}
+    .bubble.violet{background:#ede9fe;color:#5b21b6}
 
-    .table{width:100%; border-collapse:collapse; font-size:14px}
-    .table th,.table td{padding:10px; border-bottom:1px solid var(--line); text-align:left}
-    .ok{color:var(--ok); font-weight:800}
-    .err{color:var(--danger); font-weight:800}
+    /* my bets */
+    .table{width:100%;border-collapse:collapse;font-size:14px}
+    .table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left}
+    .ok{color:var(--ok);font-weight:800} .err{color:var(--danger);font-weight:800}
 
-    /* Mobile sticky dock */
-    .dock{position:fixed; left:0; right:0; bottom:0; padding:12px env(safe-area-inset-right) calc(12px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
-      background:linear-gradient(180deg, rgba(255,255,255,.0), rgba(255,255,255,.95) 20%, rgba(255,255,255,.98) 100%); backdrop-filter: blur(6px);
-      box-shadow:0 -8px 22px rgba(0,0,0,.12); display:none; z-index:998;}
-    @media (max-width:768px){ .dock{display:block} .wrap{padding-bottom:170px;} }
-    .dock-inner{max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; gap:8px; align-items:center;}
-    .dchoice{padding:12px 10px; text-align:center; border-radius:12px; color:#fff; font-weight:900; border:none}
-    .dchoice.red{background:#ef4444} .dchoice.green{background:#16a34a} .dchoice.violet{background:#7c3aed}
-    .dock .amt{min-width:auto; width:100%} .dock .btn{width:100%; font-size:16px}
+    /* mobile sticky dock */
+    .dock{position:fixed;left:0;right:0;bottom:0;padding:12px env(safe-area-inset-right) calc(12px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+      background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.95) 20%,rgba(255,255,255,.98) 100%);backdrop-filter:blur(6px);box-shadow:0 -8px 22px rgba(0,0,0,.12);display:none;z-index:998}
+    @media (max-width:768px){.dock{display:block}.wrap{padding-bottom:180px}}
+    .dock-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:8px;align-items:center}
+    .dchoice{padding:12px 10px;text-align:center;border-radius:12px;color:#fff;font-weight:900;border:none}
+    .dchoice.red{background:#ef4444}.dchoice.green{background:#16a34a}.dchoice.violet{background:#7c3aed}
+    .dock .amt{min-width:auto;width:100%}.dock .btn{width:100%;font-size:16px}
 
-    /* Chip fly + confetti */
-    .chip-fly{position:fixed; pointer-events:none; z-index:1000; background:#111; color:#fff; padding:6px 10px; border-radius:999px; font-weight:800; transform:translate(-50%,-50%); animation: fly 800ms ease-out forwards;}
-    @keyframes fly{0%{opacity:0; transform:translate(-50%,-50%) scale(.6)} 35%{opacity:1} 100%{opacity:0; transform:translate(-50%,-160%) scale(1.1)}}
-    .confetti{position:fixed; top:0; left:0; width:100%; height:0; overflow:visible; pointer-events:none; z-index:1200}
-    .piece{position:absolute; top:-10px; width:8px; height:14px; background:var(--c); animation: fall 1200ms linear forwards}
+    /* toast + confetti */
+    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#111;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.25);z-index:999;display:none}
+    .confetti{position:fixed;top:0;left:0;width:100%;height:0;overflow:visible;pointer-events:none;z-index:1200}
+    .piece{position:absolute;top:-10px;width:8px;height:14px;background:var(--c);animation:fall 1200ms linear forwards}
     @keyframes fall{to{transform:translateY(90vh) rotate(540deg)}}
-
-    .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:18px; background:#111; color:#fff; padding:10px 14px; border-radius:10px; box-shadow:0 8px 20px rgba(0,0,0,.25); z-index:999; display:none;}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <a class="back" href="./index.html" aria-label="Back to Lobby">← Back to Lobby</a>
+      <a class="back" href="./index.html">← Back to Lobby</a>
       <div class="cd">
         <div class="cd-top">
           <div style="font-weight:800;">Period: <span id="period" class="pill">---</span></div>
@@ -129,52 +129,77 @@
       </div>
     </header>
 
-    <div class="card card-min">
-      <div class="stat" id="userStat"><span class="pill">Not signed in</span></div>
+    <!-- user -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="pill" id="userStat">Not signed in</div>
     </div>
 
-    <!-- 开奖动画 -->
-    <div class="card reveal" id="reveal">
-      <div class="section-title">Result Reveal</div>
-      <div class="slots">
-        <div class="slot" id="slot1">?</div>
-        <div class="slot" id="slot2">?</div>
-        <div class="slot" id="slot3">?</div>
+    <!-- race track -->
+    <div class="card track-card">
+      <div class="section-title">Race Reveal</div>
+      <div class="track" id="track">
+        <div class="startbox" id="startbox">
+          <div class="lights"><div class="light"></div><div class="light"></div><div class="light"></div></div>
+          <span id="startText">Ready</span>
+        </div>
+
+        <div class="lane" data-color="red">
+          <div class="car red" id="car-red">
+            <div class="body">R</div><div class="rear"></div>
+            <div class="wheel w1"></div><div class="wheel w2"></div>
+          </div>
+          <div class="flag"></div>
+        </div>
+
+        <div class="lane" data-color="green">
+          <div class="car green" id="car-green">
+            <div class="body">G</div><div class="rear"></div>
+            <div class="wheel w1"></div><div class="wheel w2"></div>
+          </div>
+          <div class="flag"></div>
+        </div>
+
+        <div class="lane" data-color="violet">
+          <div class="car violet" id="car-violet">
+            <div class="body">V</div><div class="rear"></div>
+            <div class="wheel w1"></div><div class="wheel w2"></div>
+          </div>
+          <div class="flag"></div>
+        </div>
       </div>
+      <div style="margin-top:8px;color:var(--muted);font-size:13px;">The race plays when the round ends; the winner car matches the official result.</div>
     </div>
 
     <div class="row">
-      <!-- 左侧下注 -->
+      <!-- left bet -->
       <div class="card">
-        <div class="section-title">Choose a color (drag a chip onto a card)</div>
+        <div class="section-title">Bet on a car</div>
         <div class="grid3" id="choices">
-          <div class="choice red selected" data-choice="red"><div class="drop-hint"></div>Red<small>×2.0</small></div>
-          <div class="choice green" data-choice="green"><div class="drop-hint"></div>Green<small>×2.0</small></div>
-          <div class="choice violet" data-choice="violet"><div class="drop-hint"></div>Violet<small>×4.5</small></div>
+          <div class="choice red selected" data-choice="red">Red<small>×2.0</small></div>
+          <div class="choice green" data-choice="green">Green<small>×2.0</small></div>
+          <div class="choice violet" data-choice="violet">Violet<small>×4.5</small></div>
         </div>
 
         <div class="amount-box">
           <input type="number" id="amount" class="amt" placeholder="Enter amount" min="1" step="1">
-          <div class="chips">
-            <div class="chip" data-add="10">₹10</div>
-            <div class="chip" data-add="50">₹50</div>
-            <div class="chip" data-add="100">₹100</div>
-            <div class="chip" data-add="500">₹500</div>
-          </div>
+          <div class="chip" data-add="10">+10</div>
+          <div class="chip" data-add="50">+50</div>
+          <div class="chip" data-add="100">+100</div>
+          <div class="chip" data-add="500">+500</div>
           <button class="btn" id="btnBet">Place Bet</button>
         </div>
         <div id="betMsg" style="margin-top:10px;"></div>
         <div style="margin-top:8px;color:var(--muted);font-size:13px;">Betting closes automatically in the <b>last 30 seconds</b> of each 2-minute round.</div>
       </div>
 
-      <!-- 右侧结果 -->
+      <!-- right results -->
       <div class="card">
         <div class="section-title">Last 10 Results</div>
         <div class="result-list" id="resultList"></div>
       </div>
     </div>
 
-    <!-- 我的下注 -->
+    <!-- my bets -->
     <div class="card">
       <div class="section-title">My Recent Bets</div>
       <table class="table" id="betsTable">
@@ -184,13 +209,13 @@
     </div>
   </div>
 
-  <!-- 移动端底部吸附下注栏 -->
-  <div class="dock" id="dock">
+  <!-- mobile dock -->
+  <div class="dock">
     <div class="dock-inner">
       <button class="dchoice red" data-choice="red">RED</button>
       <button class="dchoice green" data-choice="green">GREEN</button>
       <button class="dchoice violet" data-choice="violet">VIOLET</button>
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex;gap:8px;">
         <input type="number" id="m_amount" class="amt" placeholder="Amt" min="1" step="1">
         <button class="btn" id="m_bet">Bet</button>
       </div>
@@ -203,14 +228,14 @@
   <script type="module">
     import { supabase } from './supabase-config.js';
 
-    const $  = (s)=>document.querySelector(s); const $$=(s)=>document.querySelectorAll(s);
-    const fmt = (n)=> Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+    // helpers
+    const $=(s)=>document.querySelector(s), $$=(s)=>document.querySelectorAll(s);
+    const fmt=(n)=>Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
     const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
-    function toast(msg, ok=true){ const t=$('#toast'); t.textContent=msg; t.style.background=ok?'#111':'#b91c1c'; t.style.display='block'; setTimeout(()=>t.style.display='none',2000) }
-    function flyChip(x,y,text){ const c=document.createElement('div'); c.className='chip-fly'; c.style.left=x+'px'; c.style.top=y+'px'; c.textContent=text; document.body.appendChild(c); setTimeout(()=>c.remove(),900) }
-    function confetti(){ const box=$('#confetti'); for(let i=0;i<24;i++){ const p=document.createElement('div'); p.className='piece'; p.style.left=(Math.random()*100)+'vw'; p.style.setProperty('--c',['#ef4444','#16a34a','#7c3aed','#f59e0b','#0ea5e9'][i%5]); p.style.animationDelay=(Math.random()*0.4)+'s'; box.appendChild(p); setTimeout(()=>p.remove(),1400)}}
+    function toast(msg,ok=true){const t=$('#toast');t.textContent=msg;t.style.background=ok?'#111':'#b91c1c';t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
+    function confetti(){const box=$('#confetti');for(let i=0;i<24;i++){const p=document.createElement('div');p.className='piece';p.style.left=(Math.random()*100)+'vw';p.style.setProperty('--c',['#ef4444','#16a34a','#7c3aed','#f59e0b','#0ea5e9'][i%5]);p.style.animationDelay=(Math.random()*0.4)+'s';box.appendChild(p);setTimeout(()=>p.remove(),1400)}}
 
-    // ===== 与服务器校时 =====
+    // server clock sync
     let skew=0;
     async function syncClock(){ try{ const {data}=await supabase.rpc('get_server_time_ms'); if(typeof data==='number') skew=data-Date.now(); }catch{} }
     await syncClock(); setInterval(syncClock,60000);
@@ -222,16 +247,17 @@
       const prog=sec/120; return {start,end,sec,remain,closed,per,prog}
     }
 
-    // ====== 全局 ======
+    // global
     let user=null, serverPeriod=null, selected='red';
-    let lastRevealFor=null;     // 已揭晓的期，避免重复动画
-    let lastStatuses=new Map(); // 我下注的状态追踪
+    let lastFinished=null; // 已播放过的赛果期号
+    let lastStatuses=new Map();
 
-    // ====== 启动 ======
+    // boot
     boot();
     async function boot(){
       const {data:{user:U}}=await supabase.auth.getUser(); user=U||null;
-      if(!user) $('#userStat').innerHTML='<span class="pill">Please login first</span>'; else await refreshUser();
+      if(!user) $('#userStat').textContent='Please login first';
+      else await refreshUser();
 
       await getServerPeriod();
       bindUI();
@@ -247,110 +273,91 @@
     }
 
     function bindUI(){
-      // 颜色选择
+      // choose color
       $$('#choices .choice').forEach(el=>{
-        el.addEventListener('click', ()=>{ selected=el.dataset.choice; $$('#choices .choice').forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); });
+        el.addEventListener('click',()=>{ selected=el.dataset.choice; $$('#choices .choice').forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); });
       });
-
-      // 筹码点击 + 拖拽（移动端 pointer 事件）
-      $$('.chip').forEach(ch=>{
-        ch.addEventListener('click', ()=>{
-          const cur=Number($('#amount').value||0); const add=Number(ch.dataset.add);
-          $('#amount').value = cur+add; const r=$('#btnBet').getBoundingClientRect(); flyChip(r.left+r.width/2, r.top, '₹'+add);
-        });
-
-        ch.addEventListener('pointerdown', e=>{
-          const ghost=document.createElement('div'); ghost.className='chip-fly'; ghost.textContent='₹'+ch.dataset.add; document.body.appendChild(ghost);
-          const move=(ev)=>{ ghost.style.left=ev.clientX+'px'; ghost.style.top=ev.clientY+'px';
-            const tgt=document.elementFromPoint(ev.clientX,ev.clientY);
-            $$('#choices .choice').forEach(c=>c.classList.toggle('drag-over', c===tgt || c.contains(tgt)));
-          };
-          move(e);
-          const up=(ev)=>{ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); ghost.remove();
-            const tgt=document.elementFromPoint(ev.clientX,ev.clientY);
-            const card=tgt?.closest?.('.choice'); $$('#choices .choice').forEach(c=>c.classList.remove('drag-over'));
-            if(card){ selected=card.dataset.choice; $$('#choices .choice').forEach(x=>x.classList.remove('selected')); card.classList.add('selected');
-              const cur=Number($('#amount').value||0); const add=Number(ch.dataset.add); $('#amount').value=cur+add;
-              flyChip(ev.clientX, ev.clientY, '₹'+add);
-            }
-          };
-          document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
-        });
-      });
-
-      // 主下注按钮
+      // chips
+      $$('.chip').forEach(ch=> ch.addEventListener('click',()=>{ const cur=Number($('#amount').value||0); $('#amount').value=cur+Number(ch.dataset.add); }));
+      // bet buttons
       $('#btnBet').addEventListener('click', placeBet);
-      // 移动端吸附下注
       $$('.dchoice').forEach(b=> b.addEventListener('click',()=> selected=b.dataset.choice));
       $('#m_bet').addEventListener('click', async ()=>{ const v=Number($('#m_amount').value||0); if(v>0){ $('#amount').value=v; await placeBet(); }});
     }
 
     async function refreshUser(){
-      const {data,error}=await supabase.from('users').select('email,balance').eq('id', user.id).single();
-      if(error) return; $('#userStat').innerHTML = `
-        <span class="pill"><b>Email:</b> ${data.email||user.email}</span>
-        <span class="pill"><b>Balance:</b> ₹${fmt(data.balance||0)}</span>
-        <span class="pill">2-min • last 30s closed</span>`;
+      const {data,error}=await supabase.from('users').select('email,balance').eq('id',user.id).single();
+      if(error) return;
+      $('#userStat').innerHTML=`<span class="pill"><b>Email:</b> ${data.email||user.email}</span> <span class="pill"><b>Balance:</b> ₹${fmt(data.balance||0)}</span> <span class="pill">2-min • last 30s closed</span>`;
     }
 
     async function getServerPeriod(){ try{ const {data}=await supabase.rpc('current_color2m_period_ist'); serverPeriod=data; }catch{} }
 
     function setBetEnabled(open){
-      $$('#choices .choice').forEach(el=> el.classList.toggle('disabled', !open) );
+      $$('#choices .choice').forEach(el=> el.classList.toggle('disabled', !open));
       $('#btnBet').disabled=!open; $('#m_bet').disabled=!open;
-      $('#betState').textContent=open?'Open':'Closed'; $('#betState').className='badge' + (open?'':' closed');
+      $('#betState').textContent=open?'Open':'Closed'; $('#betState').className='badge'+(open?'':' closed');
     }
 
     function startClock(){
       const tick=async ()=>{
         const ist=nowIST(); const s=calcSlot(ist);
-        // 倒计时数字
-        const mm=String(Math.floor(s.remain/60)).padStart(2,'0'); const ss=String(s.remain%60).padStart(2,'0');
-        $('#timeLeft').textContent=`${mm}:${ss}`; $('#bar').style.width=(s.prog*100)+'%';
+        $('#timeLeft').textContent=`${String(Math.floor(s.remain/60)).padStart(2,'0')}:${String(s.remain%60).padStart(2,'0')}`;
+        $('#bar').style.width=(s.prog*100)+'%';
         setBetEnabled(!s.closed);
         $('#period').textContent=serverPeriod || s.per;
 
-        // 到达期末：触发揭晓动画
-        if(s.remain===0){
-          revealForPeriod(s.per);
-          await sleep(1200);           // 给结算留一点时间
-          await refreshResults();
-          await refreshMyBets();
-          checkWinEffect();
-          await getServerPeriod();     // 下一期号
-        }
+        if(s.remain===0){ playRaceFor(s.per); await sleep(1200); await refreshResults(); await refreshMyBets(); checkWinEffect(); await getServerPeriod(); }
         requestAnimationFrame(()=> setTimeout(tick,250));
       };
       tick();
     }
 
-    // ===== 揭晓动画：三格洗牌 -> 停在中奖色 =====
-    async function revealForPeriod(endedPeriod){
-      if(lastRevealFor===endedPeriod) return;  // 已揭晓过
-      lastRevealFor=endedPeriod;
-
-      // 查询结果（最多等2秒）
+    // ===== Race animation =====
+    async function playRaceFor(endedPeriod){
+      if(lastFinished===endedPeriod) return;
+      // 拉取开奖结果（最多2.5s）
       let result=null;
-      for(let i=0;i<6;i++){
-        const {data}=await supabase.from('color2m_rounds').select('result').eq('period', endedPeriod).maybeSingle();
+      for(let i=0;i<10;i++){
+        const {data}=await supabase.from('color2m_rounds').select('result').eq('period',endedPeriod).maybeSingle();
         if(data?.result){ result=data.result; break; }
-        await sleep(300);
+        await sleep(250);
       }
-      if(!result) return;
+      if(!result) return; // 未结算就不播放
 
-      const box=$('#reveal'); box.classList.add('show');
-      const slots=[$('#slot1'),$('#slot2'),$('#slot3')];
-      const colors=['red','green','violet'];
-      let t=0; const spin=setInterval(()=>{ t++;
-        slots.forEach((el,i)=>{ const c=colors[(i+t)%3]; el.className='slot spin '+c; el.textContent=c.toUpperCase()[0]; });
-      },120);
+      lastFinished=endedPeriod;
 
-      // 1.2秒后停止在结果
-      setTimeout(()=>{
-        clearInterval(spin);
-        slots.forEach(el=>{ el.className='slot '+result; el.textContent=result.toUpperCase()[0]; });
-        setTimeout(()=> box.classList.remove('show'), 1600);
-      },1200);
+      // 起步灯
+      const lights=$('.lights'); const startText=$('#startText'); const track=$('#track');
+      const lamp=lights.querySelectorAll('.light');
+      startText.textContent='Ready'; lamp.forEach(x=>x.classList.remove('on'));
+      await sleep(200); lamp[0].classList.add('on'); startText.textContent='Set';
+      await sleep(200); lamp[1].classList.add('on'); await sleep(200);
+      lamp[2].classList.add('on'); startText.textContent='GO!'; track.classList.add('go');
+
+      // 赛道宽度
+      const W = track.clientWidth - 120; // 可跑距离（减车宽）
+      const cars = {
+        red:   $('#car-red'),
+        green: $('#car-green'),
+        violet:$('#car-violet')
+      };
+
+      // 设定三个车的“目标时间”，确保赢家最短
+      const base = 5200; // ms
+      const rnd = ()=> 200 + Math.random()*250; // 抖动
+      const times = { red: base+rnd(), green: base+rnd(), violet: base+rnd() };
+      times[result] = base - 600 + Math.random()*120; // 胜者更快
+
+      // 动画：CSS 过渡 + 轻微随机停顿模拟换挡
+      for(const c of Object.keys(cars)){
+        const el=cars[c];
+        el.style.transition='transform '+(times[c]/1000)+'s cubic-bezier(.25,.9,.35,1)';
+        el.style.transform='translate( '+W+'px, -50%)';
+      }
+
+      await sleep(Math.max(times.red,times.green,times.violet)+200);
+      $('#startText').textContent = result.toUpperCase()+' WINS';
     }
 
     async function placeBet(){
@@ -368,13 +375,12 @@
         if(m.includes('BET_CLOSED')) toast('Betting closed for this round',false);
         else if(m.includes('INSUFFICIENT_FUNDS')) toast('Insufficient balance',false);
         else toast(error.message||'Bet failed',false);
-        $('#betMsg').innerHTML=`<span class="err">${error.message}</span>`;
+        $('#betMsg').innerHTML=`<span style="color:#dc2626;font-weight:800">${error.message}</span>`;
         return;
       }
-      const r=$('#btnBet').getBoundingClientRect(); flyChip(r.left+r.width/2, r.top, '₹'+amt);
       toast('Bet placed');
       $('#amount').value=''; $('#m_amount').value='';
-      $('#betMsg').innerHTML=`<span class="ok">Success • Period ${data.period} • ${data.choice.toUpperCase()} • ₹${fmt(data.amount)} @ x${data.odds}</span>`;
+      $('#betMsg').innerHTML=`<span style="color:#16a34a;font-weight:800">Success • Period ${data.period} • ${data.choice.toUpperCase()} • ₹${fmt(data.amount)} @ x${data.odds}</span>`;
       refreshUser(); await refreshMyBets();
     }
 
@@ -386,6 +392,13 @@
         d.className='bubble '+(cls==='red'?'red':cls==='green'?'green':cls==='violet'?'violet':''); d.style.animationDelay=(i*0.05)+'s';
         d.textContent=r.result ? r.result[0].toUpperCase() : '-'; d.title=r.period; box.appendChild(d);
       });
+
+      // 重置车辆位置（准备下一次演出）
+      ['#car-red','#car-green','#car-violet'].forEach(sel=>{
+        const el=$(sel); el.style.transition='none'; el.style.transform='translate(6px,-50%)';
+      });
+      $('#startText').textContent='Ready';
+      $('.lights').querySelectorAll('.light').forEach(x=>x.classList.remove('on'));
     }
 
     async function refreshMyBets(){
@@ -400,7 +413,8 @@
           <td>${b.status==='win'?'<span class="ok">WIN</span>':b.status==='lose'?'<span class="err">LOSE</span>':'PENDING'}</td>
           <td>${b.payout?'₹'+fmt(b.payout):'-'}</td>`;
         tb.appendChild(tr);
-        const key=`${b.period}-${b.choice}-${b.amount}-${b.odds}`; const prev=lastStatuses.get(key);
+        const key=`${b.period}-${b.choice}-${b.amount}-${b.odds}`;
+        const prev=lastStatuses.get(key);
         if(prev && prev==='pending' && b.status==='win'){ lastStatuses.set(key,'win'); tr.dataset.justWon='1'; }
         else { lastStatuses.set(key,b.status); }
       });
