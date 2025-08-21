@@ -175,12 +175,27 @@
       el.style.display='block'; setTimeout(()=>{ el.style.display='none' }, 2000);
     }
 
-    // IST utilities
-    function getISTDate(){
-      const now = new Date();
-      const utcMs = now.getTime() + now.getTimezoneOffset()*60000;
-      return new Date(utcMs + 5.5*3600000);
+    // ======== 与服务器校时 ========
+    let clockSkewMs = 0; // server_now_ms - client_now_ms
+    async function syncServerClock(){
+      try{
+        const { data, error } = await supabase.rpc('get_server_time_ms');
+        if(!error && typeof data === 'number'){
+          clockSkewMs = data - Date.now(); // 以服务器时间为准
+        }
+      }catch(e){}
     }
+    // 初次同步 + 每分钟纠偏一次
+    await syncServerClock();
+    setInterval(syncServerClock, 60000);
+
+    // 获取“当前 IST 时间”（基于服务器校正）
+    function getISTDate(){
+      const nowMs = Date.now() + clockSkewMs;   // 服务器“现在”的 UTC 毫秒
+      const istMs = nowMs + 5.5 * 3600000;      // UTC → IST(+5:30)
+      return new Date(istMs);
+    }
+
     function calc2mSlot(ist){
       const m = ist.getMinutes();
       const slotStart = new Date(ist); slotStart.setSeconds(0,0); slotStart.setMinutes(m - (m%2));
@@ -227,7 +242,6 @@
       $$('.choice').forEach(el=>{
         el.addEventListener('click', ()=>{
           selectedChoice = el.dataset.choice;
-          // small flash
           $$('.choice').forEach(x=>x.style.outline='none');
           el.style.outline='3px solid rgba(255,255,255,.8)';
           setTimeout(()=> el.style.outline='none', 300);
@@ -248,22 +262,21 @@
       await refreshResults();
       await refreshMyBets();
 
-      // realtime (optional, will update when result inserted/updated)
+      // realtime
       try{
         supabase.channel('realtime:color2m_rounds')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'color2m_rounds' }, payload => {
             refreshResults();
           })
           .subscribe();
-      }catch(e){ /* ignore realtime errors */ }
+      }catch(e){ /* ignore */ }
     }
 
     async function refreshUserInfo(){
-      // read email & balance from users table
       const { data, error } = await supabase
         .from('users')
         .select('email,balance')
-        .eq('id', currentUser.id)
+        .eq('id', currentUser?.id)
         .single();
       if(error){ console.error(error); return; }
       $('#userStat').innerHTML = `
@@ -285,24 +298,22 @@
         const ist = getISTDate();
         const slot = calc2mSlot(ist);
 
-        // countdown text
         const m = String(Math.floor(slot.remainSec/60)).padStart(2,'0');
         const s = String(slot.remainSec%60).padStart(2,'0');
         $('#timeLeft').textContent = `${m}:${s}`;
         setBetEnabled(!slot.closed);
 
-        // period display: prefer serverPeriod if available, otherwise local computed
         $('#period').textContent = serverPeriod || slot.periodStr;
 
-        // when a round flips (remain==120), refresh server period + lists
+        // 切到新一轮：刷新 period / 列表 / 余额
         if(slot.remainSec === 120){
           await refreshServerPeriod();
           await sleep(50);
           refreshResults();
           refreshMyBets();
-          refreshUserInfo(); // balance may change on payout
+          refreshUserInfo();
         }
-        requestAnimationFrame(()=> setTimeout(tick, 250)); // smooth & light
+        requestAnimationFrame(()=> setTimeout(tick, 250));
       };
       tick();
     }
@@ -310,7 +321,7 @@
     async function placeBet(){
       if(!currentUser){ showToast('Please login first', false); return; }
 
-      // check closed by local clock first (backend will double-check)
+      // 仍做一次本地封盘判断（服务器还会二次校验）
       const ist = getISTDate();
       const { closed } = calc2mSlot(ist);
       if(closed){ showToast('Betting closed for this round', false); return; }
@@ -323,7 +334,7 @@
 
       const { data, error } = await supabase.rpc('color2m_place_bet_ist', {
         _user_id: currentUser.id,
-        _email: currentUser.email,
+        _email:  currentUser.email,
         _choice: selectedChoice,
         _amount: amt
       });
