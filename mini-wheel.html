@@ -156,7 +156,7 @@
     <div class="card">
       <h3 style="margin:0 0 8px">📈 Last 10 Results</h3>
       <div style="overflow:auto">
-        <table id="results-table">
+        <table>
           <thead>
             <tr>
               <th>Round</th>
@@ -166,7 +166,7 @@
             </tr>
           </thead>
           <tbody id="results-tbody">
-            <tr><td colspan="4" class="muted">—</td></tr>
+            <tr><td colspan="3" class="muted">—</td></tr>
           </tbody>
         </table>
       </div>
@@ -515,7 +515,7 @@ async function loadRecentResults(){
   try{
     const { data, error } = await supabase
       .from('wheel_rounds')
-      .select('round_number, result_number, result_multiplier, is_manual')
+      .select('round_number, result_number, result_multiplier')
       .not('result_number','is', null)                 // 只展示已有结果
       .order('round_number', { ascending:false })      // 期号倒序
       .limit(10);
@@ -527,14 +527,13 @@ async function loadRecentResults(){
         <td>${r.round_number}</td>
         <td>${r.result_number ?? '—'}</td>
         <td>${r.result_multiplier ? `×${r.result_multiplier}` : '—'}</td>
-        <td>${r.is_manual ? 'Manual' : 'Auto'}</td>
       </tr>
     `).join('');
 
-    resultsTbody.innerHTML = rows || `<tr><td colspan="4" class="muted">No results.</td></tr>`;
+    resultsTbody.innerHTML = rows || `<tr><td colspan="3" class="muted">No results.</td></tr>`;
   }catch(e){
     console.error('loadRecentResults error:', e);
-    resultsTbody.innerHTML = `<tr><td colspan="4" class="muted">Load failed.</td></tr>`;
+    resultsTbody.innerHTML = `<tr><td colspan="3" class="muted">Load failed.</td></tr>`;
   }
 }
 
