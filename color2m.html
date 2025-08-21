@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Color 2-Min Game (Red / Green / Violet)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <script type="module" src="./supabase-config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#222;
+      --muted:#667085; --primary:#0d6efd; --primary-pressed:#0b5ed7;
+      --success:#16a34a; --line:#e6eaf2;
+      --radius:14px; --shadow:0 6px 18px rgba(0,0,0,.08);
+      --red:#e11d48; --green:#16a34a; --violet:#7c3aed;
+      --danger:#dc2626; --warning:#f59e0b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:'Poppins',sans-serif; color:var(--text);
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      min-height:100vh;
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:18px;}
+    header{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      margin-bottom:16px;
+    }
+    .card{
+      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .row{display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:16px;}
+    @media (max-width:900px){ .row{grid-template-columns:1fr; } }
+
+    .stat{
+      display:flex; flex-wrap:wrap; gap:14px; align-items:center; font-size:14px; color:var(--muted);
+    }
+    .stat b{color:var(--text)}
+    .pill{padding:6px 10px; border-radius:999px; background:#f1f5f9; color:#111; font-weight:600;}
+    .pill.red{background:#fee2e2; color:#b91c1c}
+    .pill.green{background:#dcfce7; color:#166534}
+    .pill.violet{background:#ede9fe; color:#5b21b6}
+
+    .countdown{
+      display:flex; align-items:center; gap:10px; font-weight:600; font-size:18px;
+    }
+    .countdown .time{font-size:28px}
+    .badge{
+      padding:4px 8px; border-radius:8px; font-size:12px; font-weight:600;
+      color:#fff; background:var(--success);
+    }
+    .badge.closed{background:var(--danger)}
+    .badge.wait{background:var(--warning); color:#111}
+
+    .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+    .choice{
+      border-radius:16px; padding:16px; color:#fff; cursor:pointer; user-select:none;
+      text-align:center; font-weight:700; font-size:18px; transition:transform .06s ease;
+    }
+    .choice:active{transform:scale(.98)}
+    .choice.red{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+    .choice.green{background:linear-gradient(135deg,#22c55e,#15803d)}
+    .choice.violet{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+    .choice.disabled{opacity:.5; pointer-events:none; filter:grayscale(.2)}
+
+    .amount-box{display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap}
+    .amt{
+      border:1px solid var(--line); border-radius:12px; padding:10px 12px; min-width:140px;
+      outline:none; font-size:16px;
+    }
+    .chip{background:#f1f5f9; border:1px solid var(--line); padding:8px 12px; border-radius:12px; cursor:pointer}
+    .chip:active{transform:scale(.98)}
+    .btn{
+      padding:12px 16px; border:none; border-radius:12px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;
+    }
+    .btn:active{transform:scale(.98)}
+    .btn[disabled]{opacity:.6; cursor:not-allowed}
+
+    .section-title{font-weight:700; margin:4px 0 12px 0; font-size:16px}
+    .result-list, .bet-list {display:grid; grid-template-columns:repeat(10,1fr); gap:8px}
+    @media (max-width:900px){ .result-list, .bet-list{grid-template-columns:repeat(5,1fr);} }
+    .cell{
+      text-align:center; padding:10px 6px; border-radius:10px; font-size:14px; font-weight:700;
+      border:1px solid var(--line); background:#fff;
+    }
+    .cell.red{background:#fee2e2; color:#b91c1c}
+    .cell.green{background:#dcfce7; color:#166534}
+    .cell.violet{background:#ede9fe; color:#5b21b6}
+
+    .table{width:100%; border-collapse:collapse; font-size:14px}
+    .table th,.table td{padding:10px; border-bottom:1px solid var(--line); text-align:left}
+    .ok{color:#16a34a; font-weight:700}
+    .err{color:#dc2626; font-weight:700}
+
+    .toast{
+      position:fixed; left:50%; transform:translateX(-50%); bottom:18px; background:#111; color:#fff; padding:10px 14px; border-radius:10px;
+      box-shadow:0 8px 20px rgba(0,0,0,.25); z-index:999; display:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h2 style="margin:0;">Color 2-Min Game</h2>
+        <div class="stat" id="userStat">
+          <span class="pill">Not signed in</span>
+        </div>
+      </div>
+      <div class="countdown card" style="gap:14px;">
+        <div>Period:</div>
+        <div id="period" class="pill"></div>
+        <div class="time" id="timeLeft">--:--</div>
+        <span id="betState" class="badge wait">Waiting</span>
+      </div>
+    </header>
+
+    <div class="row">
+      <!-- Left: betting card -->
+      <div class="card">
+        <div class="section-title">Choose a color</div>
+        <div class="grid3">
+          <div class="choice red"    data-choice="red">Red<br><small>×2.0</small></div>
+          <div class="choice green"  data-choice="green">Green<br><small>×2.0</small></div>
+          <div class="choice violet" data-choice="violet">Violet<br><small>×4.5</small></div>
+        </div>
+        <div class="amount-box">
+          <input type="number" id="amount" class="amt" placeholder="Enter amount" min="1" step="1">
+          <div class="chip" data-add="10">+10</div>
+          <div class="chip" data-add="50">+50</div>
+          <div class="chip" data-add="100">+100</div>
+          <div class="chip" data-add="500">+500</div>
+          <button class="btn" id="btnBet">Place Bet</button>
+        </div>
+        <div style="margin-top:8px;color:var(--muted);font-size:13px;">
+          Betting is available for each 2-minute round. It closes automatically in the <b>last 30 seconds</b>.
+        </div>
+        <div id="betMsg" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- Right: latest results -->
+      <div class="card">
+        <div class="section-title">Last 10 Results</div>
+        <div class="result-list" id="resultList"></div>
+      </div>
+    </div>
+
+    <!-- My bets -->
+    <div class="card">
+      <div class="section-title">My Recent Bets</div>
+      <table class="table" id="betsTable">
+        <thead>
+          <tr><th>Time</th><th>Period</th><th>Choice</th><th>Amount</th><th>Odds</th><th>Status</th><th>Payout</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { supabase } from './supabase-config.js';
+
+    // ----------- helpers -------------
+    const $ = (s)=>document.querySelector(s);
+    const $$ = (s)=>document.querySelectorAll(s);
+    const fmtMoney = (n)=> Number(n||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+
+    function showToast(msg, ok=true){
+      const el = $('#toast'); el.textContent = msg;
+      el.style.background = ok ? '#111' : '#b91c1c';
+      el.style.display='block'; setTimeout(()=>{ el.style.display='none' }, 2000);
+    }
+
+    // IST utilities
+    function getISTDate(){
+      const now = new Date();
+      const utcMs = now.getTime() + now.getTimezoneOffset()*60000;
+      return new Date(utcMs + 5.5*3600000);
+    }
+    function calc2mSlot(ist){
+      const m = ist.getMinutes();
+      const slotStart = new Date(ist); slotStart.setSeconds(0,0); slotStart.setMinutes(m - (m%2));
+      const slotEnd   = new Date(slotStart.getTime() + 2*60000);
+      const secInSlot = Math.floor((ist - slotStart)/1000); // 0..119
+      const remainSec = Math.max(0, 120 - secInSlot);
+      const closed    = secInSlot >= 90; // last 30s
+      const pad = (n)=> String(n).padStart(2,'0');
+      const periodStr = `${slotEnd.getFullYear()}${pad(slotEnd.getMonth()+1)}${pad(slotEnd.getDate())}${pad(slotEnd.getHours())}${pad(slotEnd.getMinutes())}`;
+      return {slotStart, slotEnd, secInSlot, remainSec, closed, periodStr};
+    }
+
+    function setBetEnabled(enabled){
+      $$('.choice').forEach(el=>{
+        if(enabled){ el.classList.remove('disabled'); }
+        else{ el.classList.add('disabled'); }
+      });
+      $('#btnBet').disabled = !enabled;
+      $('#betState').className = 'badge ' + (enabled ? '' : 'closed');
+      $('#betState').textContent = enabled ? 'Open' : 'Closed';
+    }
+
+    // ---------- globals ----------
+    let currentUser = null;
+    let selectedChoice = 'red';
+    let serverPeriod = null; // value from RPC for display sync
+
+    // ---------- auth & boot ----------
+    boot();
+    async function boot(){
+      // user
+      const { data: { user } } = await supabase.auth.getUser();
+      if(!user){
+        $('#userStat').innerHTML = '<span class="pill">Please login first</span>';
+      }else{
+        currentUser = user;
+        await refreshUserInfo();
+      }
+
+      // initial server period (for display)
+      await refreshServerPeriod();
+
+      // UI bind
+      $$('.choice').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          selectedChoice = el.dataset.choice;
+          // small flash
+          $$('.choice').forEach(x=>x.style.outline='none');
+          el.style.outline='3px solid rgba(255,255,255,.8)';
+          setTimeout(()=> el.style.outline='none', 300);
+        });
+      });
+      $$('.chip').forEach(ch=>{
+        ch.addEventListener('click', ()=>{
+          const cur = Number($('#amount').value||0);
+          $('#amount').value = cur + Number(ch.dataset.add);
+        });
+      });
+      $('#btnBet').addEventListener('click', placeBet);
+
+      // timers
+      startClock();
+
+      // data
+      await refreshResults();
+      await refreshMyBets();
+
+      // realtime (optional, will update when result inserted/updated)
+      try{
+        supabase.channel('realtime:color2m_rounds')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'color2m_rounds' }, payload => {
+            refreshResults();
+          })
+          .subscribe();
+      }catch(e){ /* ignore realtime errors */ }
+    }
+
+    async function refreshUserInfo(){
+      // read email & balance from users table
+      const { data, error } = await supabase
+        .from('users')
+        .select('email,balance')
+        .eq('id', currentUser.id)
+        .single();
+      if(error){ console.error(error); return; }
+      $('#userStat').innerHTML = `
+        <span class="pill"><b>Email:</b> ${data.email || currentUser.email}</span>
+        <span class="pill"><b>Balance:</b> ₹${fmtMoney(data.balance || 0)}</span>
+        <span class="pill">2-min round • last 30s closed</span>
+      `;
+    }
+
+    async function refreshServerPeriod(){
+      try{
+        const { data, error } = await supabase.rpc('current_color2m_period_ist');
+        if(!error) serverPeriod = data;
+      }catch(e){}
+    }
+
+    function startClock(){
+      const tick = async ()=>{
+        const ist = getISTDate();
+        const slot = calc2mSlot(ist);
+
+        // countdown text
+        const m = String(Math.floor(slot.remainSec/60)).padStart(2,'0');
+        const s = String(slot.remainSec%60).padStart(2,'0');
+        $('#timeLeft').textContent = `${m}:${s}`;
+        setBetEnabled(!slot.closed);
+
+        // period display: prefer serverPeriod if available, otherwise local computed
+        $('#period').textContent = serverPeriod || slot.periodStr;
+
+        // when a round flips (remain==120), refresh server period + lists
+        if(slot.remainSec === 120){
+          await refreshServerPeriod();
+          await sleep(50);
+          refreshResults();
+          refreshMyBets();
+          refreshUserInfo(); // balance may change on payout
+        }
+        requestAnimationFrame(()=> setTimeout(tick, 250)); // smooth & light
+      };
+      tick();
+    }
+
+    async function placeBet(){
+      if(!currentUser){ showToast('Please login first', false); return; }
+
+      // check closed by local clock first (backend will double-check)
+      const ist = getISTDate();
+      const { closed } = calc2mSlot(ist);
+      if(closed){ showToast('Betting closed for this round', false); return; }
+
+      const amt = Number($('#amount').value || 0);
+      if(!amt || amt <= 0){ showToast('Enter a valid amount', false); return; }
+
+      $('#btnBet').disabled = true;
+      $('#betMsg').innerHTML = '';
+
+      const { data, error } = await supabase.rpc('color2m_place_bet_ist', {
+        _user_id: currentUser.id,
+        _email: currentUser.email,
+        _choice: selectedChoice,
+        _amount: amt
+      });
+
+      $('#btnBet').disabled = false;
+
+      if(error){
+        const msg = (error.message || '').toUpperCase();
+        if(msg.includes('BET_CLOSED')) showToast('Betting closed for this round', false);
+        else if(msg.includes('INSUFFICIENT_FUNDS')) showToast('Insufficient balance', false);
+        else showToast(error.message || 'Bet failed', false);
+        $('#betMsg').innerHTML = `<span class="err">${error.message}</span>`;
+        return;
+      }
+
+      showToast('Bet placed successfully');
+      $('#amount').value = '';
+      $('#betMsg').innerHTML = `<span class="ok">Success • Period ${data.period} • ${data.choice.toUpperCase()} • ₹${fmtMoney(data.amount)} @ x${data.odds}</span>`;
+      refreshUserInfo();
+      refreshMyBets();
+    }
+
+    async function refreshResults(){
+      const { data, error } = await supabase
+        .from('color2m_rounds')
+        .select('period,result,draw_time')
+        .order('draw_time', { ascending:false })
+        .limit(10);
+      if(error){ console.error(error); return; }
+      const box = $('#resultList'); box.innerHTML = '';
+      data.forEach(r=>{
+        const div = document.createElement('div');
+        const cls = r.result || 'wait';
+        div.className = 'cell ' + (cls === 'red' ? 'red' : cls === 'green' ? 'green' : cls === 'violet' ? 'violet' : '');
+        div.textContent = r.result ? r.result[0].toUpperCase() : '-';
+        div.title = r.period;
+        box.appendChild(div);
+      });
+    }
+
+    async function refreshMyBets(){
+      if(!currentUser) return;
+      const { data, error } = await supabase
+        .from('color2m_bets')
+        .select('created_at, period, choice, amount, odds, status, payout')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending:false })
+        .limit(20);
+      if(error){ console.error(error); return; }
+      const tb = $('#betsTable tbody'); tb.innerHTML = '';
+      data.forEach(b=>{
+        const tr = document.createElement('tr');
+        const dt = new Date(b.created_at);
+        tr.innerHTML = `
+          <td>${dt.toLocaleString('en-GB')}</td>
+          <td>${b.period}</td>
+          <td style="font-weight:700; color:${b.choice==='red'?'#b91c1c':b.choice==='green'?'#166534':'#5b21b6'}">${b.choice.toUpperCase()}</td>
+          <td>₹${fmtMoney(b.amount)}</td>
+          <td>x${b.odds}</td>
+          <td>${b.status === 'win' ? '<span class="ok">WIN</span>' : b.status === 'lose' ? '<span class="err">LOSE</span>' : 'PENDING'}</td>
+          <td>${b.payout ? '₹'+fmtMoney(b.payout) : '-'}</td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
