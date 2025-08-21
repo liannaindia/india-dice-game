@@ -2,26 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Color 2-Min Game · Car Race Edition</title>
+  <title>Wingo 2-Min</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0d6efd">
   <script type="module" src="./supabase-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg1:#fff7ec; --bg2:#e6f2ff; --card:#fff; --text:#1f2937; --muted:#667085; --line:#e5e7eb;
-      --radius:16px; --shadow:0 8px 22px rgba(0,0,0,.10);
-      --primary:#0d6efd; --ok:#16a34a; --danger:#dc2626;
-      --red:#ef4444; --green:#16a34a; --violet:#7c3aed;
-    }
+    :root{--card:#fff;--bg1:#fff7ec;--bg2:#e6f2ff;--text:#1f2937;--muted:#667085;--line:#e5e7eb;--radius:16px;--shadow:0 8px 22px rgba(0,0,0,.10);
+      --primary:#0d6efd;--ok:#16a34a;--danger:#dc2626;--red:#ef4444;--green:#16a34a;--violet:#7c3aed}
     *{box-sizing:border-box} html,body{height:100%}
     body{margin:0;font-family:'Poppins',sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-    .wrap{max-width:1100px;margin:0 auto;padding:16px;padding-bottom:160px}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px;padding-bottom:170px}
     header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
     .back{display:inline-flex;align-items:center;gap:8px;background:#eef2ff;color:#1d4ed8;text-decoration:none;padding:10px 14px;border-radius:999px;font-weight:800;box-shadow:var(--shadow)}
-    .back:active{transform:scale(.98)}
     .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-    .row{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px}
+    .row{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-bottom:16px}
     @media (max-width:768px){.row{grid-template-columns:1fr}}
     .pill{padding:6px 10px;border-radius:999px;background:#f1f5f9;color:#111;font-weight:700}
     .section-title{font-weight:800;margin:8px 0 12px 0;font-size:16px}
@@ -35,84 +30,49 @@
     .bar{height:10px;background:#eef2ff;border-radius:999px;overflow:hidden}
     .bar>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#60a5fa);transition:width .25s linear}
 
-    /* race track */
-    .track-card{position:relative;padding:0;overflow:hidden}
-    .track{
-      position:relative; width:100%; height:260px; padding:16px;
-      background:repeating-linear-gradient(#90a4ae 0 24px, #607d8b 24px 48px);
-      border-radius:var(--radius);
-    }
-    .lane{position:relative; height:64px; margin:8px 0; background:repeating-linear-gradient(90deg,#cbd5e1 0 16px, #e2e8f0 16px 32px);
-      border-radius:12px; box-shadow: inset 0 2px 6px rgba(0,0,0,.12)}
-    .lane .flag {position:absolute; right:8px; top:50%; transform:translateY(-50%); width:28px; height:28px;
-      background:linear-gradient(45deg,#000 25%,#fff 25% 50%,#000 50% 75%,#fff 75%); background-size:12px 12px; border-radius:4px; opacity:.9}
-    .car{
-      position:absolute; left:6px; top:50%; transform:translateY(-50%); width:86px; height:32px; border-radius:8px; color:#fff;
-      display:grid; grid-template-columns:auto 18px; align-items:center; font-weight:900; letter-spacing:1px; text-shadow:0 1px 2px rgba(0,0,0,.4);
-      box-shadow:0 6px 12px rgba(0,0,0,.25)
-    }
-    .car .body{height:100%; border-radius:8px 0 0 8px; display:grid; place-items:center}
-    .car .rear{height:100%; border-radius:0 8px 8px 0; background:rgba(255,255,255,.18)}
-    .car.red   .body{background:linear-gradient(135deg,#ef4444,#b91c1c)}
-    .car.green .body{background:linear-gradient(135deg,#22c55e,#15803d)}
-    .car.violet .body{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
-    .wheel{position:absolute; bottom:-7px; width:18px; height:18px; background:#111; border-radius:50%; box-shadow: inset 0 0 0 3px #333, 0 1px 0 #fff4}
-    .wheel::after{content:''; position:absolute; inset:4px; background:#888; border-radius:50%}
-    .w1{left:10px} .w2{right:10px}
-    .lights{position:absolute; left:-8px; top:50%; transform:translateY(-50%); display:flex; gap:4px}
-    .light{width:10px;height:10px;border-radius:50%;background:#9ca3af;box-shadow:0 0 0 2px #0003 inset}
-    .go .light.on{background:#22c55e; box-shadow:0 0 12px 2px #22c55e88}
-    .startbox{position:absolute; left:16px; top:12px; display:flex; gap:6px; padding:6px 8px; background:#111a; color:#fff; border-radius:10px; font-size:12px; font-weight:800; align-items:center}
-    .startbox span{opacity:.8}
-
-    /* choices & confirm */
+    /* tabs & grids */
+    .tabs{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+    .tab{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#f8fafc;font-weight:800;cursor:pointer}
+    .tab.active{background:#111;color:#fff;border-color:#111}
     .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .choice{border-radius:18px;padding:18px 8px;color:#fff;text-align:center;font-weight:900;cursor:pointer}
-    .choice small{display:block;opacity:.95;font-weight:700}
+    .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .choice{border-radius:14px;padding:14px 8px;text-align:center;color:#fff;font-weight:900;cursor:pointer;user-select:none}
     .choice.red{background:linear-gradient(135deg,#ef4444,#b91c1c)}
     .choice.green{background:linear-gradient(135deg,#22c55e,#15803d)}
     .choice.violet{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
-    .choice.selected{box-shadow:0 0 0 3px rgba(255,255,255,.95) inset, 0 8px 18px rgba(0,0,0,.2)}
-    .choice.disabled{filter:grayscale(.4) brightness(.9);pointer-events:none}
-    .amount-box{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+    .chipn{padding:12px 0;border-radius:12px;border:1px solid var(--line);background:#fff;text-align:center;font-weight:900;cursor:pointer}
+    .chipn.sel{box-shadow:0 0 0 3px #111 inset}
+    .siz{padding:12px 0;border-radius:12px;border:1px solid var(--line);background:#fff;text-align:center;font-weight:900;cursor:pointer}
+    .siz.sel{box-shadow:0 0 0 3px #111 inset}
+    .amount-box{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
     .amt{border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:150px;outline:none;font-size:16px}
     .chip{background:#f1f5f9;border:1px solid var(--line);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:800}
-    .chip:active{transform:scale(.98)}
     .btn{padding:12px 16px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(13,110,253,.3)}
-    .btn:active{transform:scale(.98)}
     .btn[disabled]{opacity:.6;cursor:not-allowed}
-    .shake{animation:shake .4s linear}
-    @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
 
-    /* results bubbles */
+    /* result area */
     .result-list{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
-    @media (max-width:900px){.result-list{grid-template-columns:repeat(8,1fr)}} @media (max-width:600px){.result-list{grid-template-columns:repeat(6,1fr)}}
-    .bubble{ text-align:center; padding:10px 0; border-radius:12px; font-size:14px; font-weight:900; border:1px solid var(--line); background:#fff;
-      transform:translateY(12px); opacity:0; animation: slideUp .25s ease forwards}
-    @keyframes slideUp{to{transform:translateY(0);opacity:1}}
+    @media (max-width:900px){.result-list{grid-template-columns:repeat(8,1fr)}}@media (max-width:600px){.result-list{grid-template-columns:repeat(6,1fr)}}
+    .bubble{ text-align:center; padding:10px 0; border-radius:12px; font-size:14px; font-weight:900; border:1px solid var(--line); background:#fff }
     .bubble.red{background:#fee2e2;color:#b91c1c}
     .bubble.green{background:#dcfce7;color:#166534}
     .bubble.violet{background:#ede9fe;color:#5b21b6}
 
-    /* my bets */
+    /* reel (digit roll) */
+    .reel{height:60px;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;font-weight:900;font-size:36px}
+    .roll{position:relative;height:60px}
+    .roll .d{height:60px;display:grid;place-items:center;width:100%}
+
+    /* table */
     .table{width:100%;border-collapse:collapse;font-size:14px}
     .table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left}
-    .ok{color:var(--ok);font-weight:800} .err{color:var(--danger);font-weight:800}
+    .ok{color:var(--ok);font-weight:800}.err{color:var(--danger);font-weight:800}
 
-    /* mobile sticky dock */
+    /* mobile dock */
     .dock{position:fixed;left:0;right:0;bottom:0;padding:12px env(safe-area-inset-right) calc(12px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
       background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.95) 20%,rgba(255,255,255,.98) 100%);backdrop-filter:blur(6px);box-shadow:0 -8px 22px rgba(0,0,0,.12);display:none;z-index:998}
     @media (max-width:768px){.dock{display:block}.wrap{padding-bottom:180px}}
-    .dock-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:8px;align-items:center}
-    .dchoice{padding:12px 10px;text-align:center;border-radius:12px;color:#fff;font-weight:900;border:none}
-    .dchoice.red{background:#ef4444}.dchoice.green{background:#16a34a}.dchoice.violet{background:#7c3aed}
-    .dock .amt{min-width:auto;width:100%}.dock .btn{width:100%;font-size:16px}
-
-    /* toast + confetti */
-    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#111;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.25);z-index:999;display:none}
-    .confetti{position:fixed;top:0;left:0;width:100%;height:0;overflow:visible;pointer-events:none;z-index:1200}
-    .piece{position:absolute;top:-10px;width:8px;height:14px;background:var(--c);animation:fall 1200ms linear forwards}
-    @keyframes fall{to{transform:translateY(90vh) rotate(540deg)}}
+    .dock-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr;gap:8px;align-items:center}
   </style>
 </head>
 <body>
@@ -129,55 +89,49 @@
       </div>
     </header>
 
-    <!-- user -->
     <div class="card" style="margin-bottom:12px;">
-      <div class="pill" id="userStat">Not signed in</div>
+      <div id="userStat" class="pill">Not signed in</div>
     </div>
 
-    <!-- race track -->
-    <div class="card track-card">
-      <div class="section-title">Race Reveal</div>
-      <div class="track" id="track">
-        <div class="startbox" id="startbox">
-          <div class="lights"><div class="light"></div><div class="light"></div><div class="light"></div></div>
-          <span id="startText">Ready</span>
-        </div>
-
-        <div class="lane" data-color="red">
-          <div class="car red" id="car-red">
-            <div class="body">R</div><div class="rear"></div>
-            <div class="wheel w1"></div><div class="wheel w2"></div>
-          </div>
-          <div class="flag"></div>
-        </div>
-
-        <div class="lane" data-color="green">
-          <div class="car green" id="car-green">
-            <div class="body">G</div><div class="rear"></div>
-            <div class="wheel w1"></div><div class="wheel w2"></div>
-          </div>
-          <div class="flag"></div>
-        </div>
-
-        <div class="lane" data-color="violet">
-          <div class="car violet" id="car-violet">
-            <div class="body">V</div><div class="rear"></div>
-            <div class="wheel w1"></div><div class="wheel w2"></div>
-          </div>
-          <div class="flag"></div>
-        </div>
-      </div>
-      <div style="margin-top:8px;color:var(--muted);font-size:13px;">The race plays when the round ends; the winner car matches the official result.</div>
+    <!-- Reel -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="section-title">Result Reel</div>
+      <div class="reel"><div class="roll" id="roll"></div></div>
+      <div style="margin-top:8px;color:var(--muted);font-size:13px;">Reel reveals when the round ends; winner = the rolled digit.</div>
     </div>
 
     <div class="row">
-      <!-- left bet -->
       <div class="card">
-        <div class="section-title">Bet on a car</div>
-        <div class="grid3" id="choices">
-          <div class="choice red selected" data-choice="red">Red<small>×2.0</small></div>
-          <div class="choice green" data-choice="green">Green<small>×2.0</small></div>
-          <div class="choice violet" data-choice="violet">Violet<small>×4.5</small></div>
+        <div class="section-title">Place your bet</div>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="color">Color</button>
+          <button class="tab" data-tab="number">Number</button>
+          <button class="tab" data-tab="size">Big / Small</button>
+        </div>
+
+        <!-- Color -->
+        <div id="panel-color">
+          <div class="grid3">
+            <div class="choice red"    data-color="red">RED ×2.0</div>
+            <div class="choice green"  data-color="green">GREEN ×2.0</div>
+            <div class="choice violet" data-color="violet">VIOLET ×4.5</div>
+          </div>
+        </div>
+
+        <!-- Number -->
+        <div id="panel-number" style="display:none;">
+          <div class="grid5" id="numGrid"></div>
+          <div style="margin-top:6px;color:var(--muted);font-size:13px;">Payout ×9.0</div>
+        </div>
+
+        <!-- Size -->
+        <div id="panel-size" style="display:none;">
+          <div class="grid3">
+            <div class="siz" data-size="small">SMALL (0–4) ×2.0</div>
+            <div class="siz" data-size="big">BIG (6–9) ×2.0</div>
+            <div class="siz" data-size="none" title="5 is violet only">Number 5 → no size</div>
+          </div>
         </div>
 
         <div class="amount-box">
@@ -189,21 +143,18 @@
           <button class="btn" id="btnBet">Place Bet</button>
         </div>
         <div id="betMsg" style="margin-top:10px;"></div>
-        <div style="margin-top:8px;color:var(--muted);font-size:13px;">Betting closes automatically in the <b>last 30 seconds</b> of each 2-minute round.</div>
       </div>
 
-      <!-- right results -->
       <div class="card">
         <div class="section-title">Last 10 Results</div>
         <div class="result-list" id="resultList"></div>
       </div>
     </div>
 
-    <!-- my bets -->
     <div class="card">
       <div class="section-title">My Recent Bets</div>
       <table class="table" id="betsTable">
-        <thead><tr><th>Time</th><th>Period</th><th>Choice</th><th>Amount</th><th>Odds</th><th>Status</th><th>Payout</th></tr></thead>
+        <thead><tr><th>Time</th><th>Period</th><th>Type</th><th>Pick</th><th>Amount</th><th>Odds</th><th>Status</th><th>Payout</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -212,214 +163,200 @@
   <!-- mobile dock -->
   <div class="dock">
     <div class="dock-inner">
-      <button class="dchoice red" data-choice="red">RED</button>
-      <button class="dchoice green" data-choice="green">GREEN</button>
-      <button class="dchoice violet" data-choice="violet">VIOLET</button>
-      <div style="display:flex;gap:8px;">
-        <input type="number" id="m_amount" class="amt" placeholder="Amt" min="1" step="1">
-        <button class="btn" id="m_bet">Bet</button>
-      </div>
+      <input type="number" id="m_amount" class="amt" placeholder="Amount" min="1" step="1">
+      <button class="btn" id="m_bet">Bet</button>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <div class="confetti" id="confetti"></div>
+  <div class="toast" id="toast" style="display:none"></div>
 
   <script type="module">
     import { supabase } from './supabase-config.js';
-
-    // helpers
     const $=(s)=>document.querySelector(s), $$=(s)=>document.querySelectorAll(s);
     const fmt=(n)=>Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
     const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
-    function toast(msg,ok=true){const t=$('#toast');t.textContent=msg;t.style.background=ok?'#111':'#b91c1c';t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
-    function confetti(){const box=$('#confetti');for(let i=0;i<24;i++){const p=document.createElement('div');p.className='piece';p.style.left=(Math.random()*100)+'vw';p.style.setProperty('--c',['#ef4444','#16a34a','#7c3aed','#f59e0b','#0ea5e9'][i%5]);p.style.animationDelay=(Math.random()*0.4)+'s';box.appendChild(p);setTimeout(()=>p.remove(),1400)}}
+    const toast=(m,ok=true)=>{const t=$('#toast');t.textContent=m;t.style.background=ok?'#111':'#b91c1c';t.style.display='block';setTimeout(()=>t.style.display='none',1800)};
 
-    // server clock sync
+    // server clock
     let skew=0;
     async function syncClock(){ try{ const {data}=await supabase.rpc('get_server_time_ms'); if(typeof data==='number') skew=data-Date.now(); }catch{} }
     await syncClock(); setInterval(syncClock,60000);
-    function nowIST(){ const ms=Date.now()+skew+5.5*3600000; return new Date(ms); }
+    const nowIST=()=>new Date(Date.now()+skew+5.5*3600000);
     function calcSlot(ist){
       const m=ist.getMinutes(); const start=new Date(ist); start.setSeconds(0,0); start.setMinutes(m-(m%2));
       const end=new Date(start.getTime()+120000); const sec=Math.floor((ist-start)/1000); const remain=Math.max(0,120-sec);
       const closed=sec>=90; const pad=n=>String(n).padStart(2,'0'); const per=`${end.getFullYear()}${pad(end.getMonth()+1)}${pad(end.getDate())}${pad(end.getHours())}${pad(end.getMinutes())}`;
-      const prog=sec/120; return {start,end,sec,remain,closed,per,prog}
+      return {remain,closed,per,prog:sec/120}
     }
 
-    // global
-    let user=null, serverPeriod=null, selected='red';
-    let lastFinished=null; // 已播放过的赛果期号
-    let lastStatuses=new Map();
+    // globals
+    let user=null, serverPeriod=null;
+    let sel = { kind:'color', color:'red', number:null, size:null };
 
-    // boot
+    // UI init
     boot();
     async function boot(){
       const {data:{user:U}}=await supabase.auth.getUser(); user=U||null;
-      if(!user) $('#userStat').textContent='Please login first';
-      else await refreshUser();
+      if(user) await refreshUser(); else $('#userStat').textContent='Please login first';
 
-      await getServerPeriod();
-      bindUI();
-      startClock();
+      // build number grid
+      const numGrid=$('#numGrid');
+      for(let i=0;i<=9;i++){ const b=document.createElement('div'); b.className='chipn'; b.textContent=i; b.dataset.n=i; numGrid.appendChild(b); }
+
+      // tabs
+      $$('.tab').forEach(t=>t.addEventListener('click',()=>{
+        $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+        ['color','number','size'].forEach(name=> $('#panel-'+name).style.display = (t.dataset.tab===name)?'block':'none');
+        sel.kind = t.dataset.tab; if(sel.kind==='color'){sel.color=sel.color||'red'} if(sel.kind==='number'){sel.number ??= 0} if(sel.kind==='size'){sel.size ??= 'small'}
+      }));
+
+      // color picks
+      $$('#panel-color .choice').forEach(c=>c.addEventListener('click',()=>{ sel={kind:'color', color:c.dataset.color}; toast('Selected '+sel.color.toUpperCase()); }));
+
+      // number picks
+      $$('#panel-number .chipn').forEach(n=>n.addEventListener('click',()=>{
+        $$('#panel-number .chipn').forEach(x=>x.classList.remove('sel'));
+        n.classList.add('sel'); sel={kind:'number', number: Number(n.dataset.n)};
+      }));
+
+      // size picks
+      $$('#panel-size .siz').forEach(s=>s.addEventListener('click',()=>{
+        $$('#panel-size .siz').forEach(x=>x.classList.remove('sel'));
+        s.classList.add('sel'); const v=s.dataset.size; sel={kind:'size', size: v==='none'? null : v};
+      }));
+
+      // chips
+      $$('.chip').forEach(ch=> ch.addEventListener('click',()=>{ const cur=Number($('#amount').value||0); $('#amount').value=cur+Number(ch.dataset.add); }));
+
+      // bet buttons
+      $('#btnBet').addEventListener('click', placeBet);
+      $('#m_bet').addEventListener('click', async ()=>{ const v=Number($('#m_amount').value||0); if(v>0){ $('#amount').value=v; await placeBet(); } });
+
+      // timers + data
+      tick(); setInterval(tick,250);
       await refreshResults();
       await refreshMyBets();
 
+      // realtime
       try{
         supabase.channel('rt:color2m_rounds')
-          .on('postgres_changes',{event:'*',schema:'public',table:'color2m_rounds'},()=>{refreshResults(); refreshMyBets().then(checkWinEffect);})
+          .on('postgres_changes',{event:'*',schema:'public',table:'color2m_rounds'},()=>{refreshResults(); refreshMyBets();})
           .subscribe();
       }catch{}
     }
 
-    function bindUI(){
-      // choose color
-      $$('#choices .choice').forEach(el=>{
-        el.addEventListener('click',()=>{ selected=el.dataset.choice; $$('#choices .choice').forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); });
-      });
-      // chips
-      $$('.chip').forEach(ch=> ch.addEventListener('click',()=>{ const cur=Number($('#amount').value||0); $('#amount').value=cur+Number(ch.dataset.add); }));
-      // bet buttons
-      $('#btnBet').addEventListener('click', placeBet);
-      $$('.dchoice').forEach(b=> b.addEventListener('click',()=> selected=b.dataset.choice));
-      $('#m_bet').addEventListener('click', async ()=>{ const v=Number($('#m_amount').value||0); if(v>0){ $('#amount').value=v; await placeBet(); }});
-    }
-
     async function refreshUser(){
-      const {data,error}=await supabase.from('users').select('email,balance').eq('id',user.id).single();
-      if(error) return;
-      $('#userStat').innerHTML=`<span class="pill"><b>Email:</b> ${data.email||user.email}</span> <span class="pill"><b>Balance:</b> ₹${fmt(data.balance||0)}</span> <span class="pill">2-min • last 30s closed</span>`;
+      const {data}=await supabase.from('users').select('email,balance').eq('id',user.id).single();
+      $('#userStat').innerHTML=`<b>Email:</b> ${data.email||user.email} &nbsp;|&nbsp; <b>Balance:</b> ₹${fmt(data.balance||0)}`;
     }
 
-    async function getServerPeriod(){ try{ const {data}=await supabase.rpc('current_color2m_period_ist'); serverPeriod=data; }catch{} }
-
-    function setBetEnabled(open){
-      $$('#choices .choice').forEach(el=> el.classList.toggle('disabled', !open));
-      $('#btnBet').disabled=!open; $('#m_bet').disabled=!open;
-      $('#betState').textContent=open?'Open':'Closed'; $('#betState').className='badge'+(open?'':' closed');
-    }
-
-    function startClock(){
-      const tick=async ()=>{
-        const ist=nowIST(); const s=calcSlot(ist);
-        $('#timeLeft').textContent=`${String(Math.floor(s.remain/60)).padStart(2,'0')}:${String(s.remain%60).padStart(2,'0')}`;
-        $('#bar').style.width=(s.prog*100)+'%';
-        setBetEnabled(!s.closed);
-        $('#period').textContent=serverPeriod || s.per;
-
-        if(s.remain===0){ playRaceFor(s.per); await sleep(1200); await refreshResults(); await refreshMyBets(); checkWinEffect(); await getServerPeriod(); }
-        requestAnimationFrame(()=> setTimeout(tick,250));
-      };
-      tick();
-    }
-
-    // ===== Race animation =====
-    async function playRaceFor(endedPeriod){
-      if(lastFinished===endedPeriod) return;
-      // 拉取开奖结果（最多2.5s）
-      let result=null;
-      for(let i=0;i<10;i++){
-        const {data}=await supabase.from('color2m_rounds').select('result').eq('period',endedPeriod).maybeSingle();
-        if(data?.result){ result=data.result; break; }
-        await sleep(250);
-      }
-      if(!result) return; // 未结算就不播放
-
-      lastFinished=endedPeriod;
-
-      // 起步灯
-      const lights=$('.lights'); const startText=$('#startText'); const track=$('#track');
-      const lamp=lights.querySelectorAll('.light');
-      startText.textContent='Ready'; lamp.forEach(x=>x.classList.remove('on'));
-      await sleep(200); lamp[0].classList.add('on'); startText.textContent='Set';
-      await sleep(200); lamp[1].classList.add('on'); await sleep(200);
-      lamp[2].classList.add('on'); startText.textContent='GO!'; track.classList.add('go');
-
-      // 赛道宽度
-      const W = track.clientWidth - 120; // 可跑距离（减车宽）
-      const cars = {
-        red:   $('#car-red'),
-        green: $('#car-green'),
-        violet:$('#car-violet')
-      };
-
-      // 设定三个车的“目标时间”，确保赢家最短
-      const base = 5200; // ms
-      const rnd = ()=> 200 + Math.random()*250; // 抖动
-      const times = { red: base+rnd(), green: base+rnd(), violet: base+rnd() };
-      times[result] = base - 600 + Math.random()*120; // 胜者更快
-
-      // 动画：CSS 过渡 + 轻微随机停顿模拟换挡
-      for(const c of Object.keys(cars)){
-        const el=cars[c];
-        el.style.transition='transform '+(times[c]/1000)+'s cubic-bezier(.25,.9,.35,1)';
-        el.style.transform='translate( '+W+'px, -50%)';
-      }
-
-      await sleep(Math.max(times.red,times.green,times.violet)+200);
-      $('#startText').textContent = result.toUpperCase()+' WINS';
+    async function getPeriod(){
+      // 兼容两种函数名，存在其一即可
+      let p=null;
+      try{ const {data}=await supabase.rpc('current_color2m_period_ist'); if(data) p=data; }catch{}
+      if(!p){ try{ const {data}=await supabase.rpc('current_wingo2m_period_ist'); if(data) p=data; }catch{} }
+      serverPeriod=p;
     }
 
     async function placeBet(){
-      if(!user){ toast('Please login first',false); return; }
-      const s=calcSlot(nowIST());
-      if(s.closed){ $('#btnBet').classList.add('shake'); setTimeout(()=>$('#btnBet').classList.remove('shake'),400); return toast('Betting closed for this round',false); }
+      if(!user) return toast('Please login first',false);
+      const s=calcSlot(nowIST()); if(s.closed) return toast('Betting closed for this round',false);
       const amt=Number($('#amount').value||0); if(!amt || amt<=0) return toast('Enter a valid amount',false);
 
-      $('#btnBet').disabled=true; $('#m_bet').disabled=true; $('#betMsg').innerHTML='';
-      const {data,error}=await supabase.rpc('color2m_place_bet_ist',{ _user_id:user.id, _email:user.email, _choice:selected, _amount:amt });
-      $('#btnBet').disabled=false; $('#m_bet').disabled=false;
+      let kind=sel.kind, value=null;
+      if(kind==='color'){ value=sel.color||'red'; }
+      else if(kind==='number'){ value=String(sel.number ?? 0); }
+      else { if(!sel.size) return toast('Pick BIG or SMALL',false); value=sel.size; }
 
-      if(error){
-        const m=(error.message||'').toUpperCase();
-        if(m.includes('BET_CLOSED')) toast('Betting closed for this round',false);
-        else if(m.includes('INSUFFICIENT_FUNDS')) toast('Insufficient balance',false);
-        else toast(error.message||'Bet failed',false);
-        $('#betMsg').innerHTML=`<span style="color:#dc2626;font-weight:800">${error.message}</span>`;
-        return;
-      }
+      const {data,error}=await supabase.rpc('wingo2m_place_bet_ist',{ _user_id:user.id, _email:user.email, _kind:kind, _value:value, _amount:amt });
+      if(error){ const m=(error.message||'').toUpperCase(); if(m.includes('BET_CLOSED')) toast('Betting closed',false); else if(m.includes('INSUFFICIENT_FUNDS')) toast('Insufficient balance',false); else toast(error.message,false); return; }
       toast('Bet placed');
       $('#amount').value=''; $('#m_amount').value='';
-      $('#betMsg').innerHTML=`<span style="color:#16a34a;font-weight:800">Success • Period ${data.period} • ${data.choice.toUpperCase()} • ₹${fmt(data.amount)} @ x${data.odds}</span>`;
-      refreshUser(); await refreshMyBets();
+      await refreshUser(); await refreshMyBets();
+    }
+
+    // countdown + reel trigger
+    async function tick(){
+      const ist=nowIST(); const s=calcSlot(ist);
+      $('#timeLeft').textContent = `${String(Math.floor(s.remain/60)).padStart(2,'0')}:${String(s.remain%60).padStart(2,'0')}`;
+      $('#bar').style.width = (s.prog*100)+'%';
+      $('#betState').textContent = s.closed?'Closed':'Open';
+      $('#betState').className = 'badge'+(s.closed?' closed':'');
+      if(!serverPeriod) await getPeriod();
+      $('#period').textContent = serverPeriod || s.per;
+
+      if(s.remain===0){ await playReelFor(s.per); await refreshResults(); await refreshMyBets(); await getPeriod(); }
+    }
+
+    // reel: 0-9 快速滚动后停在本期结果
+    async function playReelFor(period){
+      // 取开奖结果（最多等 2s）
+      let digit=null;
+      for(let i=0;i<8;i++){
+        const {data}=await supabase.from('color2m_rounds').select('result_number').eq('period',period).maybeSingle();
+        if(data?.result_number !== null){ digit=data.result_number; break; }
+        await sleep(250);
+      }
+      if(digit===null) return;
+
+      const roll=$('#roll'); roll.innerHTML='';
+      // 先铺 20 个数字块做滚动，再追加目标
+      for(let i=0;i<20;i++){
+        const d=document.createElement('div'); d.className='d'; d.textContent= (i%10);
+        roll.appendChild(d);
+      }
+      const target=document.createElement('div'); target.className='d'; target.textContent=digit; roll.appendChild(target);
+      roll.style.transition='none'; roll.style.transform='translateY(0)';
+      await sleep(16);
+      const h=60; const total = (roll.children.length-1)*h;
+      roll.style.transition='transform 1.2s cubic-bezier(.25,.9,.35,1)';
+      roll.style.transform=`translateY(-${total}px)`;
     }
 
     async function refreshResults(){
-      const {data}=await supabase.from('color2m_rounds').select('period,result,draw_time').order('draw_time',{ascending:false}).limit(10);
+      const {data}=await supabase
+        .from('color2m_rounds')
+        .select('period,result_number,result,result_size,draw_time')
+        .order('draw_time',{ascending:false})
+        .limit(10);
       const box=$('#resultList'); box.innerHTML='';
-      (data||[]).forEach((r,i)=>{
-        const d=document.createElement('div'); const cls=r.result||'wait';
-        d.className='bubble '+(cls==='red'?'red':cls==='green'?'green':cls==='violet'?'violet':''); d.style.animationDelay=(i*0.05)+'s';
-        d.textContent=r.result ? r.result[0].toUpperCase() : '-'; d.title=r.period; box.appendChild(d);
+      (data||[]).forEach(r=>{
+        const b=document.createElement('div');
+        const col = r.result || 'violet';
+        b.className = 'bubble '+(col==='red'?'red':col==='green'?'green':'violet');
+        b.textContent = r.result_number ?? '-';
+        b.title = `${r.period}  ${col.toUpperCase()}  ${r.result_size? r.result_size.toUpperCase() : '—'}`;
+        box.appendChild(b);
       });
-
-      // 重置车辆位置（准备下一次演出）
-      ['#car-red','#car-green','#car-violet'].forEach(sel=>{
-        const el=$(sel); el.style.transition='none'; el.style.transform='translate(6px,-50%)';
-      });
-      $('#startText').textContent='Ready';
-      $('.lights').querySelectorAll('.light').forEach(x=>x.classList.remove('on'));
     }
 
     async function refreshMyBets(){
       if(!user) return;
-      const {data}=await supabase.from('color2m_bets').select('created_at,period,choice,amount,odds,status,payout').eq('user_id',user.id).order('created_at',{ascending:false}).limit(30);
+      const {data}=await supabase
+        .from('color2m_bets')
+        .select('created_at,period,kind,choice,choice_number,choice_size,amount,odds,status,payout')
+        .eq('user_id',user.id)
+        .order('created_at',{ascending:false})
+        .limit(30);
       const tb=$('#betsTable tbody'); tb.innerHTML='';
       (data||[]).forEach(b=>{
         const tr=document.createElement('tr'); const dt=new Date(b.created_at);
-        tr.innerHTML=`<td>${dt.toLocaleString('en-GB')}</td><td>${b.period}</td>
-          <td style="font-weight:900;color:${b.choice==='red'?'#b91c1c':b.choice==='green'?'#166534':'#5b21b6'}">${b.choice.toUpperCase()}</td>
-          <td>₹${fmt(b.amount)}</td><td>x${b.odds}</td>
+        const kind=b.kind.toUpperCase();
+        const pick=b.kind==='color' ? (b.choice||'').toUpperCase()
+                : b.kind==='number' ? String(b.choice_number)
+                : (b.choice_size||'').toUpperCase();
+        tr.innerHTML = `
+          <td>${dt.toLocaleString('en-GB')}</td>
+          <td>${b.period}</td>
+          <td>${kind}</td>
+          <td>${pick}</td>
+          <td>₹${fmt(b.amount)}</td>
+          <td>x${b.odds}</td>
           <td>${b.status==='win'?'<span class="ok">WIN</span>':b.status==='lose'?'<span class="err">LOSE</span>':'PENDING'}</td>
           <td>${b.payout?'₹'+fmt(b.payout):'-'}</td>`;
         tb.appendChild(tr);
-        const key=`${b.period}-${b.choice}-${b.amount}-${b.odds}`;
-        const prev=lastStatuses.get(key);
-        if(prev && prev==='pending' && b.status==='win'){ lastStatuses.set(key,'win'); tr.dataset.justWon='1'; }
-        else { lastStatuses.set(key,b.status); }
       });
     }
-    function checkWinEffect(){ const won=[...$('#betsTable tbody').children].some(tr=>tr.dataset.justWon==='1'); if(won){ confetti(); $('#betsTable tbody').querySelectorAll('[data-just-won="1"]').forEach(tr=>tr.removeAttribute('data-just-won')); } }
   </script>
 </body>
 </html>
