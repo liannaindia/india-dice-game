@@ -151,6 +151,27 @@
         </table>
       </div>
     </div>
+
+    <!-- 新增：最近10期结果 -->
+    <div class="card">
+      <h3 style="margin:0 0 8px">📈 Last 10 Results</h3>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Round</th>
+              <th>Result</th>
+              <th>Odds</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="results-tbody">
+            <tr><td colspan="4" class="muted">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- 新增结束 -->
   </div>
 
   <div class="betbar">
@@ -159,7 +180,7 @@
   </div>
 
 <script type="module">
-import { supabase } from './supabase-config.js';
+import { supabase } from './supabase-config.js'
 
 /* ===== 配置（3..18 数字 + 赔率） ===== */
 const NUMBERS = Array.from({length:16}, (_,i)=>i+3); // 3..18
@@ -207,6 +228,7 @@ const roundEl = document.getElementById('round-number');
 const prevEl  = document.getElementById('prev-result');
 const countEl = document.getElementById('countdown');
 const betsTbody = document.getElementById('bets-tbody');
+const resultsTbody = document.getElementById('results-tbody'); // 新增：最近10期结果表
 
 const wheelG = document.getElementById('wheelG');
 const winBanner = document.getElementById('win-banner');
@@ -256,6 +278,7 @@ supabase.auth.getUser().then(async ({ data }) => {
     // 首次：直接显示上一期结果，不做动画
     await ensurePrevShown(false);
     await loadMyBets();
+    await loadRecentResults();   // 新增：启动时加载最近10期
     startTicker();
   }
 });
@@ -420,6 +443,7 @@ async function ensurePrevShown(animateIfNew){
     winBanner.textContent = `WIN — ${row.result_number} • ${row.result_multiplier}×`;
     winBanner.classList.add('show');
     shownPrevRound = row.round_number;
+    await loadRecentResults(); // 新增：有新结果时刷新最近10期
   }
 }
 
@@ -484,6 +508,34 @@ async function loadMyBets(){
       <td>₹${Number(b.payout||0).toFixed(2)}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="6" class="muted">No recent bets.</td></tr>`;
+}
+
+/* ===== 新增：最近10期结果 ===== */
+async function loadRecentResults(){
+  try{
+    const { data, error } = await supabase
+      .from('wheel_rounds')
+      .select('round_number, result_number, result_multiplier, is_manual')
+      .not('result_number','is', null)                 // 只展示已有结果
+      .order('round_number', { ascending:false })      // 期号倒序
+      .limit(10);
+
+    if (error) throw error;
+
+    const rows = (data || []).map(r => `
+      <tr>
+        <td>${r.round_number}</td>
+        <td>${r.result_number ?? '—'}</td>
+        <td>${r.result_multiplier ? `×${r.result_multiplier}` : '—'}</td>
+        <td>${r.is_manual ? 'Manual' : 'Auto'}</td>
+      </tr>
+    `).join('');
+
+    resultsTbody.innerHTML = rows || `<tr><td colspan="4" class="muted">No results.</td></tr>`;
+  }catch(e){
+    console.error('loadRecentResults error:', e);
+    resultsTbody.innerHTML = `<tr><td colspan="4" class="muted">Load failed.</td></tr>`;
+  }
 }
 
 /* ===== 下单 ===== */
