@@ -6,6 +6,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script type="module" src="./supabase-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <!-- PWA manifest -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1220">
+
+<!-- iOS：添加到主屏幕后全屏显示与名称 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ganeshcasino">
+<link rel="apple-touch-icon" href="/icons/apple-icon-180.png">
+
+<!-- 注册 Service Worker（根路径） -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js');
+    });
+  }
+</script>
+
   <style>
     :root{
       --bg:#f6f9fc; --card:#fff; --text:#0f172a; --muted:#64748b;
