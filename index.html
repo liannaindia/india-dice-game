@@ -106,10 +106,10 @@
   </style>
 </head>
 <body>
-  <!-- Install App button (fixed at bottom-right) -->
+<!-- Install App button (always visible) -->
 <style>
   #installAppBtn{
-    display:none; position:fixed; right:16px; bottom:16px; z-index:9999;
+    position:fixed; right:16px; bottom:16px; z-index:9999;
     padding:12px 16px; border:0; border-radius:12px;
     background:#22d3ee; color:#0b1220; font-weight:900;
     box-shadow:0 8px 24px #22d3ee55;
@@ -121,48 +121,51 @@
 <script>
   // If you've already registered the service worker in <head>, you can remove this block.
   // if ('serviceWorker' in navigator) {
-  //   window.addEventListener('load', () => {
-  //     navigator.serviceWorker.register('/service-worker.js');
-  //   });
+  //   window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
   // }
 
   const btn = document.getElementById('installAppBtn');
   let deferredPrompt = null;
 
-  // Hide if already running as an installed app
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  if (isStandalone) btn.style.display = 'none';
-
-  // Android/Desktop: capture install event and show the button
+  // Keep the button visible at all times (do NOT hide in standalone or after install)
+  // Capture the install prompt on Android/Desktop for later use
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    btn.style.display = 'inline-block';
   });
 
-  // Hide button after successful install
-  window.addEventListener('appinstalled', () => {
-    btn.style.display = 'none';
-  });
+  // Do NOT hide the button on 'appinstalled' — keep it visible
+  // window.addEventListener('appinstalled', () => { /* keep button visible */ });
 
   btn.addEventListener('click', async () => {
     const ua = navigator.userAgent.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(ua);
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
+    // If we have a stored prompt (Android/Desktop), show it
     if (deferredPrompt) {
       btn.disabled = true;
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice; // { outcome: 'accepted' | 'dismissed' }
-      deferredPrompt = null;
-      btn.disabled = false;
-    } else if (isIOS && isSafari) {
+      try {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice; // { outcome: 'accepted' | 'dismissed' }
+      } finally {
+        deferredPrompt = null;
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    // Otherwise show platform-specific guidance (button remains visible)
+    if (isIOS && isSafari) {
       alert('On iPhone:\n1) Open this site in Safari\n2) Tap the Share button (⬆️)\n3) Choose "Add to Home Screen"');
+    } else if (isIOS && !isSafari) {
+      alert('To install on iPhone, open this site in Safari, then use "Add to Home Screen".');
     } else {
-      alert('If no install panel appears, use your browser menu and choose "Add to Home screen" or "Install app".');
+      alert('If no install panel appears, use your browser menu and choose "Add to Home screen" or "Install app". If you already installed, open it from your home screen.');
     }
   });
 </script>
+
 
   <div class="nav">
     <div class="nav-inner">
