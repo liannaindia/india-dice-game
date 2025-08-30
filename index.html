@@ -8,23 +8,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   
   <!-- PWA manifest -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0b1220">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1220">
 
-<!-- iOS：添加到主屏幕后全屏显示与名称 -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Ganeshcasino">
-<link rel="apple-touch-icon" href="/icons/apple-icon-180.png">
+  <!-- iOS：添加到主屏幕后全屏显示与名称 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ganeshcasino">
+  <link rel="apple-touch-icon" href="/icons/apple-icon-180.png">
 
-<!-- 注册 Service Worker（根路径） -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js');
-    });
-  }
-</script>
+  <!-- 注册 Service Worker（根路径） -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js');
+      });
+    }
+  </script>
 
   <style>
     :root{
@@ -103,6 +103,19 @@
       padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
       color:#b45309;font-weight:700;font-size:12px
     }
+
+    /* ==== Added for Deposit Channels (No Tabs) ==== */
+    .channel-switch{display:flex;gap:8px;margin-bottom:12px}
+    .channel-btn{
+      padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fafafa;
+      cursor:pointer;font-weight:700
+    }
+    .channel-btn.active{background:#fff;border-color:#ffddbc;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+    .dep-pane{display:none}
+    .dep-pane.active{display:block}
+    .addr-row{display:flex;gap:8px}
+    .addr-row input{flex:1}
+    .qr-hint{font-size:12px;color:var(--muted)}
   </style>
 </head>
 <body>
@@ -266,22 +279,48 @@
     </div>
   </div>
 
-  <!-- 存款 Modal -->
+  <!-- 存款 Modal（INR / USDT 两页，点击按钮切换） -->
   <div id="dep-modal" class="modal-bg">
     <div class="modal">
       <header>Deposit</header>
       <div class="body">
-        <div class="form">
-          <div class="muted">Please transfer to the account below, then submit UTR and amount.</div>
-          <div id="dep-bank" class="form">
+        <!-- 切换按钮（不使用Tab） -->
+        <div class="channel-switch">
+          <button id="btn-inr"  class="channel-btn active">INR · UPI / Bank</button>
+          <button id="btn-usdt" class="channel-btn">USDT · Crypto</button>
+        </div>
+
+        <!-- INR 页面（原逻辑：UTR + ₹金额） -->
+        <div id="pane-inr" class="dep-pane active">
+          <div class="muted" style="margin-bottom:8px">
+            Please transfer to the account below, then submit UTR and amount.
+          </div>
+          <div id="dep-bank" class="form" style="margin-bottom:8px">
             <div class="kv"><div class="k">Name</div><div class="v">—</div></div>
             <div class="kv"><div class="k">AC</div><div class="v">—</div></div>
             <div class="kv"><div class="k">IFSC</div><div class="v">—</div></div>
             <div class="kv"><div class="k">UPI</div><div class="v">—</div></div>
             <div class="kv"><div class="k">USDT</div><div class="v">—</div></div>
           </div>
-          <input id="dep-utr" type="text" placeholder="UTR / Reference Number" />
-          <input id="dep-amount" type="number" min="1" placeholder="Amount ₹" />
+          <div class="form">
+            <input id="dep-utr" type="text" placeholder="UTR / Reference Number" />
+            <input id="dep-amount" type="number" min="1" placeholder="Amount ₹" />
+          </div>
+        </div>
+
+        <!-- USDT 页面（固定 TRC20：地址 + TXID + USDT 数量） -->
+        <div id="pane-usdt" class="dep-pane">
+          <div class="form">
+            <div class="muted" style="margin-bottom:6px">USDT (TRC20) Deposit Address</div>
+            <div class="addr-row">
+              <input id="usdt-address" type="text" readonly placeholder="Loading address…" />
+              <button id="copy-usdt" class="btn">Copy</button>
+            </div>
+            <div class="qr-hint">* Network is fixed to TRC20. Deposits on other chains will be lost.</div>
+
+            <input id="usdt-txid" type="text" placeholder="TXID / Transaction Hash" />
+            <input id="usdt-amount" type="number" min="0.01" step="0.01" placeholder="Amount (USDT)" />
+          </div>
         </div>
       </div>
       <footer>
@@ -444,7 +483,39 @@
     const chpassSubmit = $('chpass-submit');
     const oldPass = $('old-pass'), newPass = $('new-pass'), newPass2 = $('new-pass2');
 
-    $('open-deposit').onclick = async()=>{ await loadBankInfoIntoDeposit(); show(depModal,true); };
+    // ==== Deposit channel switching (No Tabs) ====
+    const btnINR   = $('btn-inr');
+    const btnUSDT  = $('btn-usdt');
+    const paneINR  = $('pane-inr');
+    const paneUSDT = $('pane-usdt');
+    const usdtAddr = $('usdt-address');
+    const usdtCopy = $('copy-usdt');
+    const usdtTxid = $('usdt-txid');
+    const usdtAmount = $('usdt-amount');
+    let depChannel = 'inr'; // 'inr' | 'usdt'
+
+    $('open-deposit').onclick = async ()=>{
+      // 默认显示 INR 页面
+      depChannel = 'inr';
+      btnINR.classList.add('active'); btnUSDT.classList.remove('active');
+      paneINR.classList.add('active'); paneUSDT.classList.remove('active');
+
+      await loadBankInfoIntoDeposit(); // 填充 Name/AC/IFSC/UPI/USDT
+
+      // 读取 bank_info.crypto_address 作为 TRC20 地址
+      try{
+        const { data } = await supabase.from('bank_info').select('crypto_address').eq('id',1).maybeSingle();
+        usdtAddr.value = data?.crypto_address || '';
+        if(!usdtAddr.value) usdtAddr.placeholder = 'No TRC20 address configured';
+      }catch{ usdtAddr.value = ''; }
+
+      // 清空 USDT 页面输入
+      usdtTxid.value = '';
+      usdtAmount.value = '';
+
+      show(depModal,true);
+    };
+
     $('open-withdraw').onclick = async()=>{ await loadWithdrawProfileIntoModal(); show(wdModal,true); };
     openLogin.onclick = ()=> show(loginModal,true);
     loginCancel.onclick = ()=> show(loginModal,false);
@@ -458,6 +529,25 @@
     // 打开/关闭修改密码
     openChpass.onclick = ()=> show(chpassModal, true);
     chpassCancel.onclick = ()=> show(chpassModal, false);
+
+    // 切换按钮行为
+    btnINR.onclick = ()=>{
+      depChannel = 'inr';
+      btnINR.classList.add('active'); btnUSDT.classList.remove('active');
+      paneINR.classList.add('active'); paneUSDT.classList.remove('active');
+    };
+    btnUSDT.onclick = ()=>{
+      depChannel = 'usdt';
+      btnUSDT.classList.add('active'); btnINR.classList.remove('active');
+      paneUSDT.classList.add('active'); paneINR.classList.remove('active');
+    };
+
+    // 复制 USDT 地址
+    usdtCopy.onclick = async ()=>{
+      try{
+        if(usdtAddr.value){ await navigator.clipboard.writeText(usdtAddr.value); toast('Address copied'); }
+      }catch{ toast('Copy failed'); }
+    };
 
     let currentUser = null;
     function setAuthUI(loggedIn){
@@ -527,19 +617,52 @@
       $('rollover-val').textContent = fmt2(data?.turnover_remaining);
     }
 
+    // 提交：根据通道分别校验与写入（兼容你现有表结构）
     depSubmit.onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
-      const utr = $('dep-utr').value.trim();
-      const amount = Number($('dep-amount').value);
-      if (!utr || !amount || amount <= 0) return toast('Enter UTR & amount');
-      const { error } = await supabase.from('recharge_requests').insert([{
-        user_id: currentUser.id, email: currentUser.email, utr, amount, status: 'pending'
-      }]);
-      if (error) return toast('Submit failed: ' + error.message);
-      show(depModal,false);
-      toast('✅ Recharge request submitted.');
-      // 如果记录弹窗打开着，刷新
-      if (historyModal.style.display === 'flex') await loadRecentRecords();
+
+      try{
+        let utrStr = '';
+        let amtNum = 0;
+
+        if (depChannel === 'inr') {
+          const utr = $('dep-utr').value.trim();
+          const amountInr = Number($('dep-amount').value);
+          if(!utr || !amountInr || amountInr <= 0) return toast('Enter UTR & amount');
+          utrStr = `[INR] ${utr}`;
+          amtNum = amountInr;
+        } else {
+          // 固定 TRC20
+          const addr = String(usdtAddr.value||'').trim();
+          const txid = String(usdtTxid.value||'').trim();
+          const amt  = Number(usdtAmount.value);
+          if(!addr) return toast('No TRC20 address configured');
+          if(!txid) return toast('Enter transaction hash (TXID)');
+          if(!amt || amt <= 0) return toast('Enter USDT amount');
+
+          utrStr = `[USDT-TRC20] ${txid}`;
+          amtNum = amt; // 直接存 USDT 数量
+        }
+
+        const { error } = await supabase.from('recharge_requests').insert([{
+          user_id: currentUser.id,
+          email: currentUser.email,
+          utr: utrStr,
+          amount: amtNum,
+          status: 'pending'
+        }]);
+        if (error) return toast('Submit failed: ' + error.message);
+
+        // 成功后清空并关闭
+        $('dep-utr').value=''; $('dep-amount').value='';
+        usdtTxid.value=''; usdtAmount.value='';
+        show(depModal,false);
+        toast('✅ Recharge request submitted.');
+
+        if (historyModal.style.display === 'flex') await loadRecentRecords();
+      }catch(e){
+        toast('Submit failed: ' + (e?.message || e));
+      }
     };
 
     $('wd-save').onclick = async ()=>{
