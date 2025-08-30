@@ -287,7 +287,7 @@
         <!-- 切换按钮（不使用Tab） -->
         <div class="channel-switch">
           <button id="btn-inr"  class="channel-btn active">INR · UPI / Bank</button>
-          <button id="btn-usdt" class="channel-btn">USDT · Crypto</button>
+          <button id="btn-usdt" class="channel-btn">USDT · Crypto·1USDT=100rs</button>
         </div>
 
         <!-- INR 页面（原逻辑：UTR + ₹金额） -->
@@ -311,12 +311,12 @@
         <!-- USDT 页面（固定 TRC20：地址 + TXID + USDT 数量） -->
         <div id="pane-usdt" class="dep-pane">
           <div class="form">
-            <div class="muted" style="margin-bottom:6px">USDT (TRC20) Deposit Address</div>
+            <div class="muted" style="margin-bottom:6px">USDT (TRC20) Deposit Address-1USDT=100rs</div>
             <div class="addr-row">
               <input id="usdt-address" type="text" readonly placeholder="Loading address…" />
               <button id="copy-usdt" class="btn">Copy</button>
             </div>
-            <div class="qr-hint">* Network is fixed to TRC20. Deposits on other chains will be lost.</div>
+            <div class="qr-hint">* Network is fixed to TRC20. Deposits on other chains will be lost.1USDT=100rs</div>
 
             <input id="usdt-txid" type="text" placeholder="TXID / Transaction Hash" />
             <input id="usdt-amount" type="number" min="0.01" step="0.01" placeholder="Amount (USDT)" />
