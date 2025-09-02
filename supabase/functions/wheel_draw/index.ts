@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// === 时间：IST，2 分钟一桶 ===
+/** ===== 时间：IST，2 分钟一桶 ===== */
 function getIST() {
   const now = new Date();
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
@@ -26,19 +26,12 @@ function previousRoundNo() {
   return roundKey(new Date(start.getTime() - 120000));
 }
 
-// === 盘面映射（索引为 1 基）：index 1..16 -> number 3..18 ===
-// 你提到表里 result_index 为 1..15，而 result_number 是 3..18。
-// 如果之前定义了 16 个格子（3..18），那么：
-//   index=1 对应 3， index=16 对应 18。
-// 我们要屏蔽 3 与 18 => 仅允许 index ∈ [2..15]（共 14 个索引）。
-const INDEX_TO_NUMBER: number[] = [
-  0,  // 占位：让下标从 1 开始更直观
-  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-];
-// 允许的 1 基索引（排除 1 和 16）
-const ALLOWED_INDEXES: number[] = [2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+/** ===== 盘面与赔率 =====
+ * result_index: 0..15  →  result_number: 3..18 (number = index + 3)
+ * 需求：排除 index=0(=3) 与 index=15(=18)
+ */
+const ALLOWED_INDEXES: number[] = Array.from({ length: 14 }, (_, i) => i + 1); // 1..14 → 4..17
 
-// 对应赔率（按“实际号码”映射）
 const ODDS: Record<number, number> = {
   3: 180, 18: 180,
   4:  60, 17:  60,
@@ -52,9 +45,9 @@ const ODDS: Record<number, number> = {
 
 type WheelRow = {
   round_number: string;
-  result_index: number | null;        // 1 基索引（2..15）
-  result_number: number | null;       // 实际号码（4..17）
-  result_multiplier: number | null;   // 对应赔率
+  result_index: number | null;        // 0..15
+  result_number: number | null;       // 3..18
+  result_multiplier: number | null;
   is_manual: boolean | null;
 };
 
@@ -77,24 +70,26 @@ Deno.serve(async () => {
     if (qErr) throw qErr;
 
     if (exist?.is_manual) {
-      // 手动结果：一律跳过，不能覆盖
+      // 手动结果：跳过，不能覆盖
       return json({ ok: true, round, status: "manual_locked_skip" });
     }
 
-    // 2) 从允许的 1 基索引里均匀抽样（排除 3 与 18）
-    const ridx = ALLOWED_INDEXES[Math.floor(Math.random() * ALLOWED_INDEXES.length)]; // 2..15
-    const num = INDEX_TO_NUMBER[ridx]; // 4..17
+    // 2) 从允许索引均匀抽样（排除 0/15）
+    const ridx = ALLOWED_INDEXES[Math.floor(Math.random() * ALLOWED_INDEXES.length)]; // 1..14
+    const num = ridx + 3; // 1→4, 14→17
     const mult = ODDS[num];
-    if (num == null || mult == null) {
-      throw new Error(`Bad mapping: index=${ridx} -> number=${num}, odds=${mult}`);
-    }
 
-    // 3) 不存在则插入；存在（且非手动）则更新
+    // 3) 兜底断言：任何异常直接中止（不落库）
+    if (ridx === 0 || ridx === 15) throw new Error(`Guard: forbidden index ${ridx}`);
+    if (num === 3 || num === 18) throw new Error(`Guard: forbidden number ${num}`);
+    if (mult == null) throw new Error(`Guard: missing odds for number ${num}`);
+
+    // 4) 写库：不存在则插入；存在（且非手动）则更新
     if (!exist) {
       const { error: insErr } = await sb.from("wheel_rounds").insert([{
         round_number: round,
-        result_index: ridx,         // 1 基索引
-        result_number: num,         // 实际号码
+        result_index: ridx,
+        result_number: num,
         result_multiplier: mult,
         is_manual: false
       }]);
