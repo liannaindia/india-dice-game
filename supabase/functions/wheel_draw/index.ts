@@ -26,24 +26,20 @@ function previousRoundNo() {
   return roundKey(new Date(start.getTime() - 120000));
 }
 
-// === 与前端一致的盘面/赔率 ===
-const NUMBERS = Array.from({ length: 16 }, (_, i) => i + 3); // 3..18
+// === 与前端一致的盘面/赔率（移除 3 和 8） ===
+// 只从下列集合里出数：4..7, 9..18  （不含 3、8）
+const NUMBERS = [4,5,6,7,9,10,11,12,13,14,15,16,17,18] as const;
 const ODDS: Record<number, number> = {
-  3: 180, 18: 180,
-  4:  60, 17:  60,
-  5:  30, 16:  30,
-  6:  18, 15:  18,
-  7:  12, 14:  12,
-  8:   9, 13:   9,
-  9:   8, 12:   8,
- 10:   7, 11:   7,
+  18: 180, 4: 60, 17: 60, 5: 30, 16: 30, 6: 18, 15: 18,
+  7: 12, 14: 12, 13: 9, 12: 8, 11: 7, 10: 7, 9: 8
 };
+// 小提示：上面去掉了 3 和 8 的赔率项；若你在前端也展示赔率，请保持一致。
 
 type WheelRow = {
   round_number: string;
-  result_index: number | null;
-  result_number: number | null;
-  result_multiplier: number | null;
+  result_index: number | null;        // 在 NUMBERS 里的索引
+  result_number: number | null;       // 实际号码
+  result_multiplier: number | null;   // 对应赔率
   is_manual: boolean | null;
 };
 
@@ -70,10 +66,13 @@ Deno.serve(async () => {
       return json({ ok: true, round, status: "manual_locked_skip" });
     }
 
-    // 2) 生成结果（或可替换为你自己的控制逻辑）
+    // 2) 生成结果（从排除 3、8 的集合里均匀抽样）
     const idx = Math.floor(Math.random() * NUMBERS.length);
     const num = NUMBERS[idx];
     const mult = ODDS[num];
+    if (mult == null) {
+      throw new Error(`Missing odds for number ${num}`);
+    }
 
     // 3) 不存在则插入；存在（且非手动）则更新
     if (!exist) {
