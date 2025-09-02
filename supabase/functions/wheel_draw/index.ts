@@ -26,19 +26,34 @@ function previousRoundNo() {
   return roundKey(new Date(start.getTime() - 120000));
 }
 
-// === 与前端一致的盘面/赔率（移除 3 和 8） ===
-// 只从下列集合里出数：4..7, 9..18  （不含 3、8）
-const NUMBERS = [4,5,6,7,9,10,11,12,13,14,15,16,17,18] as const;
+// === 盘面映射（索引为 1 基）：index 1..16 -> number 3..18 ===
+// 你提到表里 result_index 为 1..15，而 result_number 是 3..18。
+// 如果之前定义了 16 个格子（3..18），那么：
+//   index=1 对应 3， index=16 对应 18。
+// 我们要屏蔽 3 与 18 => 仅允许 index ∈ [2..15]（共 14 个索引）。
+const INDEX_TO_NUMBER: number[] = [
+  0,  // 占位：让下标从 1 开始更直观
+  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+];
+// 允许的 1 基索引（排除 1 和 16）
+const ALLOWED_INDEXES: number[] = [2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+
+// 对应赔率（按“实际号码”映射）
 const ODDS: Record<number, number> = {
-  18: 180, 4: 60, 17: 60, 5: 30, 16: 30, 6: 18, 15: 18,
-  7: 12, 14: 12, 13: 9, 12: 8, 11: 7, 10: 7, 9: 8
+  3: 180, 18: 180,
+  4:  60, 17:  60,
+  5:  30, 16:  30,
+  6:  18, 15:  18,
+  7:  12, 14:  12,
+  8:   9, 13:   9,
+  9:   8, 12:   8,
+ 10:   7, 11:   7,
 };
-// 小提示：上面去掉了 3 和 8 的赔率项；若你在前端也展示赔率，请保持一致。
 
 type WheelRow = {
   round_number: string;
-  result_index: number | null;        // 在 NUMBERS 里的索引
-  result_number: number | null;       // 实际号码
+  result_index: number | null;        // 1 基索引（2..15）
+  result_number: number | null;       // 实际号码（4..17）
   result_multiplier: number | null;   // 对应赔率
   is_manual: boolean | null;
 };
@@ -66,37 +81,37 @@ Deno.serve(async () => {
       return json({ ok: true, round, status: "manual_locked_skip" });
     }
 
-    // 2) 生成结果（从排除 3、8 的集合里均匀抽样）
-    const idx = Math.floor(Math.random() * NUMBERS.length);
-    const num = NUMBERS[idx];
+    // 2) 从允许的 1 基索引里均匀抽样（排除 3 与 18）
+    const ridx = ALLOWED_INDEXES[Math.floor(Math.random() * ALLOWED_INDEXES.length)]; // 2..15
+    const num = INDEX_TO_NUMBER[ridx]; // 4..17
     const mult = ODDS[num];
-    if (mult == null) {
-      throw new Error(`Missing odds for number ${num}`);
+    if (num == null || mult == null) {
+      throw new Error(`Bad mapping: index=${ridx} -> number=${num}, odds=${mult}`);
     }
 
     // 3) 不存在则插入；存在（且非手动）则更新
     if (!exist) {
       const { error: insErr } = await sb.from("wheel_rounds").insert([{
         round_number: round,
-        result_index: idx,
-        result_number: num,
+        result_index: ridx,         // 1 基索引
+        result_number: num,         // 实际号码
         result_multiplier: mult,
         is_manual: false
       }]);
       if (insErr) throw insErr;
-      return json({ ok: true, round, status: "auto_insert", idx, num, mult });
+      return json({ ok: true, round, status: "auto_insert", result_index: ridx, result_number: num, mult });
     } else {
       const { error: updErr } = await sb
         .from("wheel_rounds")
         .update({
-          result_index: idx,
+          result_index: ridx,
           result_number: num,
           result_multiplier: mult,
           is_manual: false
         })
         .eq("round_number", round);
       if (updErr) throw updErr;
-      return json({ ok: true, round, status: "auto_update_non_manual", idx, num, mult });
+      return json({ ok: true, round, status: "auto_update_non_manual", result_index: ridx, result_number: num, mult });
     }
   } catch (e: any) {
     return json({ ok: false, error: String(e?.message ?? e) }, 500);
