@@ -27,20 +27,24 @@
     *{box-sizing:border-box}
     html,body{margin:0;height:100%}
     body{font-family:'Poppins',sans-serif;background:linear-gradient(180deg,#f7faff, var(--bg)); color:var(--ink); display:flex; justify-content:center}
-    .wrap{width:100%; max-width:520px; padding:18px 12px 120px}
+    .wrap{width:100%; max-width:520px; padding:16px 12px 120px}
 
     /* header */
-    .brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+    .brand{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px}
     .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
     .logo .mark{width:28px; height:28px; border-radius:8px; background:conic-gradient(from 220deg, var(--saffron), var(--gold), var(--peacock)); box-shadow:0 0 0 2px rgba(0,0,0,.04)}
-    .userbox{display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted)}
+    .brand-right{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
     .balance{background:rgba(247,201,72,.18); color:#5c4500; padding:6px 10px; border:1px solid rgba(247,201,72,.5); border-radius:999px; font-weight:700}
     .btn-xs{padding:6px 10px; border:1px solid var(--line); background:#fff; border-radius:10px; color:#23457a; cursor:pointer}
+    .btn-link{padding:6px 10px; border:1px solid var(--line); background:#fff; border-radius:10px; color:#23457a; text-decoration:none; display:inline-block}
+
+    @media (max-width:520px){
+      .brand-right{width:100%; justify-content:space-between}
+    }
 
     /* top card */
     .topcard{background:linear-gradient(180deg,#ffffff,#f2f7ff); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); padding:12px}
     .split{display:grid; grid-template-columns:1fr auto; gap:12px}
-    .left h3{margin:0 0 6px; font-size:14px; color:#23457a; font-weight:800; display:flex; align-items:center; gap:8px}
     .badge{border:1px dashed rgba(13,110,253,.6); color:#23457a; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:8px; background:#fff}
     .nums{display:flex; gap:8px; margin-top:10px}
     .ball{width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow:inset 0 0 0 3px rgba(255,255,255,.45), 0 6px 16px rgba(0,0,0,.12)}
@@ -108,15 +112,6 @@
 
     .empty{padding:14px; text-align:center; color:#5a79ad}
 
-    /* charts */
-    .charts{display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px}
-    .chartbox{background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px}
-    .chart-title{font-weight:800; color:#274a87; margin-bottom:6px}
-    .bars{display:flex; gap:8px; align-items:flex-end; height:120px}
-    .bar{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px}
-    .bar .col{width:22px; border-radius:6px 6px 4px 4px; background:#e3ecff}
-    .bar .lbl{font-size:12px; color:#345d9b; font-weight:700}
-
     /* toast */
     .toast{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#ffffff; border:1px solid var(--line); color:#113066; padding:10px 14px; border-radius:10px; font-weight:700; box-shadow:var(--shadow); display:none; z-index:50}
     .toast.show{display:block}
@@ -128,7 +123,8 @@
   <div class="wrap">
     <div class="brand">
       <div class="logo"><div class="mark"></div> Ganeshcasino · <span style="color:var(--peacock)">Wingo</span></div>
-      <div class="userbox">
+      <div class="brand-right">
+        <a href="/" id="btnLobby" class="btn-link">← Lobby</a>
         <span id="userEmail">Guest</span>
         <span class="balance" id="balance">₹0.00</span>
         <button class="btn-xs" id="btnSign">Sign in</button>
@@ -138,9 +134,8 @@
     <!-- Header card -->
     <div class="topcard">
       <div class="split">
-        <div class="left">
-          <h3><span class="badge">How to play</span></h3>
-          <div class="badge" style="margin-top:6px">WinGo 2 minutes</div>
+        <div>
+          <div class="badge">WinGo 2 minutes</div>
           <div class="nums" id="recentBalls"></div>
         </div>
         <div class="right">
@@ -197,8 +192,7 @@
       </div>
 
       <div class="tabs">
-        <div class="tab active" data-tab="game">Game history</div>
-        <div class="tab" data-tab="chart">Chart</div>
+        <div class="tab active" data-tab="game">Game</div>
         <div class="tab" data-tab="mine">My history</div>
       </div>
 
@@ -210,23 +204,6 @@
       <div class="table" id="tableMine" style="display:none">
         <div class="thead"><div>Period</div><div>Pick</div><div>Amount</div><div>Status</div></div>
         <div id="tbodyMine"><div class="empty" id="emptyMine" style="display:none">No bets yet.</div></div>
-      </div>
-
-      <div id="tableChart" style="display:none">
-        <div class="charts">
-          <div class="chartbox">
-            <div class="chart-title">Colors (last 30)</div>
-            <div class="bars" id="barsColors"></div>
-          </div>
-          <div class="chartbox">
-            <div class="chart-title">Big / Small (last 30)</div>
-            <div class="bars" id="barsSize"></div>
-          </div>
-          <div class="chartbox">
-            <div class="chart-title">Numbers 0–9 (last 30)</div>
-            <div class="bars" id="barsNums"></div>
-          </div>
-        </div>
       </div>
 
     </div>
@@ -264,8 +241,8 @@
     };
     const nextBucketIST = () => { const s = bucketStartIST(); const n = new Date(s); n.setSeconds(n.getSeconds()+PERIOD_SEC); return n; };
     const secsToNextBucket = () => Math.max(0, Math.floor((nextBucketIST() - toIST())/1000));
-    const roundKey = (d) => { const t = bucketStartIST(d); const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0'); const h=String(t.getHours()).padStart(2,'0'); const mi=String(t.getMinutes()).padStart(2,'0'); return `${y}${m}${dd}${h}${mi}`; };
-    const currentRoundNumber = () => roundKey(new Date());
+    const roundKey = (d) => { const t = d; const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0'); const h=String(t.getHours()).padStart(2,'0'); const mi=String(t.getMinutes()).padStart(2,'0'); return `${y}${m}${dd}${h}${mi}`; };
+    const displayRoundNumber = () => roundKey(nextBucketIST()); // 显示“下一桶”的期号
 
     /* ===================== COLOR / SIZE RULES ===================== */
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
@@ -334,7 +311,7 @@
     /* ===================== TIMER ===================== */
     const periodEl = qs('#period'); const timerEl = qs('#timer');
     function renderTimer(){
-      const rn = currentRoundNumber(); periodEl.textContent = rn;
+      periodEl.textContent = displayRoundNumber();
       const s = secsToNextBucket(); const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(s%60).padStart(2,'0');
       const ds = timerEl.querySelectorAll('.digit'); const digits=[...m+ss]; ds[0].textContent=digits[0]; ds[1].textContent=digits[1]; ds[2].textContent=digits[2]; ds[3].textContent=digits[3];
       updateNote();
@@ -362,13 +339,12 @@
       renderEmptyState(data.length>0);
       recentWrap.innerHTML=''; data.slice(0,5).reverse().forEach(r=>addBall(r.result_number));
       tbodyGame.innerHTML=''; data.reverse().forEach(r=>pushGameRow(r.round_number, r.result_number));
-      renderCharts(data.map(x=>x.result_number));
     }
 
     try{
       const ch = supabase.channel('color2m_rounds_changes');
       ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_rounds'}, payload => {
-        const r = payload.new; addBall(r.result_number); pushGameRow(r.round_number, r.result_number); renderChartsFromDom(); refreshBalance();
+        const r = payload.new; addBall(r.result_number); pushGameRow(r.round_number, r.result_number); refreshBalance();
       }).subscribe();
     }catch(e){ console.warn('Realtime not enabled', e); }
 
@@ -380,7 +356,6 @@
       tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active');
       qs('#tableGame').style.display = (t.dataset.tab==='game')?'block':'none';
       qs('#tableMine').style.display = (t.dataset.tab==='mine')?'block':'none';
-      qs('#tableChart').style.display = (t.dataset.tab==='chart')?'block':'none';
       if(t.dataset.tab==='mine') fetchMyBets();
     }));
 
@@ -430,35 +405,6 @@
       await refreshBalance();
       await fetchMyBets();
     });
-
-    /* ===================== CHARTS ===================== */
-    function renderChartsFromDom(){
-      const nums = Array.from(tbodyGame.children).map(row=>{ const strong = row.querySelector('strong'); return strong? Number(strong.textContent):null; }).filter(n=>n!==null);
-      renderCharts(nums.slice(-30));
-    }
-    function renderCharts(nums){
-      if(!nums || !nums.length){
-        ['barsColors','barsSize','barsNums'].forEach(id=>{ const el=qs('#'+id); el.innerHTML='<div class="empty">No data yet.</div>'; });
-        return;
-      }
-      // Colors
-      const countsColor = {green:0, red:0, violet:0};
-      const countsSize  = {big:0, small:0};
-      const countsNum   = Array.from({length:10},()=>0);
-      nums.forEach(n=>{ countsNum[n]++; const c=colorOf(n); countsColor[c]++; const s=bigSmall(n).toLowerCase(); countsSize[s]++; });
-      const maxC = Math.max(...Object.values(countsColor),1);
-      const maxS = Math.max(...Object.values(countsSize),1);
-      const maxN = Math.max(...countsNum,1);
-      const mkBar = (label, value, max, color)=>`<div class="bar"><div class="col" style="height:${(value/max)*100}%; background:${color}"></div><div class="lbl">${label}<br><small>${value}</small></div></div>`;
-      qs('#barsColors').innerHTML =
-        mkBar('Green', countsColor.green, maxC, '#c9f7d7')+
-        mkBar('Violet', countsColor.violet, maxC, '#e7ddff')+
-        mkBar('Red', countsColor.red, maxC, '#ffd7d7');
-      qs('#barsSize').innerHTML =
-        mkBar('Big', countsSize.big, maxS, '#d8e6ff')+
-        mkBar('Small', countsSize.small, maxS, '#ffe9c7');
-      qs('#barsNums').innerHTML = countsNum.map((v,i)=>mkBar(String(i), v, maxN, '#e3ecff')).join('');
-    }
 
     /* ===================== INIT ===================== */
     await loadUser();
