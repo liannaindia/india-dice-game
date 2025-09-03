@@ -310,12 +310,12 @@
     const addBall = (n)=>{ const b=document.createElement('div'); b.className=`ball ${colorOf(n)}`; b.textContent=n; recentWrap.appendChild(b); while(recentWrap.children.length>5) recentWrap.removeChild(recentWrap.firstElementChild); };
 
     const tbodyGame = qs('#tbodyGame'); const emptyGame = qs('#emptyGame');
-    const pushGameRow = (round,n)=>{ const tr=document.createElement('div'); tr.className='trow'; tr.innerHTML=`<div>${round}</div><div><strong>${n}</strong></div><div>${bigSmall(n)}</div><div><span class="dot ${colorOf(n)}"></span></div>`; tbodyGame.prepend(tr); while(tbodyGame.children.length>51) tbodyGame.removeChild(tbodyGame.lastElementChild); };
+    const pushGameRow = (round,n)=>{ const tr=document.createElement('div'); tr.className='trow'; tr.innerHTML=`<div>${round}</div><div><strong>${n}</strong></div><div>${bigSmall(n)}</div><div><span class="dot ${colorOf(n)}"></span></div>`; tbodyGame.prepend(tr); while(tbodyGame.children.length>10) tbodyGame.removeChild(tbodyGame.lastElementChild); };
 
     function renderEmptyState(has){ emptyGame.style.display = has? 'none':'block'; }
 
     async function fetchGameHistory(){
-      const { data, error } = await supabase.from('color2m_rounds').select('round_number,result_number').order('round_number',{ascending:false}).limit(30);
+      const { data, error } = await supabase.from('color2m_rounds').select('round_number,result_number').order('round_number',{ascending:false}).limit(10);
       if(error){ console.error(error); return; }
       renderEmptyState(data.length>0);
       recentWrap.innerHTML=''; data.slice(0,5).reverse().forEach(r=>addBall(r.result_number));
@@ -344,7 +344,7 @@
     const tbodyMine = qs('#tbodyMine'); const emptyMine = qs('#emptyMine');
     async function fetchMyBets(){
       if(!currentUser){ tbodyMine.innerHTML = ''; emptyMine.style.display='block'; return; }
-      const { data, error } = await supabase.from('color2m_bets').select('round_number, bet_type, choice, amount, status').eq('user_id', currentUser.id).order('created_at',{ascending:false}).limit(30);
+      const { data, error } = await supabase.from('color2m_bets').select('round_number, bet_type, choice, amount, status').eq('user_id', currentUser.id).order('created_at',{ascending:false}).limit(10);
       if(error){ console.error(error); return; }
       emptyMine.style.display = data.length? 'none':'block';
       tbodyMine.innerHTML='';
