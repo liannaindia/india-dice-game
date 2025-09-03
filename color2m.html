@@ -1,368 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>WinGo 2-Min</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0b1220">
-<script type="module" src="./supabase-config.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#0b1220; --panel:#0f172a; --card:#111827; --muted:#94a3b8; --line:#1f2937; --accent:#22d3ee;
-  --green:#22c55e; --red:#ef4444; --violet:#a78bfa; --text:#e5e7eb; --shadow:0 12px 30px rgba(0,0,0,.35);
-  --radius:16px;
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;font-family:'Poppins',sans-serif;background:radial-gradient(1000px 600px at 50% -100px,#0e1b2e,#0b1220);color:var(--text);-webkit-tap-highlight-color:transparent}
-.wrap{max-width:1100px;margin:0 auto;padding:16px;padding-bottom:180px}
-a{color:#93c5fd;text-decoration:none}
-header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
-.back{display:inline-flex;align-items:center;gap:8px;background:#0b1328;border:1px solid #1e293b;color:#e2e8f0;padding:10px 14px;border-radius:999px;font-weight:800;box-shadow:var(--shadow)}
-.card{background:linear-gradient(180deg,#0f1b33,#0b1426);border:1px solid #0b1d38;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-.row{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-bottom:16px}
-@media (max-width:768px){.row{grid-template-columns:1fr}}
-.section-title{font-weight:800;margin:8px 0 12px 0;font-size:16px;color:#e2e8f0}
-.pill{padding:6px 10px;border-radius:999px;background:#0b1328;border:1px solid #1e293b;color:#cbd5e1;font-weight:700}
-
-/* top panel */
-.top{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.top .left,.top .right{background:linear-gradient(180deg,#0d1a30,#0c1528);border:1px solid #0b1d38;border-radius:12px;padding:12px}
-.topbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid #1e293b;background:#0c172c;color:#dbeafe;padding:8px 12px;border-radius:10px;font-weight:800;cursor:pointer}
-.digits{display:flex;gap:6px;align-items:center;justify-content:flex-end}
-.d{width:34px;height:44px;background:#0b1328;border:1px solid #1e293b;border-radius:8px;display:grid;place-items:center;font-weight:900;font-size:20px;color:#e2e8f0;box-shadow:inset 0 -2px 0 #0007}
-.bar{height:10px;background:#0b1328;border:1px solid #1e293b;border-radius:999px;overflow:hidden;margin-top:8px}
-.bar>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#22d3ee,#60a5fa);transition:width .25s linear}
-
-/* result balls */
-.results{display:flex;gap:8px;flex-wrap:wrap}
-.ball{--c:#fff;--glow:rgba(255,255,255,.4); width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;
-  background:radial-gradient(circle at 30% 30%, #fff 0 12px, #f1f5f9 13px, #e2e8f0 55%, #cbd5e1 100%);
-  box-shadow: inset -6px -8px 16px #0006, inset 2px 3px 6px #fff8, 0 0 0 3px var(--c), 0 0 18px var(--glow);
-  color:#0b1220; border:2px solid #0007
-}
-.ball.green{--c:#16a34a; --glow:#16a34a60}
-.ball.red{--c:#ef4444; --glow:#ef444460}
-.ball.violet{--c:#8b5cf6; --glow:#8b5cf660}
-
-/* pickers */
-.btn3{display:flex;gap:10px;margin-bottom:10px}
-.btn3 .btn{flex:1;text-align:center;padding:12px;border-radius:12px;border:1px solid #1f2a44;background:#0c162b;font-weight:900;cursor:pointer}
-.btn.green{background:linear-gradient(180deg,#1e7945,#155e36);border-color:#0a3c22}
-.btn.violet{background:linear-gradient(180deg,#7c3aed,#5b21b6);border-color:#3a1386}
-.btn.red{background:linear-gradient(180deg,#b91c1c,#7f1d1d);border-color:#5f0f0f}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-.cell{cursor:pointer}
-.cell .ball{width:56px;height:56px;font-size:18px}
-.cell.sel{outline:3px solid #22d3ee; border-radius:12px}
-
-/* action row */
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.tag{padding:10px 12px;border-radius:10px;border:1px solid #1e293b;background:#0c172c;color:#e2e8f0;font-weight:800;cursor:pointer}
-.tag.active{background:#22d3ee;color:#0b1220;border-color:#22d3ee}
-.segment{display:grid;grid-template-columns:1fr 1fr;border:1px solid #1e293b;border-radius:12px;overflow:hidden}
-.segment>button{padding:12px;font-weight:900;background:#0c172c;color:#e2e8f0;border:none;cursor:pointer}
-.segment>button.active{background:#1e293b}
-.amount{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
-.amt{border:1px solid #1e293b;background:#0b1328;color:#e2e8f0;border-radius:12px;padding:12px 14px;min-width:150px;outline:none}
-.mainbtn{padding:12px 16px;border:none;border-radius:12px;background:#22d3ee;color:#0b1220;font-weight:900;cursor:pointer;box-shadow:0 8px 24px #22d3ee55}
-
-/* right panel list */
-.list{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
-
-/* table */
-.table{width:100%;border-collapse:collapse;font-size:14px}
-.table th,.table td{padding:10px;border-bottom:1px solid #1e293b;text-align:left;color:#cbd5e1}
-.ok{color:#22c55e;font-weight:900}.err{color:#ef4444;font-weight:900}
-
-/* dock (mobile) */
-.dock{position:fixed;left:0;right:0;bottom:0;padding:12px env(safe-area-inset-right) calc(12px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
-  background:linear-gradient(180deg,rgba(11,18,32,0),rgba(11,18,32,.95) 20%,rgba(11,18,32,.98) 100%);backdrop-filter:blur(6px);box-shadow:0 -8px 22px rgba(0,0,0,.4);display:none;z-index:998}
-@media (max-width:768px){.dock{display:block}.wrap{padding-bottom:200px}}
-.dock-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr;gap:8px;align-items:center}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#0b1320;color:#fff;padding:10px 14px;border-radius:10px;border:1px solid #1e293b;box-shadow:var(--shadow);z-index:999;display:none}
-</style>
+  <meta charset="UTF-8" />
+  <title>Wingo Color2M</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <script type="module" src="./supabase-config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Poppins',sans-serif;display:flex;flex-direction:column;align-items:center;background:#f9f9f9;color:#222}
+    h1{margin:20px 0}
+    #countdown{font-size:20px;margin-bottom:10px}
+    .result{margin-top:20px;font-size:24px;font-weight:bold}
+    .history{margin-top:20px;width:90%;max-width:400px}
+    .history li{display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #ddd}
+    .color-box{width:20px;height:20px;border-radius:4px;display:inline-block;margin-right:8px}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <a class="back" href="./index.html">← Back to Lobby</a>
-    <div style="display:flex;gap:12px;align-items:center">
-      <div class="pill" id="userStat">Not signed in</div>
-    </div>
-  </header>
+  <h1>Wingo - Color2M</h1>
+  <div id="countdown">Loading...</div>
+  <div class="result" id="latest-result">Waiting for result...</div>
+  <ul class="history" id="history"></ul>
 
-  <div class="card">
-    <div class="top">
-      <div class="left">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <button id="how" class="topbtn">❔ How to play</button>
-          <div style="font-weight:900;color:#93c5fd">WinGo 2-min</div>
-        </div>
-        <div class="results" id="recentBalls"></div>
-      </div>
-      <div class="right">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div class="pill">Period <b id="period">—</b></div>
-          <div style="font-weight:900;color:#93c5fd">Time remaining</div>
-        </div>
-        <div class="digits"><div class="d" id="m1">0</div><div class="d" id="m2">2</div><div class="d">:</div><div class="d" id="s1">0</div><div class="d" id="s2">0</div></div>
-        <div class="bar"><i id="bar"></i></div>
-        <div style="margin-top:6px;display:flex;gap:8px;align-items:center">
-          <span class="pill" id="betState">Open</span>
-          <span class="pill">Last 30s closed</span>
-        </div>
-      </div>
-    </div>
-  </div>
+  <script type="module">
+    import { supabase } from "./supabase-config.js";
 
-  <div class="row">
-    <!-- LEFT: betting panel -->
-    <div class="card">
-      <div class="section-title">Betting</div>
+    async function fetchLatest() {
+      const { data, error } = await supabase
+        .from("color2m_rounds")
+        .select("*")
+        .order("round_number",{ascending:false})
+        .limit(10);
+      if (error) { console.error(error); return; }
 
-      <div class="btn3">
-        <div class="btn green"  id="btnGreen">Green</div>
-        <div class="btn violet" id="btnViolet">Violet</div>
-        <div class="btn red"    id="btnRed">Red</div>
-      </div>
+      if (data.length > 0) {
+        const latest = data[0];
+        document.getElementById("latest-result").innerHTML =
+          `Latest: <span style="color:${latest.result_color}">${latest.result_number} (${latest.result_color})</span>`;
+        const list = document.getElementById("history");
+        list.innerHTML = "";
+        data.forEach(r=>{
+          const li = document.createElement("li");
+          li.innerHTML = `<span>${r.round_number}</span><span><span class="color-box" style="background:${r.result_color}"></span>${r.result_number}</span>`;
+          list.appendChild(li);
+        });
+      }
+    }
 
-      <div class="grid" id="numGrid"></div>
+    // 倒计时：2分钟一期
+    function updateCountdown() {
+      const now = new Date();
+      const sec = now.getUTCSeconds() + now.getUTCMilliseconds()/1000;
+      const ist = new Date(now.getTime() + (5.5*3600*1000));
+      const bucket = ist.getMinutes() - (ist.getMinutes()%2);
+      const next = new Date(ist);
+      next.setMinutes(bucket+2,0,0);
+      const remain = Math.floor((next.getTime()-ist.getTime())/1000);
+      document.getElementById("countdown").textContent = `Next round in ${remain}s`;
+    }
 
-      <div class="actions">
-        <div class="tag" id="btnRandom">Random</div>
-        <div class="tag active mult" data-k="1">X1</div>
-        <div class="tag mult" data-k="5">X5</div>
-        <div class="tag mult" data-k="10">X10</div>
-        <div class="tag mult" data-k="20">X20</div>
-        <div class="tag mult" data-k="50">X50</div>
-        <div class="tag mult" data-k="100">X100</div>
-        <div style="flex:1"></div>
-        <div class="segment">
-          <button id="btnBig">Big</button>
-          <button id="btnSmall">Small</button>
-        </div>
-      </div>
-
-      <div class="amount">
-        <input type="number" id="amount" class="amt" placeholder="Enter amount" min="1" step="1">
-        <button class="mainbtn" id="btnBet">Place Bet</button>
-      </div>
-      <div id="betMsg" style="margin-top:10px;color:#93c5fd"></div>
-    </div>
-
-    <!-- RIGHT: recent -->
-    <div class="card">
-      <div class="section-title">Last 10 Results</div>
-      <div class="list" id="resultList"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="section-title">My Recent Bets</div>
-    <table class="table" id="betsTable">
-      <thead><tr><th>Time</th><th>Period</th><th>Type</th><th>Pick</th><th>Amount</th><th>Odds</th><th>Status</th><th>Payout</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- mobile dock -->
-<div class="dock">
-  <div class="dock-inner">
-    <input type="number" id="m_amount" class="amt" placeholder="Amount" min="1" step="1">
-    <button class="mainbtn" id="m_bet">Bet</button>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- How to play -->
-<div id="modal" style="display:none; position:fixed; inset:0; background:#0008; z-index:9999; align-items:center; justify-content:center;">
-  <div class="card" style="max-width:560px">
-    <div class="section-title">How to play</div>
-    <div style="color:#cbd5e1; line-height:1.6">
-      每 2 分钟一期开，结果为 <b>0–9</b> 的一个数字。<br/>
-      颜色映射：<b>1/3/7/9 → Green</b>，<b>2/4/6/8 → Red</b>，<b>0/5 → Violet</b>。<br/>
-      大小：<b>6–9 = Big</b>，<b>0–4 = Small</b>，<b>5 没有大小</b>。<br/>
-      赔率：颜色（红/绿 ×2.0、紫 ×4.5）、数字（×9.0）、大小（×2.0）。<br/>
-      每期最后 <b>30s</b> 自动封盘。
-    </div>
-    <div style="margin-top:12px; display:flex; justify-content:flex-end">
-      <button class="topbtn" id="closeModal">OK</button>
-    </div>
-  </div>
-</div>
-
-<script type="module">
-import { supabase } from './supabase-config.js';
-const $=(s)=>document.querySelector(s), $$=(s)=>document.querySelectorAll(s);
-const fmt=(n)=>Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
-const toast=(m,ok=true)=>{const t=$('#toast');t.textContent=m;t.style.borderColor=ok?'#1e293b':'#7f1d1d';t.style.display='block';setTimeout(()=>t.style.display='none',1800)};
-
-// ====== CONFIG ======
-const PERIOD_SEC = 120;    // 改成 30 即为 30s Wingo
-const CLOSE_LAST = 30;     // 最后 30s 禁止下注
-const ODDS = { color:{red:2.0, green:2.0, violet:4.5}, number:9.0, size:2.0 };
-
-// ====== CLOCK ======
-let skew=0;
-async function syncClock(){ try{ const {data}=await supabase.rpc('get_server_time_ms'); if(typeof data==='number') skew=data-Date.now(); }catch{} }
-await syncClock(); setInterval(syncClock,60000);
-const nowIST=()=>new Date(Date.now()+skew+5.5*3600000);
-function calcSlot(ist){
-  const m=ist.getMinutes(); const start=new Date(ist); start.setSeconds(0,0); start.setMinutes(m-(m%2));
-  const end=new Date(start.getTime()+PERIOD_SEC*1000);
-  const sec=Math.floor((ist-start)/1000); const remain=Math.max(0,PERIOD_SEC-sec);
-  const closed=remain<=CLOSE_LAST; const pad=n=>String(n).padStart(2,'0');
-  const per=`${end.getFullYear()}${pad(end.getMonth()+1)}${pad(end.getDate())}${pad(end.getHours())}${pad(end.getMinutes())}`;
-  return {remain,closed,per,prog:sec/PERIOD_SEC};
-}
-
-// ====== STATE ======
-let user=null, serverPeriod=null, mult=1;
-let pick = { kind:'color', color:'green', number:null, size:null };
-
-// ====== BOOT ======
-boot();
-async function boot(){
-  // auth & balance
-  const {data:{user:U}}=await supabase.auth.getUser(); user=U||null;
-  if(user) await refreshUser(); else $('#userStat').textContent='Please login first';
-
-  // modal
-  $('#how').onclick=()=>{$('#modal').style.display='flex'}
-  $('#closeModal').onclick=()=>{$('#modal').style.display='none'}
-
-  // build number grid
-  const grid=$('#numGrid');
-  for(let i=0;i<=9;i++){
-    const c=document.createElement('div'); c.className='cell'; c.dataset.n=i;
-    c.innerHTML=`<div class="ball ${ballColor(i)}">${i}</div>`;
-    c.onclick = ()=> selectNumber(i, c);
-    grid.appendChild(c);
-  }
-
-  // color buttons
-  $('#btnGreen').onclick = ()=>{ pick={kind:'color', color:'green'}; flashPick('GREEN ×'+ODDS.color.green.toFixed(1)) }
-  $('#btnViolet').onclick= ()=>{ pick={kind:'color', color:'violet'}; flashPick('VIOLET ×'+ODDS.color.violet.toFixed(1)) }
-  $('#btnRed').onclick   = ()=>{ pick={kind:'color', color:'red'}; flashPick('RED ×'+ODDS.color.red.toFixed(1)) }
-
-  // random + multipliers
-  $('#btnRandom').onclick = ()=>{ const n=Math.floor(Math.random()*10); selectNumber(n); }
-  $$('.mult').forEach(t=> t.onclick=()=>{ $$('.mult').forEach(x=>x.classList.remove('active')); t.classList.add('active'); mult=Number(t.dataset.k); });
-
-  // size
-  $('#btnBig').onclick   = ()=>{ $('#btnBig').classList.add('active'); $('#btnSmall').classList.remove('active'); pick={kind:'size', size:'big'}; flashPick('BIG ×2.0') }
-  $('#btnSmall').onclick = ()=>{ $('#btnSmall').classList.add('active'); $('#btnBig').classList.remove('active'); pick={kind:'size', size:'small'}; flashPick('SMALL ×2.0') }
-
-  // bet
-  $('#btnBet').onclick=placeBet;
-  $('#m_bet').onclick=async()=>{ const v=Number($('#m_amount').value||0); if(v>0){$('#amount').value=v; await placeBet();} }
-
-  // timers & data
-  setInterval(tick,250); await refreshRecent(); await refreshMyBets();
-  try{
-    supabase.channel('rt:color2m_rounds')
-      .on('postgres_changes',{event:'*',schema:'public',table:'color2m_rounds'},()=>{refreshRecent(); refreshMyBets();})
-      .subscribe();
-  }catch{}
-}
-
-// ====== UI helpers ======
-function ballColor(n){ return [0,5].includes(n)?'violet':([1,3,7,9].includes(n)?'green':'red'); }
-function flashPick(text){ $('#betMsg').textContent='Selected: '+text; setTimeout(()=>$('#betMsg').textContent='',1800) }
-function setDigits(rem){
-  const mm = Math.floor(rem/60), ss = rem%60;
-  const m1=Math.floor(mm/10), m2=mm%10, s1=Math.floor(ss/10), s2=ss%10;
-  $('#m1').textContent=m1; $('#m2').textContent=m2; $('#s1').textContent=s1; $('#s2').textContent=s2;
-}
-
-// number select
-function selectNumber(n, cellEl){
-  pick={kind:'number', number:n};
-  $$('#numGrid .cell').forEach(x=>x.classList.remove('sel'));
-  if(cellEl) cellEl.classList.add('sel'); else { const el=[...$$('#numGrid .cell')].find(x=>Number(x.dataset.n)===n); if(el) el.classList.add('sel'); }
-  flashPick('NUMBER '+n+' ×'+ODDS.number.toFixed(1));
-}
-
-async function refreshUser(){
-  const {data}=await supabase.from('users').select('email,balance').eq('id',user.id).single();
-  $('#userStat').innerHTML = `<b>Email:</b> ${data.email||user.email} &nbsp;|&nbsp; <b>Balance:</b> ₹${fmt(data.balance||0)}`;
-}
-
-async function getPeriod(){
-  try{ const {data}=await supabase.rpc('current_color2m_period_ist'); if(data) serverPeriod=data; }catch{}
-}
-
-async function refreshRecent(){
-  const {data}=await supabase.from('color2m_rounds').select('period,result_number,result').order('draw_time',{ascending:false}).limit(10);
-  const box=$('#resultList'); box.innerHTML='';
-  const balls=$('#recentBalls'); balls.innerHTML='';
-  (data||[]).forEach((r)=>{
-    const col=r.result||'violet';
-    const b=document.createElement('div'); b.className='ball '+(col==='red'?'red':col==='green'?'green':'violet'); b.textContent=(r.result_number ?? '-');
-    const b2=b.cloneNode(true);
-    box.appendChild(b); balls.appendChild(b2);
-  });
-}
-
-async function refreshMyBets(){
-  if(!user) return;
-  const {data}=await supabase.from('color2m_bets')
-    .select('created_at,period,kind,choice,choice_number,choice_size,amount,odds,status,payout')
-    .eq('user_id',user.id).order('created_at',{ascending:false}).limit(30);
-  const tb=$('#betsTable tbody'); tb.innerHTML='';
-  (data||[]).forEach(b=>{
-    const tr=document.createElement('tr'); const dt=new Date(b.created_at);
-    const kind=b.kind.toUpperCase();
-    const pickTxt=b.kind==='color'?(b.choice||'').toUpperCase():b.kind==='number'?String(b.choice_number):(b.choice_size||'').toUpperCase();
-    tr.innerHTML=`<td>${dt.toLocaleString('en-GB')}</td><td>${b.period}</td><td>${kind}</td><td>${pickTxt}</td>
-      <td>₹${fmt(b.amount)}</td><td>x${b.odds}</td>
-      <td>${b.status==='win'?'<span class="ok">WIN</span>':b.status==='lose'?'<span class="err">LOSE</span>':'PENDING'}</td>
-      <td>${b.payout?'₹'+fmt(b.payout):'-'}</td>`;
-    tb.appendChild(tr);
-  });
-}
-
-// ====== COUNTDOWN LOOP ======
-async function tick(){
-  const ist=nowIST(); const s=calcSlot(ist);
-  setDigits(s.remain); $('#bar').style.width=(s.prog*100)+'%';
-  $('#betState').textContent=s.remain<=CLOSE_LAST?'Closed':'Open';
-  if(!serverPeriod) await getPeriod();
-  $('#period').textContent=serverPeriod || s.per;
-
-  // 到点后，等一会刷新（结算动画你后端播完即显）
-  if(s.remain===0){ await sleep(1200); await refreshRecent(); await refreshMyBets(); await getPeriod(); }
-}
-
-// ====== PLACE BET ======
-async function placeBet(){
-  if(!user) return toast('Please login first',false);
-  const s=calcSlot(nowIST()); if(s.remain<=CLOSE_LAST) return toast('Betting closed for this round',false);
-  const base=Number($('#amount').value||0); if(!base||base<=0) return toast('Enter a valid amount',false);
-  let kind=pick.kind, value=null;
-  if(kind==='color'){ value=pick.color||'green'; }
-  else if(kind==='number'){ value=String(pick.number ?? 0); }
-  else { if(!pick.size) return toast('Pick BIG or SMALL',false); value=pick.size; }
-
-  const amount = base * mult;
-  const {data,error}=await supabase.rpc('wingo2m_place_bet_ist',{
-    _user_id:user.id, _email:user.email, _kind:kind, _value:value, _amount:amount
-  });
-  if(error){ const m=(error.message||'').toUpperCase();
-    if(m.includes('BET_CLOSED')) toast('Betting closed',false);
-    else if(m.includes('INSUFFICIENT_FUNDS')) toast('Insufficient balance',false);
-    else toast(error.message,false);
-    return;
-  }
-  toast(`Bet placed: ${kind.toUpperCase()} ${value} ₹${fmt(amount)}`);
-  $('#amount').value=''; $('#m_amount').value='';
-  await refreshUser(); await refreshMyBets();
-}
-</script>
+    setInterval(updateCountdown,1000);
+    setInterval(fetchLatest,5000);
+    fetchLatest();
+  </script>
 </body>
 </html>
