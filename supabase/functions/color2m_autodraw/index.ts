@@ -1,55 +1,80 @@
-// supabase/functions/color2m_autodraw/index.ts
-// 作用：计算“刚刚结束的 2 分钟期(IST)”并调用 RPC color2m_settle_period
-// 可选强制结果：POST /functions/v1/color2m_autodraw?result=red|green|violet
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-function pad(n: number) { return n.toString().padStart(2, "0"); }
-
-function lastEnded2MinPeriodIST(nowUtc = new Date()): string {
-  // UTC->IST (+5:30)
-  const istMs = nowUtc.getTime() + 5.5 * 60 * 60 * 1000;
-  const ist = new Date(istMs);
-  const y = ist.getFullYear();
-  const mon = pad(ist.getMonth() + 1);
-  const d = pad(ist.getDate());
-  const h = pad(ist.getHours());
-  const m = ist.getMinutes();
-  const evenMin = m - (m % 2);       // 最近的偶数分钟 = 最近一个2分钟窗口结束时刻
-  return `${y}${mon}${d}${h}${pad(evenMin)}`;
+function getIST() {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + 5.5 * 3600 * 1000);
+}
+function bucketStart2mIST(d: Date) {
+  const t = new Date(d);
+  const m = t.getMinutes();
+  t.setMinutes(m - (m % 2), 0, 0);
+  return t;
+}
+function roundKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  return `${y}${m}${d}${h}${mi}`;
+}
+function previousRoundNo() {
+  const start = bucketStart2mIST(getIST());
+  return roundKey(new Date(start.getTime() - 120000));
 }
 
-serve(async (req) => {
-  if (req.method !== "POST") {
-    return new Response("Only POST", { status: 405 });
-  }
+// Wingo 颜色池：数字 0-9 对应颜色
+const COLORS = ["red","green","blue","purple","yellow","pink","orange","cyan","black","white"];
+
+const sb = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE")!,
+  { auth: { persistSession: false } }
+);
+
+Deno.serve(async () => {
   try {
-    const url = new URL(req.url);
-    const forced = url.searchParams.get("result"); // red|green|violet|null
+    const round = previousRoundNo();
 
-    const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    // 查该期是否存在
+    const { data: exist, error: qErr } = await sb
+      .from("color2m_rounds")
+      .select("round_number,is_manual")
+      .eq("round_number", round)
+      .maybeSingle();
+    if (qErr) throw qErr;
 
-    const period = lastEnded2MinPeriodIST();
-    const { data, error } = await supabase.rpc("color2m_settle_period", {
-      _period: period,
-      _result: forced
-    });
-
-    if (error) {
-      return new Response(JSON.stringify({ ok: false, period, error: error.message }), {
-        status: 500, headers: { "content-type": "application/json" }
-      });
+    if (exist?.is_manual) {
+      return json({ ok: true, round, status: "manual_locked_skip" });
     }
-    return new Response(JSON.stringify({ ok: true, period, data }), {
-      headers: { "content-type": "application/json" }
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: String(e) }), {
-      status: 500, headers: { "content-type": "application/json" }
-    });
+    if (exist) {
+      return json({ ok: true, round, status: "already_exists_skip" });
+    }
+
+    // 随机生成结果
+    const num = Math.floor(Math.random() * 10); // 0-9
+    const color = COLORS[num];
+
+    // 插入
+    const { error: insErr } = await sb.from("color2m_rounds").insert([{
+      round_number: round,
+      result_color: color,
+      result_number: num,
+      is_manual: false
+    }]);
+    if (insErr) throw insErr;
+
+    return json({ ok: true, round, status: "auto_insert", result_number: num, result_color: color });
+  } catch (e: any) {
+    return json({ ok: false, error: String(e?.message ?? e) }, 500);
   }
 });
+
+function json(body: any, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" }
+  });
+}
