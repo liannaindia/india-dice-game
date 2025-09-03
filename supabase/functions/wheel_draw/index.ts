@@ -23,14 +23,14 @@ function roundKey(date: Date) {
 }
 function previousRoundNo() {
   const start = bucketStart2mIST(getIST());
-  return roundKey(new Date(start.getTime() - 120000));
+  return roundKey(new Date(start.getTime() - 120000)); // 取“上一期”
 }
 
 /** ===== 盘面与赔率 =====
  * result_index: 0..15  →  result_number: 3..18 (number = index + 3)
- * 需求：排除 index=0(=3) 与 index=15(=18)
+ * 需求：排除 index=0(=3) 与 index=15(=18) → 只允许 1..14
  */
-const ALLOWED_INDEXES: number[] = Array.from({ length: 14 }, (_, i) => i + 1); // 1..14 → 4..17
+const ALLOWED_INDEXES: number[] = Array.from({ length: 14 }, (_, i) => i + 1); // 1..14 → number 4..17
 
 const ODDS: Record<number, number> = {
   3: 180, 18: 180,
@@ -61,7 +61,7 @@ Deno.serve(async () => {
   try {
     const round = previousRoundNo();
 
-    // 1) 查该期是否存在 & 是否手动
+    // 查有没有且是否手动
     const { data: exist, error: qErr } = await sb
       .from<WheelRow>("wheel_rounds")
       .select("round_number, is_manual")
@@ -70,44 +70,40 @@ Deno.serve(async () => {
     if (qErr) throw qErr;
 
     if (exist?.is_manual) {
-      // 手动结果：跳过，不能覆盖
+      // 手动结果锁定，不覆盖
       return json({ ok: true, round, status: "manual_locked_skip" });
     }
 
-    // 2) 从允许索引均匀抽样（排除 0/15）
-    const ridx = ALLOWED_INDEXES[Math.floor(Math.random() * ALLOWED_INDEXES.length)]; // 1..14
-    const num = ridx + 3; // 1→4, 14→17
+    if (exist) {
+      // ✅ 已存在自动结果：不再改动（避免同一期被多次随机覆盖）
+      return json({ ok: true, round, status: "already_exists_skip" });
+    }
+
+    // 生成允许的随机 index（1..14）→ 等价禁止开 3/18
+    const ridx = ALLOWED_INDEXES[Math.floor(Math.random() * ALLOWED_INDEXES.length)];
+    const num = ridx + 3;     // 1→4, 14→17
     const mult = ODDS[num];
 
-    // 3) 兜底断言：任何异常直接中止（不落库）
+    // 兜底断言（理论上不会触发）
     if (ridx === 0 || ridx === 15) throw new Error(`Guard: forbidden index ${ridx}`);
     if (num === 3 || num === 18) throw new Error(`Guard: forbidden number ${num}`);
     if (mult == null) throw new Error(`Guard: missing odds for number ${num}`);
 
-    // 4) 写库：不存在则插入；存在（且非手动）则更新
-    if (!exist) {
-      const { error: insErr } = await sb.from("wheel_rounds").insert([{
-        round_number: round,
-        result_index: ridx,
-        result_number: num,
-        result_multiplier: mult,
-        is_manual: false
-      }]);
-      if (insErr) throw insErr;
-      return json({ ok: true, round, status: "auto_insert", result_index: ridx, result_number: num, mult });
-    } else {
-      const { error: updErr } = await sb
-        .from("wheel_rounds")
-        .update({
-          result_index: ridx,
-          result_number: num,
-          result_multiplier: mult,
-          is_manual: false
-        })
-        .eq("round_number", round);
-      if (updErr) throw updErr;
-      return json({ ok: true, round, status: "auto_update_non_manual", result_index: ridx, result_number: num, mult });
-    }
+    const payload = {
+      round_number: round,
+      result_index: ridx,
+      result_number: num,
+      result_multiplier: mult,
+      is_manual: false
+    };
+
+    // 只插入一次：依赖 round_number 唯一键，重复则忽略
+    const { error: insErr } = await sb
+      .from("wheel_rounds")
+      .insert([payload], { onConflict: "round_number", ignoreDuplicates: true } as any);
+    if (insErr) throw insErr;
+
+    return json({ ok: true, round, status: "auto_insert", result_index: ridx, result_number: num, mult });
   } catch (e: any) {
     return json({ ok: false, error: String(e?.message ?? e) }, 500);
   }
