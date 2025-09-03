@@ -8,115 +8,92 @@
   <script type="module" src="./supabase-config.js"></script>
   <style>
     :root{
-      /* Light theme tuned for Ganeshcasino */
-      --peacock:#0d6efd;      /* brand blue */
-      --saffron:#ff8c1a;      /* saffron orange */
-      --lotus:#7c3aed;        /* violet */
-      --emerald:#16a34a;      /* green */
-      --ruby:#ef4444;         /* red */
-      --bg:#eef4ff;           /* page background */
-      --ink:#0b1f49;          /* main text */
-      --card:#ffffff;         /* card surface */
-      --card2:#f7faff;        /* soft surface */
-      --muted:#526a95;        /* muted text */
-      --line:#dce7ff;         /* lines */
-      --gold:#f7c948;         /* accents */
-      --shadow:0 12px 28px rgba(15,60,160,.14);
-      --radius:18px;
+      --peacock:#0d6efd; --saffron:#ff8c1a; --lotus:#7c3aed; --emerald:#16a34a; --ruby:#ef4444;
+      --bg:#eef4ff; --ink:#0b1f49; --card:#ffffff; --card2:#f7faff; --muted:#526a95; --line:#dce7ff; --gold:#f7c948; --shadow:0 12px 28px rgba(15,60,160,.14);
     }
     *{box-sizing:border-box}
     html,body{margin:0;height:100%}
-    body{font-family:'Poppins',sans-serif;background:linear-gradient(180deg,#f7faff, var(--bg)); color:var(--ink); display:flex; justify-content:center}
-    .wrap{width:100%; max-width:520px; padding:16px 12px 120px}
+    body{font-family:'Poppins',sans-serif;background:linear-gradient(180deg,#f7faff,var(--bg));color:var(--ink);display:flex;justify-content:center}
+    .wrap{width:100%;max-width:520px;padding:16px 12px 120px}
 
     /* header */
-    .brand{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px}
-    .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
-    .logo .mark{width:28px; height:28px; border-radius:8px; background:conic-gradient(from 220deg, var(--saffron), var(--gold), var(--peacock)); box-shadow:0 0 0 2px rgba(0,0,0,.04)}
-    .brand-right{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
-    .balance{background:rgba(247,201,72,.18); color:#5c4500; padding:6px 10px; border:1px solid rgba(247,201,72,.5); border-radius:999px; font-weight:700}
-    .btn-xs{padding:6px 10px; border:1px solid var(--line); background:#fff; border-radius:10px; color:#23457a; cursor:pointer}
-    .btn-link{padding:6px 10px; border:1px solid var(--line); background:#fff; border-radius:10px; color:#23457a; text-decoration:none; display:inline-block}
-
-    @media (max-width:520px){
-      .brand-right{width:100%; justify-content:space-between}
-    }
+    .brand{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3px}
+    .logo .mark{width:28px;height:28px;border-radius:8px;background:conic-gradient(from 220deg,var(--saffron),var(--gold),var(--peacock));box-shadow:0 0 0 2px rgba(0,0,0,.04)}
+    .brand-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .balance{background:rgba(247,201,72,.18);color:#5c4500;padding:6px 10px;border:1px solid rgba(247,201,72,.5);border-radius:999px;font-weight:700}
+    .btn-xs,.btn-link{padding:6px 10px;border:1px solid var(--line);background:#fff;border-radius:10px;color:#23457a;cursor:pointer;text-decoration:none}
+    @media (max-width:520px){.brand-right{width:100%;justify-content:space-between}}
 
     /* top card */
-    .topcard{background:linear-gradient(180deg,#ffffff,#f2f7ff); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); padding:12px}
-    .split{display:grid; grid-template-columns:1fr auto; gap:12px}
-    .badge{border:1px dashed rgba(13,110,253,.6); color:#23457a; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:8px; background:#fff}
-    .nums{display:flex; gap:8px; margin-top:10px}
-    .ball{width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow:inset 0 0 0 3px rgba(255,255,255,.45), 0 6px 16px rgba(0,0,0,.12)}
+    .topcard{background:linear-gradient(180deg,#ffffff,#f2f7ff);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:12px}
+    .split{display:grid;grid-template-columns:1fr auto;gap:12px}
+    .badge{border:1px dashed rgba(13,110,253,.6);color:#23457a;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:8px;background:#fff}
+    .nums{display:flex;gap:8px;margin-top:10px}
+    .ball{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;box-shadow:inset 0 0 0 3px rgba(255,255,255,.45),0 6px 16px rgba(0,0,0,.12)}
     .ball.green{background:linear-gradient(180deg,#34d399,#16a34a)}
     .ball.red{background:linear-gradient(180deg,#ff6b6b,#ef4444)}
     .ball.violet{background:linear-gradient(180deg,#b692ff,#7c3aed)}
 
-    .right{background:linear-gradient(180deg,#0d6efd,#1e55f4); color:#fff; border-radius:16px; padding:12px 14px; min-width:170px; display:flex; flex-direction:column; justify-content:center; gap:4px; box-shadow:0 8px 18px rgba(13,110,253,.22)}
-    .right .title{opacity:.95; font-size:12px; font-weight:700}
-    .timer{display:flex; align-items:center; gap:6px}
-    .digit{width:26px; height:32px; border-radius:8px; background:rgba(255,255,255,.95); color:#0a2a6b; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 -2px 0 rgba(0,0,0,.12)}
-    .colon{padding:0 2px; font-weight:800}
-    .period{font-size:12px; opacity:.98; letter-spacing:.2px}
+    .right{background:linear-gradient(180deg,#0d6efd,#1e55f4);color:#fff;border-radius:16px;padding:12px 14px;min-width:170px;display:flex;flex-direction:column;justify-content:center;gap:4px;box-shadow:0 8px 18px rgba(13,110,253,.22)}
+    .right .title{opacity:.95;font-size:12px;font-weight:700}
+    .timer{display:flex;align-items:center;gap:6px}
+    .digit{width:26px;height:32px;border-radius:8px;background:rgba(255,255,255,.95);color:#0a2a6b;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -2px 0 rgba(0,0,0,.12)}
+    .colon{padding:0 2px;font-weight:800}
+    .period{font-size:12px;opacity:.98;letter-spacing:.2px}
 
     /* board */
-    .board{margin-top:14px; background:var(--card); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); padding:12px}
-    .row{display:flex; gap:8px}
-    .pill{flex:1; text-align:center; padding:10px 8px; border-radius:12px; font-weight:800; border:1.5px solid transparent; cursor:pointer; user-select:none}
-    .pill.green{background:linear-gradient(180deg, #eafff3, #e4fff0); color:#0b7a3a; border-color:#b8f2cd}
-    .pill.violet{background:linear-gradient(180deg, #f1e9ff, #efe6ff); color:#5b33c8; border-color:#d9c7ff}
-    .pill.red{background:linear-gradient(180deg, #ffe9e9, #ffe3e3); color:#9a1a1a; border-color:#ffc1c1}
-    .pill .sub{font-weight:700; font-size:12px; opacity:.9}
-    .pill.active{outline:2px solid var(--peacock); box-shadow:0 0 0 4px rgba(13,110,253,.16)}
+    .board{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:12px}
+    .row{display:flex;gap:8px}
+    .pill{flex:1;text-align:center;padding:10px 8px;border-radius:12px;font-weight:800;border:1.5px solid transparent;cursor:pointer;user-select:none}
+    .pill.green{background:linear-gradient(180deg,#eafff3,#e4fff0);color:#0b7a3a;border-color:#b8f2cd}
+    .pill.violet{background:linear-gradient(180deg,#f1e9ff,#efe6ff);color:#5b33c8;border-color:#d9c7ff}
+    .pill.red{background:linear-gradient(180deg,#ffe9e9,#ffe3e3);color:#9a1a1a;border-color:#ffc1c1}
+    .pill .sub{font-weight:700;font-size:12px;opacity:.9}
+    .pill.active{outline:2px solid var(--peacock);box-shadow:0 0 0 4px rgba(13,110,253,.16)}
 
-    .grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:12px 2px 8px}
-    .chip{position:relative; background:#fff; border:1.5px solid #e5edff; border-radius:14px; height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 8px 18px rgba(17,69,180,.08)}
-    .chip .n{font-weight:800; font-size:18px}
-    .chip .x{font-size:10px; color:#6b84b1; font-weight:700}
-    .chip.green .n{color:#22c55e}
-    .chip.red .n{color:#ef4444}
-    .chip.violet .n{color:#7c3aed}
+    .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:12px 2px 8px}
+    .chip{position:relative;background:#fff;border:1.5px solid #e5edff;border-radius:14px;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 8px 18px rgba(17,69,180,.08)}
+    .chip .n{font-weight:800;font-size:18px}
+    .chip .x{font-size:10px;color:#6b84b1;font-weight:700}
+    .chip.green .n{color:#22c55e}.chip.red .n{color:#ef4444}.chip.violet .n{color:#7c3aed}
 
-    .tools{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 6px}
-    .btn{padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; color:#23457a; font-weight:700; font-size:12px; cursor:pointer}
-    .btn.primary{background:linear-gradient(180deg,#0d6efd,#1e55f4); border-color:#1e55f4; color:#fff}
-    .btn.gold{background:linear-gradient(180deg,#ffe089,#f7c948); color:#3a2a00; border-color:#f7c948}
+    .tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
+    .btn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#23457a;font-weight:700;font-size:12px;cursor:pointer}
+    .btn.primary{background:linear-gradient(180deg,#0d6efd,#1e55f4);border-color:#1e55f4;color:#fff}
+    .btn.gold{background:linear-gradient(180deg,#ffe089,#f7c948);color:#3a2a00;border-color:#f7c948}
 
-    .bigsmall{display:flex; gap:10px; margin-top:8px}
-    .bigsmall .btn{flex:1; text-align:center; padding:12px 0; border-radius:12px; font-weight:800}
+    .bigsmall{display:flex;gap:10px;margin-top:8px}
+    .bigsmall .btn{flex:1;text-align:center;padding:12px 0;border-radius:12px;font-weight:800}
 
     /* bet slip */
-    .betslip{margin-top:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; padding:12px}
-    .betslip h4{margin:0 0 8px; font-size:14px; color:#1e3b72}
-    .row2{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .amount{flex:1; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; color:#1b356a; font-weight:700}
-    .chipamt{padding:8px 10px; border:1px solid var(--line); border-radius:10px; cursor:pointer; background:#fff; color:#23457a}
+    .betslip{margin-top:12px;background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px}
+    .betslip h4{margin:0 0 8px;font-size:14px;color:#1e3b72}
+    .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .amount{flex:1;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;color:#1b356a;font-weight:700}
+    .chipamt{padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:#fff;color:#23457a}
 
-    .submit{display:flex; gap:10px; margin-top:10px}
-    .submit .btn{flex:1; padding:12px 16px; font-size:14px; border-radius:12px}
-    .note{font-size:12px; color:var(--muted); margin-top:6px}
+    .submit{display:flex;gap:10px;margin-top:10px}
+    .submit .btn{flex:1;padding:12px 16px;font-size:14px;border-radius:12px}
+    .note{font-size:12px;color:var(--muted);margin-top:6px}
 
     /* tabs + table */
-    .tabs{display:flex; gap:8px; margin-top:12px}
-    .tab{flex:1; text-align:center; background:#eef5ff; border:1px solid var(--line); border-radius:12px; padding:10px 0; font-weight:800; color:#345d9b; cursor:pointer}
-    .tab.active{background:linear-gradient(180deg,#0d6efd,#1e55f4); color:#fff; border-color:#1e55f4}
+    .tabs{display:flex;gap:8px;margin-top:12px}
+    .tab{flex:1;text-align:center;background:#eef5ff;border:1px solid var(--line);border-radius:12px;padding:10px 0;font-weight:800;color:#345d9b;cursor:pointer}
+    .tab.active{background:linear-gradient(180deg,#0d6efd,#1e55f4);color:#fff;border-color:#1e55f4}
 
-    .table{margin-top:10px; background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden}
-    .thead,.trow{display:grid; grid-template-columns:1.2fr .8fr .8fr .9fr; align-items:center}
-    .thead{background:#0d6efd; color:#fff; font-weight:800; padding:10px 12px}
-    .trow{padding:10px 12px; border-top:1px solid var(--line)}
-    .dot{width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px}
-    .dot.green{background:var(--emerald)}
-    .dot.red{background:var(--ruby)}
-    .dot.violet{background:var(--lotus)}
-
-    .empty{padding:14px; text-align:center; color:#5a79ad}
+    .table{margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+    .thead,.trow{display:grid;grid-template-columns:1.2fr .8fr .8fr .9fr;align-items:center}
+    .thead{background:#0d6efd;color:#fff;font-weight:800;padding:10px 12px}
+    .trow{padding:10px 12px;border-top:1px solid var(--line)}
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+    .dot.green{background:var(--emerald)}.dot.red{background:var(--ruby)}.dot.violet{background:var(--lotus)}
+    .empty{padding:14px;text-align:center;color:#5a79ad}
 
     /* toast */
-    .toast{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#ffffff; border:1px solid var(--line); color:#113066; padding:10px 14px; border-radius:10px; font-weight:700; box-shadow:var(--shadow); display:none; z-index:50}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#ffffff;border:1px solid var(--line);color:#113066;padding:10px 14px;border-radius:10px;font-weight:700;box-shadow:var(--shadow);display:none;z-index:50}
     .toast.show{display:block}
-
-    @media (max-width:360px){ .thead,.trow{grid-template-columns:1fr .8fr .8fr .8fr} .wrap{padding-bottom:160px} }
+    @media (max-width:360px){.thead,.trow{grid-template-columns:1fr .8fr .8fr .8fr}.wrap{padding-bottom:160px}}
   </style>
 </head>
 <body>
@@ -220,37 +197,41 @@
     const ODDS = { color:{green:2, red:2, violet:4.5}, number:9, size:{big:2, small:2} };
 
     /* ===================== STATE ===================== */
-    let currentUser = null;        // supabase auth user
-    let userBalance = 0;           // balance from users table
+    let currentUser = null;
+    let userBalance = 0;
     let selection = null;          // { kind:'color'|'number'|'size', value:string|number }
-    let betMultiplier = 1;         // X1..X100 (display only)
+    let betMultiplier = 1;
 
-    /* ===================== UTIL (IST time & round) ===================== */
-    const toIST = (d=new Date()) => new Date(d.getTime() + (5.5*3600*1000));
-    const bucketStartIST = (d=new Date()) => {
-      const t = toIST(d);
-      const secondsToday = t.getHours()*3600 + t.getMinutes()*60 + t.getSeconds();
-      const bucket = Math.floor(secondsToday / PERIOD_SEC);
-      const start = new Date(t);
-      const targetSec = bucket * PERIOD_SEC;
-      const hh = Math.floor(targetSec/3600);
-      const mm = Math.floor((targetSec%3600)/60);
-      const ss = targetSec%60;
-      start.setHours(hh, mm, ss, 0);
-      return start;
+    /* ===================== TIME (IST, match DB) ===================== */
+    const IST_OFFSET_MIN = 330; // 5.5 hours
+    const utcNow = () => new Date();
+    const istNowUtcView = () => new Date(utcNow().getTime() + IST_OFFSET_MIN*60000);
+
+    const bucketStartIST = () => {
+      const t = istNowUtcView();            // treat as IST, read via UTC accessors
+      const m = t.getUTCMinutes();
+      t.setUTCMinutes(m - (m % 2), 0, 0);   // align to current 2-min bucket start
+      return t;
     };
-    const nextBucketIST = () => { const s = bucketStartIST(); const n = new Date(s); n.setSeconds(n.getSeconds()+PERIOD_SEC); return n; };
-    const secsToNextBucket = () => Math.max(0, Math.floor((nextBucketIST() - toIST())/1000));
-    const roundKey = (d) => { const t = d; const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0'); const h=String(t.getHours()).padStart(2,'0'); const mi=String(t.getMinutes()).padStart(2,'0'); return `${y}${m}${dd}${h}${mi}`; };
-    const displayRoundNumber = () => roundKey(nextBucketIST()); // 显示“下一桶”的期号
+    const nextBucketIST = () => new Date(bucketStartIST().getTime() + PERIOD_SEC*1000);
+    const secsToNextBucket = () => Math.max(0, Math.floor((nextBucketIST() - istNowUtcView())/1000));
+    const roundKeyIST = (d) => {
+      const y  = d.getUTCFullYear();
+      const mo = String(d.getUTCMonth()+1).padStart(2,'0');
+      const da = String(d.getUTCDate()).padStart(2,'0');
+      const hh = String(d.getUTCHours()).padStart(2,'0');
+      const mi = String(d.getUTCMinutes()).padStart(2,'0');
+      return `${y}${mo}${da}${hh}${mi}`;
+    };
+    const displayRoundNumber = () => roundKeyIST(bucketStartIST()); // match DB exactly
 
-    /* ===================== COLOR / SIZE RULES ===================== */
+    /* ===================== RULES ===================== */
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
     const bigSmall = (n) => (n>=5? 'Big' : 'Small');
 
     /* ===================== UI HELPERS ===================== */
-    const qs = (s)=>document.querySelector(s); const qsa=(s)=>document.querySelectorAll(s);
-    const toast = (msg)=>{ const t=qs('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 1600); };
+    const qs=(s)=>document.querySelector(s);const qsa=(s)=>document.querySelectorAll(s);
+    const toast=(msg)=>{const t=qs('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600)};
 
     /* ===================== AUTH & BALANCE ===================== */
     async function loadUser(){
@@ -313,7 +294,8 @@
     function renderTimer(){
       periodEl.textContent = displayRoundNumber();
       const s = secsToNextBucket(); const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(s%60).padStart(2,'0');
-      const ds = timerEl.querySelectorAll('.digit'); const digits=[...m+ss]; ds[0].textContent=digits[0]; ds[1].textContent=digits[1]; ds[2].textContent=digits[2]; ds[3].textContent=digits[3];
+      const ds = timerEl.querySelectorAll('.digit'); const digits=[...m+ss];
+      ds[0].textContent=digits[0]; ds[1].textContent=digits[1]; ds[2].textContent=digits[2]; ds[3].textContent=digits[3];
       updateNote();
     }
     function updateNote(){
@@ -321,7 +303,6 @@
       if(closed) note.textContent = `Betting closed. Wait for next draw.`; else note.textContent = `Bets close ${CLOSE_SEC}s before draw. Current round only.`;
       qs('#btnPlace').disabled = closed;
     }
-
     setInterval(renderTimer, 250); renderTimer();
 
     /* ===================== DATA: HISTORY & REALTIME ===================== */
@@ -359,6 +340,7 @@
       if(t.dataset.tab==='mine') fetchMyBets();
     }));
 
+    /* ===================== MY BETS ===================== */
     const tbodyMine = qs('#tbodyMine'); const emptyMine = qs('#emptyMine');
     async function fetchMyBets(){
       if(!currentUser){ tbodyMine.innerHTML = ''; emptyMine.style.display='block'; return; }
