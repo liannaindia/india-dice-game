@@ -148,7 +148,7 @@
       </div>
 
       <div class="bigsmall">
-        <button class="btn" data-type="size" data-val="big" id="btnBig">Big 2X</button>
+        <button class="btn primary" data-type="size" data-val="big" id="btnBig">Big 2X</button>
         <button class="btn" data-type="size" data-val="small" id="btnSmall">Small 2X</button>
       </div>
 
@@ -278,25 +278,6 @@
 
     function selectPick(kind,value){
       selection = { kind, value };
-      // highlight color pills
-      qsa('.pill').forEach(p=>p.classList.remove('active'));
-      qsa('.pill').forEach(p=>{ if(p.dataset.type===kind && p.dataset.val===String(value)) p.classList.add('active'); });
-      // highlight number chip
-      qsa('.chip').forEach(c=>c.style.outline='none');
-      qsa('.chip').forEach(c=>{ if(c.dataset.type==='number' && c.dataset.val===String(value)) c.style.outline='2px solid var(--peacock)'; });
-      // toggle Big/Small buttons active state
-      const bigBtn = qs('#btnBig');
-      const smallBtn = qs('#btnSmall');
-      if(kind==='size'){
-        bigBtn.classList.remove('primary');
-        smallBtn.classList.remove('primary');
-        (String(value)==='big' ? bigBtn : smallBtn).classList.add('primary');
-      }else{
-        bigBtn.classList.remove('primary');
-        smallBtn.classList.remove('primary');
-      }
-      updateNote();
-    };
       qsa('.pill').forEach(p=>p.classList.remove('active'));
       qsa('.pill').forEach(p=>{ if(p.dataset.type===kind && p.dataset.val===String(value)) p.classList.add('active'); });
       qsa('.chip').forEach(c=>c.style.outline='none');
@@ -306,14 +287,7 @@
 
     qsa('.mult').forEach(b=>b.addEventListener('click',()=>{ betMultiplier = Number(b.dataset.m); qsa('.mult').forEach(x=>x.classList.remove('primary')); b.classList.add('primary'); }));
     qsa('.chipamt').forEach(b=>b.addEventListener('click',()=>{ const i=qs('#amount'); i.value = String((Number(i.value||0) + Number(b.dataset.amt))*betMultiplier); }));
-    qs('#btnClear').addEventListener('click',()=>{
-      qs('#amount').value='';
-      selection=null;
-      qsa('.pill').forEach(p=>p.classList.remove('active'));
-      qsa('.chip').forEach(c=>c.style.outline='none');
-      qs('#btnBig').classList.remove('primary');
-      qs('#btnSmall').classList.remove('primary');
-    }); qsa('.chip').forEach(c=>c.style.outline='none'); });
+    qs('#btnClear').addEventListener('click',()=>{ qs('#amount').value=''; selection=null; qsa('.pill').forEach(p=>p.classList.remove('active')); qsa('.chip').forEach(c=>c.style.outline='none'); });
 
     /* ===================== TIMER ===================== */
     const periodEl = qs('#period'); const timerEl = qs('#timer');
@@ -337,12 +311,11 @@
 
     const tbodyGame = qs('#tbodyGame'); const emptyGame = qs('#emptyGame');
     const pushGameRow = (round,n)=>{ const tr=document.createElement('div'); tr.className='trow'; tr.innerHTML=`<div>${round}</div><div><strong>${n}</strong></div><div>${bigSmall(n)}</div><div><span class="dot ${colorOf(n)}"></span></div>`; tbodyGame.prepend(tr); while(tbodyGame.children.length>10) tbodyGame.removeChild(tbodyGame.lastElementChild); };
-    const appendGameRow = (round,n)=>{ const tr=document.createElement('div'); tr.className='trow'; tr.innerHTML=`<div>${round}</div><div><strong>${n}</strong></div><div>${bigSmall(n)}</div><div><span class="dot ${colorOf(n)}"></span></div>`; tbodyGame.appendChild(tr); while(tbodyGame.children.length>10) tbodyGame.removeChild(tbodyGame.lastElementChild); };
 
     function renderEmptyState(has){ emptyGame.style.display = has? 'none':'block'; }
 
     async function fetchGameHistory(){
-      const { data, error } = await supabase.from('color2m_ro = await supabase.from('color2m_rounds').select('round_number,result_number').order('round_number',{ascending:false}).limit(10);
+      const { data, error } = await supabase.from('color2m_rounds').select('round_number,result_number').order('round_number',{ascending:false}).limit(10);
       if(error){ console.error(error); return; }
       renderEmptyState(data.length>0);
       recentWrap.innerHTML=''; data.slice(0,5).reverse().forEach(r=>addBall(r.result_number));
