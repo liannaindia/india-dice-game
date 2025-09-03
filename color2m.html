@@ -2,66 +2,254 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Wingo Color2M</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <script type="module" src="./supabase-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <title>Wingo 1 Minute</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body{margin:0;font-family:'Poppins',sans-serif;display:flex;flex-direction:column;align-items:center;background:#f9f9f9;color:#222}
-    h1{margin:20px 0}
-    #countdown{font-size:20px;margin-bottom:10px}
-    .result{margin-top:20px;font-size:24px;font-weight:bold}
-    .history{margin-top:20px;width:90%;max-width:400px}
-    .history li{display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #ddd}
-    .color-box{width:20px;height:20px;border-radius:4px;display:inline-block;margin-right:8px}
+    :root{
+      --bg:#e8f1ff;           /* page background */
+      --card:#f4f9ff;         /* card background */
+      --blue:#2f7cff;         /* header blue */
+      --blue-strong:#1e5ee6;
+      --muted:#7b90b2;
+      --line:#cfe0ff;
+      --success:#2ac769;      /* green */
+      --danger:#ff4d4f;       /* red */
+      --violet:#8b5cf6;       /* violet */
+      --shadow:0 10px 30px rgba(21, 47, 89, .15);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;}
+    body{font-family:'Poppins',sans-serif;background:var(--bg);color:#1d2a44;display:flex;justify-content:center}
+    .wrap{width:100%;max-width:420px;padding:16px 12px 40px}
+
+    /* top header card */
+    .topcard{background:linear-gradient(180deg,#e9f2ff 0%,#d7e8ff 100%);border-radius:22px;box-shadow:var(--shadow);padding:14px 14px 10px}
+    .topbar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+    .badge-outline{border:1.5px dashed var(--blue);color:var(--blue);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#fff}
+
+    .split{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:stretch;background:#fff;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+    .left{padding:12px}
+    .left h3{margin:0 0 6px;font-size:14px;color:#3a5a97;font-weight:700;display:flex;align-items:center;gap:8px}
+    .help{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:600;box-shadow:0 6px 16px rgba(47,124,255,.25)}
+    .how{display:flex;align-items:center;gap:6px}
+    .how i{width:16px;height:16px;border-radius:50%;background:#fff;color:var(--blue);display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-weight:700;font-size:12px}
+
+    .nums{display:flex;gap:8px;margin-top:8px}
+    .ball{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;box-shadow:inset 0 0 0 3px rgba(255,255,255,.85), 0 4px 10px rgba(0,0,0,.1)}
+    .ball.green{background:linear-gradient(180deg,#4ade80,#16a34a)}
+    .ball.red{background:linear-gradient(180deg,#ff7171,#ff3b30)}
+    .ball.violet{background:linear-gradient(180deg,#a78bfa,#7c3aed)}
+
+    .right{background:linear-gradient(180deg,#2f7cff,#1c5bf0);color:#fff;padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:160px}
+    .right .title{opacity:.9;font-size:12px}
+    .timer{display:flex;align-items:center;gap:6px}
+    .digit{width:24px;height:30px;border-radius:6px;background:rgba(255,255,255,.9);color:#0b2a6b;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -2px 0 rgba(0,0,0,.08)}
+    .colon{padding:0 2px;font-weight:700}
+    .period{font-size:12px;opacity:.95;margin-top:2px;letter-spacing:.2px}
+
+    /* action board */
+    .board{margin-top:14px;background:#fff;border-radius:22px;box-shadow:var(--shadow);padding:12px;border:1px solid var(--line)}
+    .btnrow{display:flex;gap:8px}
+    .pill{flex:1;text-align:center;padding:10px 8px;border-radius:12px;font-weight:700;border:1.5px solid transparent;cursor:pointer;user-select:none}
+    .pill.green{background:linear-gradient(180deg,#e7fff2,#d2ffe7);color:#107e3e;border-color:#aaf2c7}
+    .pill.red{background:linear-gradient(180deg,#ffe7e7,#ffd9d9);color:#b42318;border-color:#ffb3b3}
+    .pill.violet{background:linear-gradient(180deg,#efe7ff,#e4d9ff);color:#6b3cdf;border-color:#d2b8ff}
+    .pill .sub{font-weight:600;font-size:12px;opacity:.9}
+    .pill.active{outline:2px solid #2f7cff;box-shadow:0 0 0 4px rgba(47,124,255,.12)}
+
+    .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:12px 2px 8px}
+    .chip{position:relative;background:#fff;border:1.5px solid #e6ecf7;border-radius:14px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 4px 12px rgba(8,22,72,.06)}
+    .chip .n{font-weight:800;font-size:18px}
+    .chip .x{font-size:10px;color:#62729a;font-weight:700}
+    .chip.green .n{color:#22c55e}
+    .chip.red .n{color:#ef4444}
+    .chip.violet .n{color:#8b5cf6}
+
+    .tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
+    .btn{padding:6px 10px;border:1px solid #d7e2f6;border-radius:10px;background:#fff;font-weight:600;font-size:12px;cursor:pointer}
+    .btn.primary{background:#2f7cff;color:#fff;border-color:#2f7cff}
+
+    .bigsmall{display:flex;gap:10px;margin-top:8px}
+    .bigsmall .btn{flex:1;text-align:center;padding:10px 0;border-radius:12px;font-weight:800}
+
+    /* tabs */
+    .tabs{display:flex;gap:8px;margin-top:10px}
+    .tab{flex:1;text-align:center;background:#eef5ff;border:1px solid #d7e2f6;border-radius:12px;padding:10px 0;font-weight:700;color:#5872a5;cursor:pointer}
+    .tab.active{background:#2f7cff;color:#fff;border-color:#2f7cff}
+
+    /* table */
+    .table{margin-top:10px;background:#fff;border:1px solid #e1eafd;border-radius:16px;overflow:hidden}
+    .thead,.trow{display:grid;grid-template-columns:1.4fr .9fr .9fr .9fr;align-items:center}
+    .thead{background:#2f7cff;color:#fff;font-weight:700;padding:10px 12px}
+    .trow{padding:10px 12px;border-top:1px solid #e6eefc}
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+    .dot.green{background:var(--success)}
+    .dot.red{background:var(--danger)}
+    .dot.violet{background:var(--violet)}
+
+    /* mobile tweaks */
+    @media (max-width:360px){
+      .thead,.trow{grid-template-columns:1.2fr .8fr .8fr .8fr}
+      .right{min-width:140px}
+    }
   </style>
 </head>
 <body>
-  <h1>Wingo - Color2M</h1>
-  <div id="countdown">Loading...</div>
-  <div class="result" id="latest-result">Waiting for result...</div>
-  <ul class="history" id="history"></ul>
+  <div class="wrap">
+    <!-- Header card -->
+    <div class="topcard">
+      <div class="topbar">
+        <span class="badge-outline">How to play</span>
+      </div>
+      <div class="split">
+        <div class="left">
+          <div class="how"><span class="help"><i>?</i> How to play</span></div>
+          <div class="badge-outline" style="margin-top:8px">WinGo 1 minute</div>
+          <div class="nums" id="recentBalls">
+            <!-- recent balls injected here -->
+          </div>
+        </div>
+        <div class="right">
+          <div class="title">Time remaining</div>
+          <div class="timer" id="timer">
+            <span class="digit">0</span><span class="digit">0</span>
+            <span class="colon">:</span>
+            <span class="digit">0</span><span class="digit">0</span>
+          </div>
+          <div class="period" id="period">000000000000</div>
+        </div>
+      </div>
+    </div>
 
-  <script type="module">
-    import { supabase } from "./supabase-config.js";
+    <!-- action board -->
+    <div class="board">
+      <div class="btnrow">
+        <div class="pill green" data-color="green">Green <span class="sub">2X</span></div>
+        <div class="pill violet" data-color="violet">Violet <span class="sub">4.5X</span></div>
+        <div class="pill red" data-color="red">Red <span class="sub">2X</span></div>
+      </div>
 
-    async function fetchLatest() {
-      const { data, error } = await supabase
-        .from("color2m_rounds")
-        .select("*")
-        .order("round_number",{ascending:false})
-        .limit(10);
-      if (error) { console.error(error); return; }
+      <div class="grid" id="numGrid"></div>
 
-      if (data.length > 0) {
-        const latest = data[0];
-        document.getElementById("latest-result").innerHTML =
-          `Latest: <span style="color:${latest.result_color}">${latest.result_number} (${latest.result_color})</span>`;
-        const list = document.getElementById("history");
-        list.innerHTML = "";
-        data.forEach(r=>{
-          const li = document.createElement("li");
-          li.innerHTML = `<span>${r.round_number}</span><span><span class="color-box" style="background:${r.result_color}"></span>${r.result_number}</span>`;
-          list.appendChild(li);
-        });
-      }
+      <div class="tools">
+        <button class="btn" id="btnRandom">Random</button>
+        <button class="btn primary mult" data-m="1">X1</button>
+        <button class="btn mult" data-m="5">X5</button>
+        <button class="btn mult" data-m="10">X10</button>
+        <button class="btn mult" data-m="20">X20</button>
+        <button class="btn mult" data-m="50">X50</button>
+        <button class="btn mult" data-m="100">X100</button>
+      </div>
+
+      <div class="bigsmall">
+        <button class="btn primary" id="btnBig">Big 2X</button>
+        <button class="btn" id="btnSmall">Small 2X</button>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active">Game history</div>
+        <div class="tab">Chart</div>
+        <div class="tab">My history</div>
+      </div>
+
+      <div class="table">
+        <div class="thead"><div>Period</div><div>Number</div><div>Big Small</div><div>Color</div></div>
+        <div id="tbody"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Utility: IST and round logic =====
+    const toIST = (d=new Date()) => new Date(d.getTime() + (5.5*3600*1000));
+    const istRoundNumber = () => {
+      const t = toIST();
+      const y = t.getFullYear();
+      const m = String(t.getMonth()+1).padStart(2,'0');
+      const d = String(t.getDate()).padStart(2,'0');
+      const h = String(t.getHours()).padStart(2,'0');
+      const mi = String(t.getMinutes()).padStart(2,'0');
+      return `${y}${m}${d}${h}${mi}`; // YYYYMMDDHHmm
+    };
+    const secsToNextMinute = () => {
+      const t = toIST();
+      const next = new Date(t); next.setMinutes(t.getMinutes()+1,0,0);
+      return Math.max(0, Math.floor((next - t)/1000));
+    };
+
+    // ===== Color rules commonly used in Wingo =====
+    const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
+    const bigSmall = (n) => (n>=5? 'Big' : 'Small');
+
+    // ===== Build number chips 0..9 =====
+    const grid = document.getElementById('numGrid');
+    for(let n=0;n<=9;n++){
+      const c = document.createElement('div');
+      c.className = `chip ${colorOf(n)}`;
+      c.innerHTML = `<div class="n">${n}</div><div class="x">9X</div>`;
+      c.dataset.num = n;
+      grid.appendChild(c);
     }
 
-    // 倒计时：2分钟一期
-    function updateCountdown() {
-      const now = new Date();
-      const sec = now.getUTCSeconds() + now.getUTCMilliseconds()/1000;
-      const ist = new Date(now.getTime() + (5.5*3600*1000));
-      const bucket = ist.getMinutes() - (ist.getMinutes()%2);
-      const next = new Date(ist);
-      next.setMinutes(bucket+2,0,0);
-      const remain = Math.floor((next.getTime()-ist.getTime())/1000);
-      document.getElementById("countdown").textContent = `Next round in ${remain}s`;
-    }
+    // ===== Recent balls mock (you can replace by API later) =====
+    const recent = [7,5,7,7,2];
+    const recentWrap = document.getElementById('recentBalls');
+    const addBall = (n) => {
+      const b = document.createElement('div');
+      b.className = `ball ${colorOf(n)}`;
+      b.textContent = n;
+      recentWrap.appendChild(b);
+    };
+    recent.forEach(addBall);
 
-    setInterval(updateCountdown,1000);
-    setInterval(fetchLatest,5000);
-    fetchLatest();
+    // ===== Table with history =====
+    const tbody = document.getElementById('tbody');
+    const pushRow = (round, n) => {
+      const tr = document.createElement('div');
+      tr.className = 'trow';
+      tr.innerHTML = `<div>${round}</div>
+        <div><strong>${n}</strong></div>
+        <div>${bigSmall(n)}</div>
+        <div><span class="dot ${colorOf(n)}"></span></div>`;
+      tbody.prepend(tr);
+    };
+    // Seed a few demo rows
+    [['2025090301266',7],['2025090301265',5],['2025090301264',7],['2025090301263',7],['2025090301262',2],['2025090301261',5]]
+      .forEach(([r,n])=>pushRow(r,Number(n)));
+
+    // ===== Timer =====
+    const periodEl = document.getElementById('period');
+    const timerEl = document.getElementById('timer');
+    function renderTimer(){
+      periodEl.textContent = istRoundNumber();
+      const s = secsToNextMinute();
+      const mm = String(Math.floor(s/60)).padStart(2,'0');
+      const ss = String(s%60).padStart(2,'0');
+      const digits = [...mm+ss];
+      const ds = timerEl.querySelectorAll('.digit');
+      ds[0].textContent = digits[0];
+      ds[1].textContent = digits[1];
+      ds[2].textContent = digits[2];
+      ds[3].textContent = digits[3];
+    }
+    setInterval(renderTimer, 250);
+    renderTimer();
+
+    // ===== UI interactions (no backend yet) =====
+    document.querySelectorAll('.pill').forEach(el=>{
+      el.addEventListener('click',()=>{
+        document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+        el.classList.add('active');
+      })
+    });
+    document.getElementById('btnRandom').addEventListener('click',()=>{
+      const n = Math.floor(Math.random()*10);
+      pushRow(istRoundNumber(), n);
+      addBall(n);
+      if(recentWrap.children.length>5) recentWrap.removeChild(recentWrap.firstElementChild);
+    });
   </script>
 </body>
 </html>
