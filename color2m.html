@@ -8,46 +8,47 @@
   <script type="module" src="./supabase-config.js"></script>
   <style>
     :root{
-      /* Ganeshcasino palette */
-      --peacock:#0d6efd;      /* peacock blue */
+      /* Light theme tuned for Ganeshcasino */
+      --peacock:#0d6efd;      /* brand blue */
       --saffron:#ff8c1a;      /* saffron orange */
-      --lotus:#8b5cf6;        /* violet */
-      --emerald:#22c55e;      /* green */
+      --lotus:#7c3aed;        /* violet */
+      --emerald:#16a34a;      /* green */
       --ruby:#ef4444;         /* red */
-      --bg:#0b1220;           /* deep navy */
-      --card:#111a2e;         /* card surface */
-      --card2:#0f1628;
-      --muted:#8aa0c6;        /* muted text */
-      --line:#24314f;         /* lines */
+      --bg:#eef4ff;           /* page background */
+      --ink:#0b1f49;          /* main text */
+      --card:#ffffff;         /* card surface */
+      --card2:#f7faff;        /* soft surface */
+      --muted:#526a95;        /* muted text */
+      --line:#dce7ff;         /* lines */
       --gold:#f7c948;         /* accents */
-      --shadow:0 18px 40px rgba(4,12,32,.4);
+      --shadow:0 12px 28px rgba(15,60,160,.14);
       --radius:18px;
     }
     *{box-sizing:border-box}
     html,body{margin:0;height:100%}
-    body{font-family:'Poppins',sans-serif;background:radial-gradient(1200px 600px at 50% -10%, rgba(255,140,26,.1), transparent 60%), linear-gradient(180deg,#0b1220,#0a1326 60%, #081023); color:#e9f0ff; display:flex; justify-content:center}
-    .wrap{width:100%; max-width:480px; padding:18px 12px 120px}
+    body{font-family:'Poppins',sans-serif;background:linear-gradient(180deg,#f7faff, var(--bg)); color:var(--ink); display:flex; justify-content:center}
+    .wrap{width:100%; max-width:520px; padding:18px 12px 120px}
 
     /* header */
     .brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
     .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
-    .logo .mark{width:28px; height:28px; border-radius:8px; background:conic-gradient(from 220deg, var(--saffron), var(--gold), var(--peacock)); box-shadow:0 0 0 2px rgba(255,255,255,.12)}
+    .logo .mark{width:28px; height:28px; border-radius:8px; background:conic-gradient(from 220deg, var(--saffron), var(--gold), var(--peacock)); box-shadow:0 0 0 2px rgba(0,0,0,.04)}
     .userbox{display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted)}
-    .balance{background:rgba(247,201,72,.12); color:#ffe08a; padding:6px 10px; border:1px solid rgba(247,201,72,.35); border-radius:999px; font-weight:700}
-    .btn-xs{padding:6px 10px; border:1px solid var(--line); background:#0c172e; border-radius:10px; color:#cfe1ff; cursor:pointer}
+    .balance{background:rgba(247,201,72,.18); color:#5c4500; padding:6px 10px; border:1px solid rgba(247,201,72,.5); border-radius:999px; font-weight:700}
+    .btn-xs{padding:6px 10px; border:1px solid var(--line); background:#fff; border-radius:10px; color:#23457a; cursor:pointer}
 
     /* top card */
-    .topcard{background:linear-gradient(180deg,#0f1b34,#0b1630); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); padding:12px}
+    .topcard{background:linear-gradient(180deg,#ffffff,#f2f7ff); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); padding:12px}
     .split{display:grid; grid-template-columns:1fr auto; gap:12px}
-    .left h3{margin:0 0 6px; font-size:14px; color:#cfe1ff; font-weight:800; display:flex; align-items:center; gap:8px}
-    .badge{border:1px dashed rgba(13,110,253,.7); color:#cfe1ff; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:8px}
+    .left h3{margin:0 0 6px; font-size:14px; color:#23457a; font-weight:800; display:flex; align-items:center; gap:8px}
+    .badge{border:1px dashed rgba(13,110,253,.6); color:#23457a; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:8px; background:#fff}
     .nums{display:flex; gap:8px; margin-top:10px}
-    .ball{width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow:inset 0 0 0 3px rgba(255,255,255,.18), 0 6px 16px rgba(0,0,0,.35)}
+    .ball{width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow:inset 0 0 0 3px rgba(255,255,255,.45), 0 6px 16px rgba(0,0,0,.12)}
     .ball.green{background:linear-gradient(180deg,#34d399,#16a34a)}
     .ball.red{background:linear-gradient(180deg,#ff6b6b,#ef4444)}
-    .ball.violet{background:linear-gradient(180deg,#a78bfa,#7c3aed)}
+    .ball.violet{background:linear-gradient(180deg,#b692ff,#7c3aed)}
 
-    .right{background:linear-gradient(180deg,#0d6efd,#1549ff); border-radius:16px; padding:12px 14px; min-width:170px; display:flex; flex-direction:column; justify-content:center; gap:4px; box-shadow:0 8px 18px rgba(13,110,253,.35)}
+    .right{background:linear-gradient(180deg,#0d6efd,#1e55f4); color:#fff; border-radius:16px; padding:12px 14px; min-width:170px; display:flex; flex-direction:column; justify-content:center; gap:4px; box-shadow:0 8px 18px rgba(13,110,253,.22)}
     .right .title{opacity:.95; font-size:12px; font-weight:700}
     .timer{display:flex; align-items:center; gap:6px}
     .digit{width:26px; height:32px; border-radius:8px; background:rgba(255,255,255,.95); color:#0a2a6b; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 -2px 0 rgba(0,0,0,.12)}
@@ -58,34 +59,34 @@
     .board{margin-top:14px; background:var(--card); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); padding:12px}
     .row{display:flex; gap:8px}
     .pill{flex:1; text-align:center; padding:10px 8px; border-radius:12px; font-weight:800; border:1.5px solid transparent; cursor:pointer; user-select:none}
-    .pill.green{background:linear-gradient(180deg, rgba(34,197,94,.18), rgba(34,197,94,.06)); color:#a9f8c8; border-color:rgba(34,197,94,.35)}
-    .pill.violet{background:linear-gradient(180deg, rgba(139,92,246,.2), rgba(139,92,246,.08)); color:#d9c6ff; border-color:rgba(139,92,246,.35)}
-    .pill.red{background:linear-gradient(180deg, rgba(239,68,68,.2), rgba(239,68,68,.08)); color:#ffc9c9; border-color:rgba(239,68,68,.35)}
+    .pill.green{background:linear-gradient(180deg, #eafff3, #e4fff0); color:#0b7a3a; border-color:#b8f2cd}
+    .pill.violet{background:linear-gradient(180deg, #f1e9ff, #efe6ff); color:#5b33c8; border-color:#d9c7ff}
+    .pill.red{background:linear-gradient(180deg, #ffe9e9, #ffe3e3); color:#9a1a1a; border-color:#ffc1c1}
     .pill .sub{font-weight:700; font-size:12px; opacity:.9}
     .pill.active{outline:2px solid var(--peacock); box-shadow:0 0 0 4px rgba(13,110,253,.16)}
 
     .grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:12px 2px 8px}
-    .chip{position:relative; background:linear-gradient(180deg,#121b31,#0f1628); border:1.5px solid #223358; border-radius:14px; height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 8px 18px rgba(0,0,0,.25)}
+    .chip{position:relative; background:#fff; border:1.5px solid #e5edff; border-radius:14px; height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 8px 18px rgba(17,69,180,.08)}
     .chip .n{font-weight:800; font-size:18px}
-    .chip .x{font-size:10px; color:#90a8d3; font-weight:700}
-    .chip.green .n{color:#34d399}
-    .chip.red .n{color:#ff7575}
-    .chip.violet .n{color:#c6a7ff}
+    .chip .x{font-size:10px; color:#6b84b1; font-weight:700}
+    .chip.green .n{color:#22c55e}
+    .chip.red .n{color:#ef4444}
+    .chip.violet .n{color:#7c3aed}
 
     .tools{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 6px}
-    .btn{padding:8px 12px; border:1px solid #223358; border-radius:10px; background:#0f1a32; color:#cfe1ff; font-weight:700; font-size:12px; cursor:pointer}
-    .btn.primary{background:linear-gradient(180deg,#0d6efd,#1956ff); border-color:#1e55f4; color:#fff}
-    .btn.gold{background:linear-gradient(180deg,#fbd26a,#f7c948); color:#372500; border-color:#f7c948}
+    .btn{padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; color:#23457a; font-weight:700; font-size:12px; cursor:pointer}
+    .btn.primary{background:linear-gradient(180deg,#0d6efd,#1e55f4); border-color:#1e55f4; color:#fff}
+    .btn.gold{background:linear-gradient(180deg,#ffe089,#f7c948); color:#3a2a00; border-color:#f7c948}
 
     .bigsmall{display:flex; gap:10px; margin-top:8px}
     .bigsmall .btn{flex:1; text-align:center; padding:12px 0; border-radius:12px; font-weight:800}
 
     /* bet slip */
     .betslip{margin-top:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; padding:12px}
-    .betslip h4{margin:0 0 8px; font-size:14px}
+    .betslip h4{margin:0 0 8px; font-size:14px; color:#1e3b72}
     .row2{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .amount{flex:1; background:#0d152a; border:1px solid #213052; border-radius:10px; padding:10px; color:#fff; font-weight:700}
-    .chipamt{padding:8px 10px; border:1px solid #213052; border-radius:10px; cursor:pointer; background:#0e1830; color:#cfe1ff}
+    .amount{flex:1; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; color:#1b356a; font-weight:700}
+    .chipamt{padding:8px 10px; border:1px solid var(--line); border-radius:10px; cursor:pointer; background:#fff; color:#23457a}
 
     .submit{display:flex; gap:10px; margin-top:10px}
     .submit .btn{flex:1; padding:12px 16px; font-size:14px; border-radius:12px}
@@ -93,29 +94,40 @@
 
     /* tabs + table */
     .tabs{display:flex; gap:8px; margin-top:12px}
-    .tab{flex:1; text-align:center; background:#0f1830; border:1px solid #213052; border-radius:12px; padding:10px 0; font-weight:800; color:#9fb7e7; cursor:pointer}
-    .tab.active{background:linear-gradient(180deg,#0d6efd,#1956ff); color:#fff; border-color:#1e55f4}
+    .tab{flex:1; text-align:center; background:#eef5ff; border:1px solid var(--line); border-radius:12px; padding:10px 0; font-weight:800; color:#345d9b; cursor:pointer}
+    .tab.active{background:linear-gradient(180deg,#0d6efd,#1e55f4); color:#fff; border-color:#1e55f4}
 
-    .table{margin-top:10px; background:#0f1830; border:1px solid #223358; border-radius:16px; overflow:hidden}
+    .table{margin-top:10px; background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden}
     .thead,.trow{display:grid; grid-template-columns:1.2fr .8fr .8fr .9fr; align-items:center}
     .thead{background:#0d6efd; color:#fff; font-weight:800; padding:10px 12px}
-    .trow{padding:10px 12px; border-top:1px solid #1c2a4a}
+    .trow{padding:10px 12px; border-top:1px solid var(--line)}
     .dot{width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px}
     .dot.green{background:var(--emerald)}
     .dot.red{background:var(--ruby)}
     .dot.violet{background:var(--lotus)}
 
+    .empty{padding:14px; text-align:center; color:#5a79ad}
+
+    /* charts */
+    .charts{display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px}
+    .chartbox{background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px}
+    .chart-title{font-weight:800; color:#274a87; margin-bottom:6px}
+    .bars{display:flex; gap:8px; align-items:flex-end; height:120px}
+    .bar{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px}
+    .bar .col{width:22px; border-radius:6px 6px 4px 4px; background:#e3ecff}
+    .bar .lbl{font-size:12px; color:#345d9b; font-weight:700}
+
     /* toast */
-    .toast{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:rgba(12,23,46,.96); border:1px solid #223358; color:#fff; padding:10px 14px; border-radius:10px; font-weight:700; box-shadow:var(--shadow); display:none; z-index:50}
+    .toast{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#ffffff; border:1px solid var(--line); color:#113066; padding:10px 14px; border-radius:10px; font-weight:700; box-shadow:var(--shadow); display:none; z-index:50}
     .toast.show{display:block}
 
-    @media (max-width:360px){ .thead,.trow{grid-template-columns:1fr .8fr .8fr .8fr} }
+    @media (max-width:360px){ .thead,.trow{grid-template-columns:1fr .8fr .8fr .8fr} .wrap{padding-bottom:160px} }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="brand">
-      <div class="logo"><div class="mark"></div> Ganeshcasino · <span style="color:var(--gold)">Wingo</span></div>
+      <div class="logo"><div class="mark"></div> Ganeshcasino · <span style="color:var(--peacock)">Wingo</span></div>
       <div class="userbox">
         <span id="userEmail">Guest</span>
         <span class="balance" id="balance">₹0.00</span>
@@ -192,16 +204,31 @@
 
       <div class="table" id="tableGame">
         <div class="thead"><div>Period</div><div>Number</div><div>Big Small</div><div>Color</div></div>
-        <div id="tbodyGame"></div>
+        <div id="tbodyGame"><div class="empty" id="emptyGame" style="display:none">No records yet.</div></div>
       </div>
+
       <div class="table" id="tableMine" style="display:none">
         <div class="thead"><div>Period</div><div>Pick</div><div>Amount</div><div>Status</div></div>
-        <div id="tbodyMine"></div>
+        <div id="tbodyMine"><div class="empty" id="emptyMine" style="display:none">No bets yet.</div></div>
       </div>
-      <div class="table" id="tableChart" style="display:none">
-        <div class="thead"><div>Period</div><div>Number</div><div>Trend</div><div>—</div></div>
-        <div id="tbodyChart"></div>
+
+      <div id="tableChart" style="display:none">
+        <div class="charts">
+          <div class="chartbox">
+            <div class="chart-title">Colors (last 30)</div>
+            <div class="bars" id="barsColors"></div>
+          </div>
+          <div class="chartbox">
+            <div class="chart-title">Big / Small (last 30)</div>
+            <div class="bars" id="barsSize"></div>
+          </div>
+          <div class="chartbox">
+            <div class="chart-title">Numbers 0–9 (last 30)</div>
+            <div class="bars" id="barsNums"></div>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -217,7 +244,7 @@
 
     /* ===================== STATE ===================== */
     let currentUser = null;        // supabase auth user
-    let userBalance = 0;           // ₹ balance from users table
+    let userBalance = 0;           // balance from users table
     let selection = null;          // { kind:'color'|'number'|'size', value:string|number }
     let betMultiplier = 1;         // X1..X100 (display only)
 
@@ -295,8 +322,8 @@
       selection = { kind, value };
       qsa('.pill').forEach(p=>p.classList.remove('active'));
       qsa('.pill').forEach(p=>{ if(p.dataset.type===kind && p.dataset.val===String(value)) p.classList.add('active'); });
-      qsa('.chip').forEach(c=>c.classList.remove('active'));
-      qsa('.chip').forEach(c=>{ if(c.dataset.type==='number' && c.dataset.val===String(value)) c.style.outline='2px solid var(--peacock)'; else c.style.outline='none'; });
+      qsa('.chip').forEach(c=>c.style.outline='none');
+      qsa('.chip').forEach(c=>{ if(c.dataset.type==='number' && c.dataset.val===String(value)) c.style.outline='2px solid var(--peacock)'; });
       updateNote();
     }
 
@@ -324,22 +351,24 @@
     const recentWrap = qs('#recentBalls');
     const addBall = (n)=>{ const b=document.createElement('div'); b.className=`ball ${colorOf(n)}`; b.textContent=n; recentWrap.appendChild(b); while(recentWrap.children.length>5) recentWrap.removeChild(recentWrap.firstElementChild); };
 
-    const tbodyGame = qs('#tbodyGame');
-    const pushGameRow = (round,n)=>{ const tr=document.createElement('div'); tr.className='trow'; tr.innerHTML=`<div>${round}</div><div><strong>${n}</strong></div><div>${bigSmall(n)}</div><div><span class="dot ${colorOf(n)}"></span></div>`; tbodyGame.prepend(tr); while(tbodyGame.children.length>50) tbodyGame.removeChild(tbodyGame.lastElementChild); };
+    const tbodyGame = qs('#tbodyGame'); const emptyGame = qs('#emptyGame');
+    const pushGameRow = (round,n)=>{ const tr=document.createElement('div'); tr.className='trow'; tr.innerHTML=`<div>${round}</div><div><strong>${n}</strong></div><div>${bigSmall(n)}</div><div><span class="dot ${colorOf(n)}"></span></div>`; tbodyGame.prepend(tr); while(tbodyGame.children.length>51) tbodyGame.removeChild(tbodyGame.lastElementChild); };
+
+    function renderEmptyState(has){ emptyGame.style.display = has? 'none':'block'; }
 
     async function fetchGameHistory(){
       const { data, error } = await supabase.from('color2m_rounds').select('round_number,result_number').order('round_number',{ascending:false}).limit(30);
       if(error){ console.error(error); return; }
+      renderEmptyState(data.length>0);
       recentWrap.innerHTML=''; data.slice(0,5).reverse().forEach(r=>addBall(r.result_number));
       tbodyGame.innerHTML=''; data.reverse().forEach(r=>pushGameRow(r.round_number, r.result_number));
+      renderCharts(data.map(x=>x.result_number));
     }
 
     try{
       const ch = supabase.channel('color2m_rounds_changes');
       ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_rounds'}, payload => {
-        const r = payload.new; addBall(r.result_number); pushGameRow(r.round_number, r.result_number);
-        // 下注结算后余额会在后端更新，这里拉一下余额
-        refreshBalance();
+        const r = payload.new; addBall(r.result_number); pushGameRow(r.round_number, r.result_number); renderChartsFromDom(); refreshBalance();
       }).subscribe();
     }catch(e){ console.warn('Realtime not enabled', e); }
 
@@ -355,11 +384,12 @@
       if(t.dataset.tab==='mine') fetchMyBets();
     }));
 
-    const tbodyMine = qs('#tbodyMine');
+    const tbodyMine = qs('#tbodyMine'); const emptyMine = qs('#emptyMine');
     async function fetchMyBets(){
-      if(!currentUser){ tbodyMine.innerHTML = ''; return; }
+      if(!currentUser){ tbodyMine.innerHTML = ''; emptyMine.style.display='block'; return; }
       const { data, error } = await supabase.from('color2m_bets').select('round_number, bet_type, choice, amount, status').eq('user_id', currentUser.id).order('created_at',{ascending:false}).limit(30);
       if(error){ console.error(error); return; }
+      emptyMine.style.display = data.length? 'none':'block';
       tbodyMine.innerHTML='';
       data.forEach(r=>{
         const pick = r.bet_type==='number' ? r.choice : r.choice.toUpperCase();
@@ -383,10 +413,8 @@
       const s = secsToNextBucket(); if(s <= CLOSE_SEC){ toast('Betting closed for this round'); return; }
       if(!selection){ toast('Select a color / number / size'); return; }
       const amt = Number(qs('#amount').value || 0); if(!(amt>0)){ toast('Enter a valid amount'); return; }
-      const rn = currentRoundNumber();
       const odds = computeOdds(selection); if(!odds){ toast('Odds error'); return; }
 
-      // RPC: color2m_place_bet_ist
       const payload = {
         _user_id: currentUser.id,
         _email: currentUser.email,
@@ -402,6 +430,35 @@
       await refreshBalance();
       await fetchMyBets();
     });
+
+    /* ===================== CHARTS ===================== */
+    function renderChartsFromDom(){
+      const nums = Array.from(tbodyGame.children).map(row=>{ const strong = row.querySelector('strong'); return strong? Number(strong.textContent):null; }).filter(n=>n!==null);
+      renderCharts(nums.slice(-30));
+    }
+    function renderCharts(nums){
+      if(!nums || !nums.length){
+        ['barsColors','barsSize','barsNums'].forEach(id=>{ const el=qs('#'+id); el.innerHTML='<div class="empty">No data yet.</div>'; });
+        return;
+      }
+      // Colors
+      const countsColor = {green:0, red:0, violet:0};
+      const countsSize  = {big:0, small:0};
+      const countsNum   = Array.from({length:10},()=>0);
+      nums.forEach(n=>{ countsNum[n]++; const c=colorOf(n); countsColor[c]++; const s=bigSmall(n).toLowerCase(); countsSize[s]++; });
+      const maxC = Math.max(...Object.values(countsColor),1);
+      const maxS = Math.max(...Object.values(countsSize),1);
+      const maxN = Math.max(...countsNum,1);
+      const mkBar = (label, value, max, color)=>`<div class="bar"><div class="col" style="height:${(value/max)*100}%; background:${color}"></div><div class="lbl">${label}<br><small>${value}</small></div></div>`;
+      qs('#barsColors').innerHTML =
+        mkBar('Green', countsColor.green, maxC, '#c9f7d7')+
+        mkBar('Violet', countsColor.violet, maxC, '#e7ddff')+
+        mkBar('Red', countsColor.red, maxC, '#ffd7d7');
+      qs('#barsSize').innerHTML =
+        mkBar('Big', countsSize.big, maxS, '#d8e6ff')+
+        mkBar('Small', countsSize.small, maxS, '#ffe9c7');
+      qs('#barsNums').innerHTML = countsNum.map((v,i)=>mkBar(String(i), v, maxN, '#e3ecff')).join('');
+    }
 
     /* ===================== INIT ===================== */
     await loadUser();
