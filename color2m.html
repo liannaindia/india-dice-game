@@ -3,113 +3,133 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Wingo 1 Minute</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Ganeshcasino · Wingo (Color2M)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script type="module" src="./supabase-config.js"></script>
   <style>
     :root{
-      --bg:#e8f1ff;           /* page background */
-      --card:#f4f9ff;         /* card background */
-      --blue:#2f7cff;         /* header blue */
-      --blue-strong:#1e5ee6;
-      --muted:#7b90b2;
-      --line:#cfe0ff;
-      --success:#2ac769;      /* green */
-      --danger:#ff4d4f;       /* red */
-      --violet:#8b5cf6;       /* violet */
-      --shadow:0 10px 30px rgba(21, 47, 89, .15);
+      /* Ganeshcasino palette */
+      --peacock:#0d6efd;      /* peacock blue */
+      --saffron:#ff8c1a;      /* saffron orange */
+      --lotus:#8b5cf6;        /* violet */
+      --emerald:#22c55e;      /* green */
+      --ruby:#ef4444;         /* red */
+      --bg:#0b1220;           /* deep navy */
+      --card:#111a2e;         /* card surface */
+      --card2:#0f1628;
+      --muted:#8aa0c6;        /* muted text */
+      --line:#24314f;         /* lines */
+      --gold:#f7c948;         /* accents */
+      --shadow:0 18px 40px rgba(4,12,32,.4);
       --radius:18px;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;height:100%;}
-    body{font-family:'Poppins',sans-serif;background:var(--bg);color:#1d2a44;display:flex;justify-content:center}
-    .wrap{width:100%;max-width:420px;padding:16px 12px 40px}
+    html,body{margin:0;height:100%}
+    body{font-family:'Poppins',sans-serif;background:radial-gradient(1200px 600px at 50% -10%, rgba(255,140,26,.1), transparent 60%), linear-gradient(180deg,#0b1220,#0a1326 60%, #081023); color:#e9f0ff; display:flex; justify-content:center}
+    .wrap{width:100%; max-width:480px; padding:18px 12px 120px}
 
-    /* top header card */
-    .topcard{background:linear-gradient(180deg,#e9f2ff 0%,#d7e8ff 100%);border-radius:22px;box-shadow:var(--shadow);padding:14px 14px 10px}
-    .topbar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-    .badge-outline{border:1.5px dashed var(--blue);color:var(--blue);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#fff}
+    /* header */
+    .brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+    .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
+    .logo .mark{width:28px; height:28px; border-radius:8px; background:conic-gradient(from 220deg, var(--saffron), var(--gold), var(--peacock)); box-shadow:0 0 0 2px rgba(255,255,255,.12)}
+    .userbox{display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted)}
+    .balance{background:rgba(247,201,72,.12); color:#ffe08a; padding:6px 10px; border:1px solid rgba(247,201,72,.35); border-radius:999px; font-weight:700}
+    .btn-xs{padding:6px 10px; border:1px solid var(--line); background:#0c172e; border-radius:10px; color:#cfe1ff; cursor:pointer}
 
-    .split{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:stretch;background:#fff;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
-    .left{padding:12px}
-    .left h3{margin:0 0 6px;font-size:14px;color:#3a5a97;font-weight:700;display:flex;align-items:center;gap:8px}
-    .help{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:600;box-shadow:0 6px 16px rgba(47,124,255,.25)}
-    .how{display:flex;align-items:center;gap:6px}
-    .how i{width:16px;height:16px;border-radius:50%;background:#fff;color:var(--blue);display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-weight:700;font-size:12px}
-
-    .nums{display:flex;gap:8px;margin-top:8px}
-    .ball{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;box-shadow:inset 0 0 0 3px rgba(255,255,255,.85), 0 4px 10px rgba(0,0,0,.1)}
-    .ball.green{background:linear-gradient(180deg,#4ade80,#16a34a)}
-    .ball.red{background:linear-gradient(180deg,#ff7171,#ff3b30)}
+    /* top card */
+    .topcard{background:linear-gradient(180deg,#0f1b34,#0b1630); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); padding:12px}
+    .split{display:grid; grid-template-columns:1fr auto; gap:12px}
+    .left h3{margin:0 0 6px; font-size:14px; color:#cfe1ff; font-weight:800; display:flex; align-items:center; gap:8px}
+    .badge{border:1px dashed rgba(13,110,253,.7); color:#cfe1ff; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:8px}
+    .nums{display:flex; gap:8px; margin-top:10px}
+    .ball{width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow:inset 0 0 0 3px rgba(255,255,255,.18), 0 6px 16px rgba(0,0,0,.35)}
+    .ball.green{background:linear-gradient(180deg,#34d399,#16a34a)}
+    .ball.red{background:linear-gradient(180deg,#ff6b6b,#ef4444)}
     .ball.violet{background:linear-gradient(180deg,#a78bfa,#7c3aed)}
 
-    .right{background:linear-gradient(180deg,#2f7cff,#1c5bf0);color:#fff;padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:160px}
-    .right .title{opacity:.9;font-size:12px}
-    .timer{display:flex;align-items:center;gap:6px}
-    .digit{width:24px;height:30px;border-radius:6px;background:rgba(255,255,255,.9);color:#0b2a6b;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -2px 0 rgba(0,0,0,.08)}
-    .colon{padding:0 2px;font-weight:700}
-    .period{font-size:12px;opacity:.95;margin-top:2px;letter-spacing:.2px}
+    .right{background:linear-gradient(180deg,#0d6efd,#1549ff); border-radius:16px; padding:12px 14px; min-width:170px; display:flex; flex-direction:column; justify-content:center; gap:4px; box-shadow:0 8px 18px rgba(13,110,253,.35)}
+    .right .title{opacity:.95; font-size:12px; font-weight:700}
+    .timer{display:flex; align-items:center; gap:6px}
+    .digit{width:26px; height:32px; border-radius:8px; background:rgba(255,255,255,.95); color:#0a2a6b; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 -2px 0 rgba(0,0,0,.12)}
+    .colon{padding:0 2px; font-weight:800}
+    .period{font-size:12px; opacity:.98; letter-spacing:.2px}
 
-    /* action board */
-    .board{margin-top:14px;background:#fff;border-radius:22px;box-shadow:var(--shadow);padding:12px;border:1px solid var(--line)}
-    .btnrow{display:flex;gap:8px}
-    .pill{flex:1;text-align:center;padding:10px 8px;border-radius:12px;font-weight:700;border:1.5px solid transparent;cursor:pointer;user-select:none}
-    .pill.green{background:linear-gradient(180deg,#e7fff2,#d2ffe7);color:#107e3e;border-color:#aaf2c7}
-    .pill.red{background:linear-gradient(180deg,#ffe7e7,#ffd9d9);color:#b42318;border-color:#ffb3b3}
-    .pill.violet{background:linear-gradient(180deg,#efe7ff,#e4d9ff);color:#6b3cdf;border-color:#d2b8ff}
-    .pill .sub{font-weight:600;font-size:12px;opacity:.9}
-    .pill.active{outline:2px solid #2f7cff;box-shadow:0 0 0 4px rgba(47,124,255,.12)}
+    /* board */
+    .board{margin-top:14px; background:var(--card); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); padding:12px}
+    .row{display:flex; gap:8px}
+    .pill{flex:1; text-align:center; padding:10px 8px; border-radius:12px; font-weight:800; border:1.5px solid transparent; cursor:pointer; user-select:none}
+    .pill.green{background:linear-gradient(180deg, rgba(34,197,94,.18), rgba(34,197,94,.06)); color:#a9f8c8; border-color:rgba(34,197,94,.35)}
+    .pill.violet{background:linear-gradient(180deg, rgba(139,92,246,.2), rgba(139,92,246,.08)); color:#d9c6ff; border-color:rgba(139,92,246,.35)}
+    .pill.red{background:linear-gradient(180deg, rgba(239,68,68,.2), rgba(239,68,68,.08)); color:#ffc9c9; border-color:rgba(239,68,68,.35)}
+    .pill .sub{font-weight:700; font-size:12px; opacity:.9}
+    .pill.active{outline:2px solid var(--peacock); box-shadow:0 0 0 4px rgba(13,110,253,.16)}
 
-    .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:12px 2px 8px}
-    .chip{position:relative;background:#fff;border:1.5px solid #e6ecf7;border-radius:14px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 4px 12px rgba(8,22,72,.06)}
-    .chip .n{font-weight:800;font-size:18px}
-    .chip .x{font-size:10px;color:#62729a;font-weight:700}
-    .chip.green .n{color:#22c55e}
-    .chip.red .n{color:#ef4444}
-    .chip.violet .n{color:#8b5cf6}
+    .grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:12px 2px 8px}
+    .chip{position:relative; background:linear-gradient(180deg,#121b31,#0f1628); border:1.5px solid #223358; border-radius:14px; height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 8px 18px rgba(0,0,0,.25)}
+    .chip .n{font-weight:800; font-size:18px}
+    .chip .x{font-size:10px; color:#90a8d3; font-weight:700}
+    .chip.green .n{color:#34d399}
+    .chip.red .n{color:#ff7575}
+    .chip.violet .n{color:#c6a7ff}
 
-    .tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
-    .btn{padding:6px 10px;border:1px solid #d7e2f6;border-radius:10px;background:#fff;font-weight:600;font-size:12px;cursor:pointer}
-    .btn.primary{background:#2f7cff;color:#fff;border-color:#2f7cff}
+    .tools{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 6px}
+    .btn{padding:8px 12px; border:1px solid #223358; border-radius:10px; background:#0f1a32; color:#cfe1ff; font-weight:700; font-size:12px; cursor:pointer}
+    .btn.primary{background:linear-gradient(180deg,#0d6efd,#1956ff); border-color:#1e55f4; color:#fff}
+    .btn.gold{background:linear-gradient(180deg,#fbd26a,#f7c948); color:#372500; border-color:#f7c948}
 
-    .bigsmall{display:flex;gap:10px;margin-top:8px}
-    .bigsmall .btn{flex:1;text-align:center;padding:10px 0;border-radius:12px;font-weight:800}
+    .bigsmall{display:flex; gap:10px; margin-top:8px}
+    .bigsmall .btn{flex:1; text-align:center; padding:12px 0; border-radius:12px; font-weight:800}
 
-    /* tabs */
-    .tabs{display:flex;gap:8px;margin-top:10px}
-    .tab{flex:1;text-align:center;background:#eef5ff;border:1px solid #d7e2f6;border-radius:12px;padding:10px 0;font-weight:700;color:#5872a5;cursor:pointer}
-    .tab.active{background:#2f7cff;color:#fff;border-color:#2f7cff}
+    /* bet slip */
+    .betslip{margin-top:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; padding:12px}
+    .betslip h4{margin:0 0 8px; font-size:14px}
+    .row2{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .amount{flex:1; background:#0d152a; border:1px solid #213052; border-radius:10px; padding:10px; color:#fff; font-weight:700}
+    .chipamt{padding:8px 10px; border:1px solid #213052; border-radius:10px; cursor:pointer; background:#0e1830; color:#cfe1ff}
 
-    /* table */
-    .table{margin-top:10px;background:#fff;border:1px solid #e1eafd;border-radius:16px;overflow:hidden}
-    .thead,.trow{display:grid;grid-template-columns:1.4fr .9fr .9fr .9fr;align-items:center}
-    .thead{background:#2f7cff;color:#fff;font-weight:700;padding:10px 12px}
-    .trow{padding:10px 12px;border-top:1px solid #e6eefc}
-    .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
-    .dot.green{background:var(--success)}
-    .dot.red{background:var(--danger)}
-    .dot.violet{background:var(--violet)}
+    .submit{display:flex; gap:10px; margin-top:10px}
+    .submit .btn{flex:1; padding:12px 16px; font-size:14px; border-radius:12px}
+    .note{font-size:12px; color:var(--muted); margin-top:6px}
 
-    /* mobile tweaks */
-    @media (max-width:360px){
-      .thead,.trow{grid-template-columns:1.2fr .8fr .8fr .8fr}
-      .right{min-width:140px}
-    }
+    /* tabs + table */
+    .tabs{display:flex; gap:8px; margin-top:12px}
+    .tab{flex:1; text-align:center; background:#0f1830; border:1px solid #213052; border-radius:12px; padding:10px 0; font-weight:800; color:#9fb7e7; cursor:pointer}
+    .tab.active{background:linear-gradient(180deg,#0d6efd,#1956ff); color:#fff; border-color:#1e55f4}
+
+    .table{margin-top:10px; background:#0f1830; border:1px solid #223358; border-radius:16px; overflow:hidden}
+    .thead,.trow{display:grid; grid-template-columns:1.2fr .8fr .8fr .9fr; align-items:center}
+    .thead{background:#0d6efd; color:#fff; font-weight:800; padding:10px 12px}
+    .trow{padding:10px 12px; border-top:1px solid #1c2a4a}
+    .dot{width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px}
+    .dot.green{background:var(--emerald)}
+    .dot.red{background:var(--ruby)}
+    .dot.violet{background:var(--lotus)}
+
+    /* toast */
+    .toast{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:rgba(12,23,46,.96); border:1px solid #223358; color:#fff; padding:10px 14px; border-radius:10px; font-weight:700; box-shadow:var(--shadow); display:none; z-index:50}
+    .toast.show{display:block}
+
+    @media (max-width:360px){ .thead,.trow{grid-template-columns:1fr .8fr .8fr .8fr} }
   </style>
 </head>
 <body>
   <div class="wrap">
+    <div class="brand">
+      <div class="logo"><div class="mark"></div> Ganeshcasino · <span style="color:var(--gold)">Wingo</span></div>
+      <div class="userbox">
+        <span id="userEmail">Guest</span>
+        <span class="balance" id="balance">₹0.00</span>
+        <button class="btn-xs" id="btnSign">Sign in</button>
+      </div>
+    </div>
+
     <!-- Header card -->
     <div class="topcard">
-      <div class="topbar">
-        <span class="badge-outline">How to play</span>
-      </div>
       <div class="split">
         <div class="left">
-          <div class="how"><span class="help"><i>?</i> How to play</span></div>
-          <div class="badge-outline" style="margin-top:8px">WinGo 1 minute</div>
-          <div class="nums" id="recentBalls">
-            <!-- recent balls injected here -->
-          </div>
+          <h3><span class="badge">How to play</span></h3>
+          <div class="badge" style="margin-top:6px">WinGo 2 minutes</div>
+          <div class="nums" id="recentBalls"></div>
         </div>
         <div class="right">
           <div class="title">Time remaining</div>
@@ -123,12 +143,12 @@
       </div>
     </div>
 
-    <!-- action board -->
+    <!-- Betting board -->
     <div class="board">
-      <div class="btnrow">
-        <div class="pill green" data-color="green">Green <span class="sub">2X</span></div>
-        <div class="pill violet" data-color="violet">Violet <span class="sub">4.5X</span></div>
-        <div class="pill red" data-color="red">Red <span class="sub">2X</span></div>
+      <div class="row">
+        <div class="pill green" data-type="color" data-val="green">Green <span class="sub">2X</span></div>
+        <div class="pill violet" data-type="color" data-val="violet">Violet <span class="sub">4.5X</span></div>
+        <div class="pill red" data-type="color" data-val="red">Red <span class="sub">2X</span></div>
       </div>
 
       <div class="grid" id="numGrid"></div>
@@ -144,33 +164,68 @@
       </div>
 
       <div class="bigsmall">
-        <button class="btn primary" id="btnBig">Big 2X</button>
-        <button class="btn" id="btnSmall">Small 2X</button>
+        <button class="btn primary" data-type="size" data-val="big" id="btnBig">Big 2X</button>
+        <button class="btn" data-type="size" data-val="small" id="btnSmall">Small 2X</button>
+      </div>
+
+      <div class="betslip">
+        <h4>Bet slip</h4>
+        <div class="row2">
+          <input class="amount" id="amount" type="number" min="1" step="1" placeholder="Enter amount (₹)" />
+          <button class="chipamt" data-amt="10">+10</button>
+          <button class="chipamt" data-amt="50">+50</button>
+          <button class="chipamt" data-amt="100">+100</button>
+          <button class="chipamt" data-amt="500">+500</button>
+        </div>
+        <div class="submit">
+          <button class="btn" id="btnClear">Clear</button>
+          <button class="btn gold" id="btnPlace">Place Bet</button>
+        </div>
+        <div class="note" id="note">Bets close 30s before draw. Current round only.</div>
       </div>
 
       <div class="tabs">
-        <div class="tab active">Game history</div>
-        <div class="tab">Chart</div>
-        <div class="tab">My history</div>
+        <div class="tab active" data-tab="game">Game history</div>
+        <div class="tab" data-tab="chart">Chart</div>
+        <div class="tab" data-tab="mine">My history</div>
       </div>
 
-      <div class="table">
+      <div class="table" id="tableGame">
         <div class="thead"><div>Period</div><div>Number</div><div>Big Small</div><div>Color</div></div>
-        <div id="tbody"></div>
+        <div id="tbodyGame"></div>
+      </div>
+      <div class="table" id="tableMine" style="display:none">
+        <div class="thead"><div>Period</div><div>Pick</div><div>Amount</div><div>Status</div></div>
+        <div id="tbodyMine"></div>
+      </div>
+      <div class="table" id="tableChart" style="display:none">
+        <div class="thead"><div>Period</div><div>Number</div><div>Trend</div><div>—</div></div>
+        <div id="tbodyChart"></div>
       </div>
     </div>
   </div>
 
+  <div class="toast" id="toast">Saved</div>
+
   <script type="module">
-    import { supabase } from "./supabase-config.js";
+    import { supabase } from './supabase-config.js';
 
-    // ===== Config =====
-    const PERIOD_SEC = 120; // 改成 60 可切换为 1 分钟一期
+    /* ===================== CONFIG ===================== */
+    const PERIOD_SEC = 120;       // 2-minute rounds
+    const CLOSE_SEC  = 30;        // close 30s before next round
+    const ODDS = { color:{green:2, red:2, violet:4.5}, number:9, size:{big:2, small:2} };
 
-    // ===== Utility: IST and round logic =====
+    /* ===================== STATE ===================== */
+    let currentUser = null;        // supabase auth user
+    let userBalance = 0;           // ₹ balance from users table
+    let selection = null;          // { kind:'color'|'number'|'size', value:string|number }
+    let betMultiplier = 1;         // X1..X100 (display only)
+
+    /* ===================== UTIL (IST time & round) ===================== */
     const toIST = (d=new Date()) => new Date(d.getTime() + (5.5*3600*1000));
     const bucketStartIST = (d=new Date()) => {
-      const t = toIST(d); const secondsToday = t.getHours()*3600 + t.getMinutes()*60 + t.getSeconds();
+      const t = toIST(d);
+      const secondsToday = t.getHours()*3600 + t.getMinutes()*60 + t.getSeconds();
       const bucket = Math.floor(secondsToday / PERIOD_SEC);
       const start = new Date(t);
       const targetSec = bucket * PERIOD_SEC;
@@ -182,116 +237,174 @@
     };
     const nextBucketIST = () => { const s = bucketStartIST(); const n = new Date(s); n.setSeconds(n.getSeconds()+PERIOD_SEC); return n; };
     const secsToNextBucket = () => Math.max(0, Math.floor((nextBucketIST() - toIST())/1000));
-    const roundKey = (d) => {
-      const t = toIST(d);
-      const y = t.getFullYear();
-      const m = String(t.getMonth()+1).padStart(2,'0');
-      const dd= String(t.getDate()).padStart(2,'0');
-      const h = String(t.getHours()).padStart(2,'0');
-      const mi= String(t.getMinutes()).padStart(2,'0');
-      return `${y}${m}${dd}${h}${mi}`; // 12 位期号
-    };
-    const currentRoundNumber = () => roundKey(bucketStartIST());
+    const roundKey = (d) => { const t = bucketStartIST(d); const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0'); const h=String(t.getHours()).padStart(2,'0'); const mi=String(t.getMinutes()).padStart(2,'0'); return `${y}${m}${dd}${h}${mi}`; };
+    const currentRoundNumber = () => roundKey(new Date());
 
-    // ===== Color rules commonly used in Wingo =====
+    /* ===================== COLOR / SIZE RULES ===================== */
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
     const bigSmall = (n) => (n>=5? 'Big' : 'Small');
 
-    // ===== Build number chips 0..9 =====
-    const grid = document.getElementById('numGrid');
+    /* ===================== UI HELPERS ===================== */
+    const qs = (s)=>document.querySelector(s); const qsa=(s)=>document.querySelectorAll(s);
+    const toast = (msg)=>{ const t=qs('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 1600); };
+
+    /* ===================== AUTH & BALANCE ===================== */
+    async function loadUser(){
+      const { data: { user } } = await supabase.auth.getUser();
+      currentUser = user || null;
+      const emailEl = qs('#userEmail');
+      const btn = qs('#btnSign');
+      if(currentUser){
+        emailEl.textContent = currentUser.email;
+        btn.textContent = 'Sign out';
+        await refreshBalance();
+      } else {
+        emailEl.textContent = 'Guest';
+        btn.textContent = 'Sign in';
+        qs('#balance').textContent = '₹0.00';
+      }
+    }
+    async function refreshBalance(){
+      if(!currentUser) return;
+      const { data, error } = await supabase.from('users').select('balance').eq('id', currentUser.id).maybeSingle();
+      if(error){ console.error(error); return; }
+      userBalance = Number(data?.balance||0);
+      qs('#balance').textContent = `₹${userBalance.toFixed(2)}`;
+    }
+    qs('#btnSign').addEventListener('click', async ()=>{
+      if(currentUser){ await supabase.auth.signOut(); location.reload(); } else { location.href = './index.html'; }
+    });
+
+    /* ===================== BUILD NUMBER GRID ===================== */
+    const numGrid = qs('#numGrid');
     for(let n=0;n<=9;n++){
-      const c = document.createElement('div');
-      c.className = `chip ${colorOf(n)}`;
-      c.innerHTML = `<div class=\"n\">${n}</div><div class=\"x\">9X</div>`;
-      c.dataset.num = n;
-      grid.appendChild(c);
+      const d=document.createElement('div');
+      d.className = `chip ${colorOf(n)}`;
+      d.innerHTML = `<div class="n">${n}</div><div class="x">9X</div>`;
+      d.dataset.type = 'number'; d.dataset.val = String(n);
+      d.addEventListener('click', ()=>selectPick('number', n));
+      numGrid.appendChild(d);
     }
 
-    // ===== Recent balls from DB =====
-    const recentWrap = document.getElementById('recentBalls');
-    const addBall = (n) => {
-      const b = document.createElement('div');
-      b.className = `ball ${colorOf(n)}`;
-      b.textContent = n;
-      recentWrap.appendChild(b);
-      while(recentWrap.children.length>5) recentWrap.removeChild(recentWrap.firstElementChild);
-    };
+    /* ===================== PICK HANDLERS ===================== */
+    qsa('.pill').forEach(p=>p.addEventListener('click',()=>selectPick(p.dataset.type, p.dataset.val)));
+    qs('#btnBig').addEventListener('click',()=>selectPick('size','big'));
+    qs('#btnSmall').addEventListener('click',()=>selectPick('size','small'));
 
-    // ===== Table with history =====
-    const tbody = document.getElementById('tbody');
-    const pushRow = (round, n) => {
-      const tr = document.createElement('div');
-      tr.className = 'trow';
-      tr.innerHTML = `<div>${round}</div>
-        <div><strong>${n}</strong></div>
-        <div>${bigSmall(n)}</div>
-        <div><span class=\"dot ${colorOf(n)}\"></span></div>`;
-      tbody.prepend(tr);
-      while(tbody.children.length>30){ tbody.removeChild(tbody.lastElementChild); }
-    };
-
-    // ===== Fetch latest rounds from Supabase =====
-    async function fetchRecent(limit=20){
-      const { data, error } = await supabase
-        .from('color2m_rounds')
-        .select('round_number,result_number')
-        .order('round_number',{ascending:false})
-        .limit(limit);
-      if(error){ console.error('[color2m] fetch error', error); return; }
-      // 渲染最近 5 个球
-      recentWrap.innerHTML = '';
-      data.slice(0,5).reverse().forEach(r=> addBall(r.result_number));
-      // 列表避免重复
-      const existing = new Set(Array.from(tbody.children).map(el=>el.firstElementChild.textContent.trim()));
-      data.reverse().forEach(r=>{ if(!existing.has(r.round_number)) pushRow(r.round_number, r.result_number); });
+    function selectPick(kind,value){
+      selection = { kind, value };
+      qsa('.pill').forEach(p=>p.classList.remove('active'));
+      qsa('.pill').forEach(p=>{ if(p.dataset.type===kind && p.dataset.val===String(value)) p.classList.add('active'); });
+      qsa('.chip').forEach(c=>c.classList.remove('active'));
+      qsa('.chip').forEach(c=>{ if(c.dataset.type==='number' && c.dataset.val===String(value)) c.style.outline='2px solid var(--peacock)'; else c.style.outline='none'; });
+      updateNote();
     }
 
-    // ===== Realtime（可选：需要在 Supabase 面板开启该表的 Realtime） =====
-    try{
-      const channel = supabase.channel('color2m_rounds_changes');
-      channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'color2m_rounds' }, (payload)=>{
-        const r = payload.new;
-        addBall(r.result_number);
-        pushRow(r.round_number, r.result_number);
-      }).subscribe();
-    }catch(err){ console.warn('Realtime not enabled, fallback to polling.', err); }
+    qsa('.mult').forEach(b=>b.addEventListener('click',()=>{ betMultiplier = Number(b.dataset.m); qsa('.mult').forEach(x=>x.classList.remove('primary')); b.classList.add('primary'); }));
+    qsa('.chipamt').forEach(b=>b.addEventListener('click',()=>{ const i=qs('#amount'); i.value = String((Number(i.value||0) + Number(b.dataset.amt))*betMultiplier); }));
+    qs('#btnClear').addEventListener('click',()=>{ qs('#amount').value=''; selection=null; qsa('.pill').forEach(p=>p.classList.remove('active')); qsa('.chip').forEach(c=>c.style.outline='none'); });
 
-    // ===== Timer =====
-    const periodEl = document.getElementById('period');
-    const timerEl = document.getElementById('timer');
+    /* ===================== TIMER ===================== */
+    const periodEl = qs('#period'); const timerEl = qs('#timer');
     function renderTimer(){
-      periodEl.textContent = currentRoundNumber();
-      const s = secsToNextBucket();
-      const m = String(Math.floor(s/60)).padStart(2,'0');
-      const ss= String(s%60).padStart(2,'0');
-      const digits = [...m+ss];
-      const ds = timerEl.querySelectorAll('.digit');
-      ds[0].textContent = digits[0];
-      ds[1].textContent = digits[1];
-      ds[2].textContent = digits[2];
-      ds[3].textContent = digits[3];
+      const rn = currentRoundNumber(); periodEl.textContent = rn;
+      const s = secsToNextBucket(); const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(s%60).padStart(2,'0');
+      const ds = timerEl.querySelectorAll('.digit'); const digits=[...m+ss]; ds[0].textContent=digits[0]; ds[1].textContent=digits[1]; ds[2].textContent=digits[2]; ds[3].textContent=digits[3];
+      updateNote();
+    }
+    function updateNote(){
+      const s = secsToNextBucket(); const closed = s <= CLOSE_SEC; const note = qs('#note');
+      if(closed) note.textContent = `Betting closed. Wait for next draw.`; else note.textContent = `Bets close ${CLOSE_SEC}s before draw. Current round only.`;
+      qs('#btnPlace').disabled = closed;
     }
 
-    // 初始拉取 + 轮询兜底
-    await fetchRecent(20);
-    setInterval(fetchRecent, 5000);
-    setInterval(renderTimer, 250);
-    renderTimer();
+    setInterval(renderTimer, 250); renderTimer();
 
-    // ===== UI interactions (no betting backend yet) =====
-    document.querySelectorAll('.pill').forEach(el=>{
-      el.addEventListener('click',()=>{
-        document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
-        el.classList.add('active');
-      })
+    /* ===================== DATA: HISTORY & REALTIME ===================== */
+    const recentWrap = qs('#recentBalls');
+    const addBall = (n)=>{ const b=document.createElement('div'); b.className=`ball ${colorOf(n)}`; b.textContent=n; recentWrap.appendChild(b); while(recentWrap.children.length>5) recentWrap.removeChild(recentWrap.firstElementChild); };
+
+    const tbodyGame = qs('#tbodyGame');
+    const pushGameRow = (round,n)=>{ const tr=document.createElement('div'); tr.className='trow'; tr.innerHTML=`<div>${round}</div><div><strong>${n}</strong></div><div>${bigSmall(n)}</div><div><span class="dot ${colorOf(n)}"></span></div>`; tbodyGame.prepend(tr); while(tbodyGame.children.length>50) tbodyGame.removeChild(tbodyGame.lastElementChild); };
+
+    async function fetchGameHistory(){
+      const { data, error } = await supabase.from('color2m_rounds').select('round_number,result_number').order('round_number',{ascending:false}).limit(30);
+      if(error){ console.error(error); return; }
+      recentWrap.innerHTML=''; data.slice(0,5).reverse().forEach(r=>addBall(r.result_number));
+      tbodyGame.innerHTML=''; data.reverse().forEach(r=>pushGameRow(r.round_number, r.result_number));
+    }
+
+    try{
+      const ch = supabase.channel('color2m_rounds_changes');
+      ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_rounds'}, payload => {
+        const r = payload.new; addBall(r.result_number); pushGameRow(r.round_number, r.result_number);
+        // 下注结算后余额会在后端更新，这里拉一下余额
+        refreshBalance();
+      }).subscribe();
+    }catch(e){ console.warn('Realtime not enabled', e); }
+
+    setInterval(fetchGameHistory, 5000); fetchGameHistory();
+
+    /* ===================== TABS ===================== */
+    const tabs = qsa('.tab');
+    tabs.forEach(t=>t.addEventListener('click',()=>{
+      tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active');
+      qs('#tableGame').style.display = (t.dataset.tab==='game')?'block':'none';
+      qs('#tableMine').style.display = (t.dataset.tab==='mine')?'block':'none';
+      qs('#tableChart').style.display = (t.dataset.tab==='chart')?'block':'none';
+      if(t.dataset.tab==='mine') fetchMyBets();
+    }));
+
+    const tbodyMine = qs('#tbodyMine');
+    async function fetchMyBets(){
+      if(!currentUser){ tbodyMine.innerHTML = ''; return; }
+      const { data, error } = await supabase.from('color2m_bets').select('round_number, bet_type, choice, amount, status').eq('user_id', currentUser.id).order('created_at',{ascending:false}).limit(30);
+      if(error){ console.error(error); return; }
+      tbodyMine.innerHTML='';
+      data.forEach(r=>{
+        const pick = r.bet_type==='number' ? r.choice : r.choice.toUpperCase();
+        const tr=document.createElement('div'); tr.className='trow';
+        tr.innerHTML = `<div>${r.round_number}</div><div>${pick}</div><div>₹${Number(r.amount).toFixed(2)}</div><div>${r.status}</div>`;
+        tbodyMine.appendChild(tr);
+      });
+    }
+
+    /* ===================== PLACE BET (RPC) ===================== */
+    function computeOdds(sel){
+      if(!sel) return null;
+      if(sel.kind==='color') return ODDS.color[sel.value];
+      if(sel.kind==='number') return ODDS.number;
+      if(sel.kind==='size') return ODDS.size[sel.value];
+      return null;
+    }
+
+    qs('#btnPlace').addEventListener('click', async ()=>{
+      if(!currentUser){ toast('Please sign in first'); return; }
+      const s = secsToNextBucket(); if(s <= CLOSE_SEC){ toast('Betting closed for this round'); return; }
+      if(!selection){ toast('Select a color / number / size'); return; }
+      const amt = Number(qs('#amount').value || 0); if(!(amt>0)){ toast('Enter a valid amount'); return; }
+      const rn = currentRoundNumber();
+      const odds = computeOdds(selection); if(!odds){ toast('Odds error'); return; }
+
+      // RPC: color2m_place_bet_ist
+      const payload = {
+        _user_id: currentUser.id,
+        _email: currentUser.email,
+        _bet_type: selection.kind,
+        _choice: String(selection.value),
+        _amount: amt,
+        _odds: odds
+      };
+      const { data, error } = await supabase.rpc('color2m_place_bet_ist', payload);
+      if(error){ console.error(error); toast(error.message || 'Bet failed'); return; }
+      toast('Bet placed');
+      qs('#amount').value='';
+      await refreshBalance();
+      await fetchMyBets();
     });
 
-    document.getElementById('btnRandom').addEventListener('click',()=>{
-      // 演示按钮：仅本地追加，不落库
-      const n = Math.floor(Math.random()*10);
-      addBall(n);
-      pushRow(currentRoundNumber(), n);
-    });
+    /* ===================== INIT ===================== */
+    await loadUser();
   </script>
 </body>
 </html>
