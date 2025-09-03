@@ -1,0 +1,16 @@
+name: Auto Trigger Color2M Draw
+
+on:
+  schedule:
+    - cron: "*/2 * * * *"   # 每2分钟运行一次
+  workflow_dispatch:        # 允许手动执行
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call color2m_autodraw function
+        run: |
+          curl -X POST "https://<YOUR_PROJECT_ID>.supabase.co/functions/v1/color2m_autodraw" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+          -H "Content-Type: application/json"
