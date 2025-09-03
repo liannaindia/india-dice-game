@@ -161,23 +161,37 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { supabase } from "./supabase-config.js";
+
+    // ===== Config =====
+    const PERIOD_SEC = 120; // 改成 60 可切换为 1 分钟一期
+
     // ===== Utility: IST and round logic =====
     const toIST = (d=new Date()) => new Date(d.getTime() + (5.5*3600*1000));
-    const istRoundNumber = () => {
-      const t = toIST();
+    const bucketStartIST = (d=new Date()) => {
+      const t = toIST(d); const secondsToday = t.getHours()*3600 + t.getMinutes()*60 + t.getSeconds();
+      const bucket = Math.floor(secondsToday / PERIOD_SEC);
+      const start = new Date(t);
+      const targetSec = bucket * PERIOD_SEC;
+      const hh = Math.floor(targetSec/3600);
+      const mm = Math.floor((targetSec%3600)/60);
+      const ss = targetSec%60;
+      start.setHours(hh, mm, ss, 0);
+      return start;
+    };
+    const nextBucketIST = () => { const s = bucketStartIST(); const n = new Date(s); n.setSeconds(n.getSeconds()+PERIOD_SEC); return n; };
+    const secsToNextBucket = () => Math.max(0, Math.floor((nextBucketIST() - toIST())/1000));
+    const roundKey = (d) => {
+      const t = toIST(d);
       const y = t.getFullYear();
       const m = String(t.getMonth()+1).padStart(2,'0');
-      const d = String(t.getDate()).padStart(2,'0');
+      const dd= String(t.getDate()).padStart(2,'0');
       const h = String(t.getHours()).padStart(2,'0');
-      const mi = String(t.getMinutes()).padStart(2,'0');
-      return `${y}${m}${d}${h}${mi}`; // YYYYMMDDHHmm
+      const mi= String(t.getMinutes()).padStart(2,'0');
+      return `${y}${m}${dd}${h}${mi}`; // 12 位期号
     };
-    const secsToNextMinute = () => {
-      const t = toIST();
-      const next = new Date(t); next.setMinutes(t.getMinutes()+1,0,0);
-      return Math.max(0, Math.floor((next - t)/1000));
-    };
+    const currentRoundNumber = () => roundKey(bucketStartIST());
 
     // ===== Color rules commonly used in Wingo =====
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
@@ -188,21 +202,20 @@
     for(let n=0;n<=9;n++){
       const c = document.createElement('div');
       c.className = `chip ${colorOf(n)}`;
-      c.innerHTML = `<div class="n">${n}</div><div class="x">9X</div>`;
+      c.innerHTML = `<div class=\"n\">${n}</div><div class=\"x\">9X</div>`;
       c.dataset.num = n;
       grid.appendChild(c);
     }
 
-    // ===== Recent balls mock (you can replace by API later) =====
-    const recent = [7,5,7,7,2];
+    // ===== Recent balls from DB =====
     const recentWrap = document.getElementById('recentBalls');
     const addBall = (n) => {
       const b = document.createElement('div');
       b.className = `ball ${colorOf(n)}`;
       b.textContent = n;
       recentWrap.appendChild(b);
+      while(recentWrap.children.length>5) recentWrap.removeChild(recentWrap.firstElementChild);
     };
-    recent.forEach(addBall);
 
     // ===== Table with history =====
     const tbody = document.getElementById('tbody');
@@ -212,43 +225,72 @@
       tr.innerHTML = `<div>${round}</div>
         <div><strong>${n}</strong></div>
         <div>${bigSmall(n)}</div>
-        <div><span class="dot ${colorOf(n)}"></span></div>`;
+        <div><span class=\"dot ${colorOf(n)}\"></span></div>`;
       tbody.prepend(tr);
+      while(tbody.children.length>30){ tbody.removeChild(tbody.lastElementChild); }
     };
-    // Seed a few demo rows
-    [['2025090301266',7],['2025090301265',5],['2025090301264',7],['2025090301263',7],['2025090301262',2],['2025090301261',5]]
-      .forEach(([r,n])=>pushRow(r,Number(n)));
+
+    // ===== Fetch latest rounds from Supabase =====
+    async function fetchRecent(limit=20){
+      const { data, error } = await supabase
+        .from('color2m_rounds')
+        .select('round_number,result_number')
+        .order('round_number',{ascending:false})
+        .limit(limit);
+      if(error){ console.error('[color2m] fetch error', error); return; }
+      // 渲染最近 5 个球
+      recentWrap.innerHTML = '';
+      data.slice(0,5).reverse().forEach(r=> addBall(r.result_number));
+      // 列表避免重复
+      const existing = new Set(Array.from(tbody.children).map(el=>el.firstElementChild.textContent.trim()));
+      data.reverse().forEach(r=>{ if(!existing.has(r.round_number)) pushRow(r.round_number, r.result_number); });
+    }
+
+    // ===== Realtime（可选：需要在 Supabase 面板开启该表的 Realtime） =====
+    try{
+      const channel = supabase.channel('color2m_rounds_changes');
+      channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'color2m_rounds' }, (payload)=>{
+        const r = payload.new;
+        addBall(r.result_number);
+        pushRow(r.round_number, r.result_number);
+      }).subscribe();
+    }catch(err){ console.warn('Realtime not enabled, fallback to polling.', err); }
 
     // ===== Timer =====
     const periodEl = document.getElementById('period');
     const timerEl = document.getElementById('timer');
     function renderTimer(){
-      periodEl.textContent = istRoundNumber();
-      const s = secsToNextMinute();
-      const mm = String(Math.floor(s/60)).padStart(2,'0');
-      const ss = String(s%60).padStart(2,'0');
-      const digits = [...mm+ss];
+      periodEl.textContent = currentRoundNumber();
+      const s = secsToNextBucket();
+      const m = String(Math.floor(s/60)).padStart(2,'0');
+      const ss= String(s%60).padStart(2,'0');
+      const digits = [...m+ss];
       const ds = timerEl.querySelectorAll('.digit');
       ds[0].textContent = digits[0];
       ds[1].textContent = digits[1];
       ds[2].textContent = digits[2];
       ds[3].textContent = digits[3];
     }
+
+    // 初始拉取 + 轮询兜底
+    await fetchRecent(20);
+    setInterval(fetchRecent, 5000);
     setInterval(renderTimer, 250);
     renderTimer();
 
-    // ===== UI interactions (no backend yet) =====
+    // ===== UI interactions (no betting backend yet) =====
     document.querySelectorAll('.pill').forEach(el=>{
       el.addEventListener('click',()=>{
         document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
         el.classList.add('active');
       })
     });
+
     document.getElementById('btnRandom').addEventListener('click',()=>{
+      // 演示按钮：仅本地追加，不落库
       const n = Math.floor(Math.random()*10);
-      pushRow(istRoundNumber(), n);
       addBall(n);
-      if(recentWrap.children.length>5) recentWrap.removeChild(recentWrap.firstElementChild);
+      pushRow(currentRoundNumber(), n);
     });
   </script>
 </body>
