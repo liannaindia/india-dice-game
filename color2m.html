@@ -272,6 +272,7 @@
         btn.textContent = 'Sign out';
         await refreshBalance();
         setupRealtimeForMyBets();           // 注单变化 → 自动更新余额/我的下注
+        setupRealtimeForUserBalance();      // NEW: 直接监听 users 表余额变化
       } else {
         emailEl.textContent = 'Guest';
         btn.textContent = 'Sign in';
@@ -288,6 +289,27 @@
     qs('#btnSign').addEventListener('click', async ()=>{
       if(currentUser){ await supabase.auth.signOut(); location.reload(); } else { location.href = './index.html'; }
     });
+
+    // NEW: 监听 users 表当前用户行的 UPDATE，余额改动时即刻反映
+    function setupRealtimeForUserBalance(){
+      if(!currentUser) return;
+      try{
+        const ch = supabase.channel(`users_balance_${currentUser.id}`);
+        ch.on('postgres_changes',
+          { event:'UPDATE', schema:'public', table:'users', filter:`id=eq.${currentUser.id}` },
+          (payload)=>{
+            const b = Number(payload?.new?.balance);
+            if(!Number.isNaN(b)){
+              userBalance = b;
+              qs('#balance').textContent = `₹${b.toFixed(2)}`;
+            }else{
+              refreshBalance();
+            }
+          }
+        );
+        ch.subscribe();
+      }catch(e){ console.warn('Realtime users balance not enabled', e); }
+    }
 
     /* ===================== BUILD NUMBER GRID ===================== */
     const numGrid = qs('#numGrid');
@@ -380,6 +402,11 @@
       past.reverse().forEach(r=>pushGameRow(r.round_number, r.result_number));
     }
 
+    // NEW: 快速余额扫频（结算到达后的事务延迟兜底）
+    function triggerQuickBalanceSweep(){
+      [0,800,1600,3000,5000,8000].forEach(delay => setTimeout(()=>refreshBalance(), delay));
+    }
+
     // Realtime: 监听 INSERT/UPDATE，但忽略“当前/未来期”
     (function setupRealtimeRounds(){
       try{
@@ -387,12 +414,15 @@
         ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_rounds'}, payload => {
           const r = payload.new;
           if (!isPastRound(r.round_number)) return;
-          addBall(r.result_number); pushGameRow(r.round_number, r.result_number); refreshBalance();
+          addBall(r.result_number); pushGameRow(r.round_number, r.result_number);
+          refreshBalance();               // 原有
+          triggerQuickBalanceSweep();     // NEW: 扫频兜底
         });
         ch.on('postgres_changes', {event:'UPDATE', schema:'public', table:'color2m_rounds'}, payload => {
           const r = payload.new;
           if (!isPastRound(r.round_number)) return;
           fetchGameHistory(); refreshBalance();
+          triggerQuickBalanceSweep();     // NEW
         });
         ch.subscribe();
       }catch(e){ console.warn('Realtime not enabled', e); }
@@ -435,9 +465,9 @@
       try{
         const ch = supabase.channel(`color2m_bets_user_${currentUser.id}`);
         ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_bets', filter:`user_id=eq.${currentUser.id}`},
-          () => { fetchMyBets(); refreshBalance(); });
+          () => { fetchMyBets(); refreshBalance(); triggerQuickBalanceSweep(); }); // NEW: 扫频
         ch.on('postgres_changes', {event:'UPDATE', schema:'public', table:'color2m_bets', filter:`user_id=eq.${currentUser.id}`},
-          () => { fetchMyBets(); refreshBalance(); });
+          () => { fetchMyBets(); refreshBalance(); triggerQuickBalanceSweep(); }); // NEW: 扫频
         ch.subscribe();
       }catch(e){ console.warn('Realtime bets not enabled', e); }
     }
