@@ -72,6 +72,8 @@
         <button data-tab="bets">📜 Today’s Bets (IST)</button>
         <button data-tab="manual">🎯 Manual Result (Old Dice)</button>
         <button data-tab="wheel">🎡 Wheel Control</button>
+        <!-- ✅ 新增：Wingo 控制 -->
+        <button data-tab="wingo">🎯 Wingo Control</button>
         <button data-tab="users">👥 Users</button>
       </div>
     </aside>
@@ -110,7 +112,7 @@
         </div>
       </section>
 
-      <!-- Bets (合并 3 个游戏) -->
+      <!-- Bets (合并多游戏) -->
       <section id="tab-bets" class="tab hidden">
         <div class="card">
           <h3>📜 Today’s Bets (IST)</h3>
@@ -162,6 +164,36 @@
           </div>
         </div>
       </section>
+
+     <!-- Wingo Control -->
+<section id="tab-wingo" class="tab hidden">
+  <div class="card">
+    <h3>🎯 WinGo — Manual Result (Save Only)</h3>
+    <div class="toolbar">
+      <span class="pill gray">IST Now: <span id="wingo-ist-now" class="mono">—</span></span>
+      <span class="pill">Prev: <code id="wingo-prev" class="mono">—</code></span>
+      <span class="pill">Curr: <code id="wingo-curr" class="mono">—</code></span>
+      <span class="pill">Next: <code id="wingo-next" class="mono">—</code></span>
+      <button id="wingo-refresh-times" style="width:auto">Refresh</button>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <input id="wingo-round-input" class="mono" placeholder="Round Number (e.g. 202508081430)"/>
+      <input id="wingo-number-input" type="number" min="0" max="9" placeholder="Result Number (0–9)"/>
+    </div>
+
+    <div class="btn-group">
+      <button id="wingo-fill-prev" style="width:auto">⬅️ Fill Prev</button>
+      <button id="wingo-fill-curr" style="width:auto">🕒 Fill Curr</button>
+      <button id="wingo-fill-next" style="width:auto">➡️ Fill Next</button>
+      <!-- 只保存，不结算 -->
+      <button id="wingo-save" style="width:auto;background:#16a34a">💾 Save</button>
+    </div>
+
+    <div id="wingo-last-msg" class="muted" style="margin-top:8px"></div>
+  </div>
+</section>
+
 
       <!-- Users -->
       <section id="tab-users" class="tab hidden">
@@ -226,9 +258,10 @@
           document.getElementById('tab-' + tab).classList.remove('hidden');
           if (tab==='recharge') loadRechargeRequests();
           if (tab==='withdraw') loadWithdrawRequests();
-          if (tab==='bets')     loadTodayBets();   // NEW: 合并 3 表
+          if (tab==='bets')     loadTodayBets();   // 合并多表
           if (tab==='users')    loadUsers();
           if (tab==='wheel')    refreshWheelTimes();
+          if (tab==='wingo')    refreshWingoTimes(); // ✅ 新增
         };
       });
     }
@@ -244,8 +277,9 @@
       }
       loadRechargeRequests();
       loadWithdrawRequests();
-      loadTodayBets();       // NEW
+      loadTodayBets();
       refreshWheelTimes();
+      refreshWingoTimes(); // 初次也刷新
     }
 
     // ===== 充值 / 提现（保持你的逻辑不变）
@@ -366,7 +400,7 @@
       return `${y}-${m}-${d} ${hh}:${mm}:${ss} IST`;
     };
 
-    /* ========= 今日下注：合并 Dice / AB / Mini Wheel ========= */
+    /* ========= 今日下注：合并 Dice / AB / Mini Wheel / WinGo ========= */
     async function loadTodayBets() {
       const container = document.getElementById('today-bets');
       container.textContent = 'Loading...';
@@ -374,8 +408,8 @@
       const emailFilter = (document.getElementById('bet-email-filter').value || '').trim().toLowerCase();
       const { startUtcIso, endUtcIso } = getISTDayRangeUTCISO();
 
-      // 1) 拉取三张表（按 created_at 过滤到当天 IST）
-      const [diceRes, abRes, wheelRes] = await Promise.all([
+      // ✅ 现在拉取四张表
+      const [diceRes, abRes, wheelRes, wingoRes] = await Promise.all([
         supabase.from('bets').select('created_at, email, user_id, round_number, bet_type, choice, amount, odds, status, payout')
                  .gte('created_at', startUtcIso).lt('created_at', endUtcIso)
                  .order('created_at', { ascending: false }).limit(1000),
@@ -384,25 +418,31 @@
                  .order('created_at', { ascending: false }).limit(1000),
         supabase.from('wheel_bets').select('created_at, email, user_id, round_number, bet_type, pick, multiplier, amount, status, payout')
                  .gte('created_at', startUtcIso).lt('created_at', endUtcIso)
+                 .order('created_at', { ascending: false }).limit(1000),
+        // WinGo（color2m）
+        supabase.from('color2m_bets').select('created_at, email, user_id, round_number, bet_type, choice, amount, odds, status, payout')
+                 .gte('created_at', startUtcIso).lt('created_at', endUtcIso)
                  .order('created_at', { ascending: false }).limit(1000)
       ]);
 
       const dice  = diceRes.data  || [];
       const ab    = abRes.data    || [];
       const wheel = wheelRes.data || [];
+      const wingo = wingoRes.data || [];
       if (diceRes.error)  console.warn('bets error:', diceRes.error.message);
       if (abRes.error)    console.warn('ab_bets error:', abRes.error.message);
       if (wheelRes.error) console.warn('wheel_bets error:', wheelRes.error.message);
+      if (wingoRes.error) console.warn('color2m_bets error:', wingoRes.error.message);
 
-      // 2) 补齐 email（若有记录缺 email，用 users 表补）
+      // 2) 补齐 email
       const missingIds = new Set();
-      [...dice, ...ab, ...wheel].forEach(r=>{
+      [...dice, ...ab, ...wheel, ...wingo].forEach(r=>{
         if (!r?.email && r?.user_id) missingIds.add(r.user_id);
       });
       let userMap = {};
       if (missingIds.size){
         const { data: users } = await supabase.from('users').select('id,email').in('id', Array.from(missingIds));
-        (users||[]).forEach(u=> userMap[u.id]=u.email);
+        (users || []).forEach(u=> userMap[u.id]=u.email);
       }
       const getEmail = (row)=> row.email || userMap[row.user_id] || row.user_id || '-';
 
@@ -467,6 +507,28 @@
           bet: betText,
           amount: Number(b.amount||0),
           odds: Number(b.multiplier||0), // Wheel 用 multiplier
+          status: b.status || '-',
+          payout: Number(b.payout||0),
+          ts: b.created_at
+        });
+      }
+
+      // ✅ WinGo (color2m)
+      for (const b of wingo){
+        const email = getEmail(b);
+        if (emailFilter && !String(email).toLowerCase().includes(emailFilter)) continue;
+        const kind = (b.bet_type||'').toLowerCase();
+        let betText = '-';
+        if (kind === 'number') betText = `Number ${b.choice ?? '-'}`;
+        else if (kind === 'color') betText = String(b.choice||'-').replace(/^[a-z]/, s=>s.toUpperCase());
+        else if (kind === 'size')  betText = String(b.choice||'-').toLowerCase()==='big' ? 'Big' : 'Small';
+        rows.push({
+          game: 'WinGo',
+          email,
+          round: b.round_number || '-',
+          bet: betText,
+          amount: Number(b.amount||0),
+          odds: Number(b.odds||0),
           status: b.status || '-',
           payout: Number(b.payout||0),
           ts: b.created_at
@@ -663,39 +725,38 @@
 
       alert('Updated.'); loadUsers();
     };
-window.adjustTurnover = async (user_id) => {
-  // 1) 读入增减数：正数=增加，负数=减少
-  let val = prompt('Enter turnover delta (positive = increase, negative = decrease):');
-  if (val === null) return; // 用户取消
-  const delta = parseFloat(val);
-  if (!Number.isFinite(delta) || delta === 0) return alert('Invalid number');
+    window.adjustTurnover = async (user_id) => {
+      // 1) 读入增减数：正数=增加，负数=减少
+      let val = prompt('Enter turnover delta (positive = increase, negative = decrease):');
+      if (val === null) return; // 用户取消
+      const delta = parseFloat(val);
+      if (!Number.isFinite(delta) || delta === 0) return alert('Invalid number');
 
-  // 2) 读取当前 turnover_remaining
-  const { data: urow, error: rerr } = await supabase
-    .from('users').select('turnover_remaining').eq('id', user_id).single();
-  if (rerr) return alert('Load user failed: ' + rerr.message);
+      // 2) 读取当前 turnover_remaining
+      const { data: urow, error: rerr } = await supabase
+        .from('users').select('turnover_remaining').eq('id', user_id).single();
+      if (rerr) return alert('Load user failed: ' + rerr.message);
 
-  const curr = Number(urow?.turnover_remaining || 0);
-  let next = curr + delta;
+      const curr = Number(urow?.turnover_remaining || 0);
+      let next = curr + delta;
 
-  // 3) 不允许为负
-  if (next < 0) next = 0;
+      // 3) 不允许为负
+      if (next < 0) next = 0;
 
-  // 4) 二次确认
-  if (!confirm(`Confirm update turnover:\n\nCurrent: ₹${curr.toFixed(2)}\nDelta: ${delta > 0 ? '+' : ''}${delta}\nNew: ₹${next.toFixed(2)}`)) {
-    return;
-  }
+      // 4) 二次确认
+      if (!confirm(`Confirm update turnover:\n\nCurrent: ₹${curr.toFixed(2)}\nDelta: ${delta > 0 ? '+' : ''}${delta}\nNew: ₹${next.toFixed(2)}`)) {
+        return;
+      }
 
-  // 5) 更新
-  const { error: uperr } = await supabase
-    .from('users').update({ turnover_remaining: next }).eq('id', user_id);
-  if (uperr) return alert('Update failed: ' + uperr.message);
+      // 5) 更新
+      const { error: uperr } = await supabase
+        .from('users').update({ turnover_remaining: next }).eq('id', user_id);
+      if (uperr) return alert('Update failed: ' + uperr.message);
 
-  alert('Turnover updated.');
-  loadUsers();
-};
+      alert('Turnover updated.');
+      loadUsers();
+    };
 
-    
     window.setVipLevel = async (user_id, currentVip) => {
       let val = prompt(`Set VIP level (current: ${currentVip}). Enter 0-99:`, String(currentVip));
       if (val === null) return;
@@ -705,38 +766,84 @@ window.adjustTurnover = async (user_id) => {
       if (error) return alert('Update failed: ' + error.message);
       alert('VIP updated.'); loadUsers();
     };
-// ===== Bank Info 保存（新增）=====
-async function saveBankInfo(){
-  const btn = document.getElementById('save-bank-btn');
-  const name   = (document.getElementById('name').value   || '').trim();
-  const ac     = (document.getElementById('ac').value     || '').trim();
-  const ifsc   = (document.getElementById('ifsc').value   || '').trim();
-  const upi    = (document.getElementById('upi').value    || '').trim();
-  const crypto = (document.getElementById('crypto').value || '').trim();
 
-  btn.disabled = true; const oldTxt = btn.textContent; btn.textContent = 'Saving...';
+    // ===== Bank Info 保存（新增）=====
+    async function saveBankInfo(){
+      const btn = document.getElementById('save-bank-btn');
+      const name   = (document.getElementById('name').value   || '').trim();
+      const ac     = (document.getElementById('ac').value     || '').trim();
+      const ifsc   = (document.getElementById('ifsc').value   || '').trim();
+      const upi    = (document.getElementById('upi').value    || '').trim();
+      const crypto = (document.getElementById('crypto').value || '').trim();
 
-  // 约定 bank_info 只有一条记录，主键 id=1
-  const payload = { id: 1, name, ac, ifsc, upi, crypto_address: crypto };
+      btn.disabled = true; const oldTxt = btn.textContent; btn.textContent = 'Saving...';
 
-  const { error } = await supabase
-    .from('bank_info')
-    .upsert([payload]); // 如果没有就插入，有就更新
+      // 约定 bank_info 只有一条记录，主键 id=1
+      const payload = { id: 1, name, ac, ifsc, upi, crypto_address: crypto };
 
-  btn.disabled = false; btn.textContent = oldTxt;
+      const { error } = await supabase
+        .from('bank_info')
+        .upsert([payload]); // 如果没有就插入，有就更新
 
-  if (error) {
-    console.error(error);
-    alert('Save failed: ' + error.message);
-  } else {
-    alert('✅ Saved');
-  }
+      btn.disabled = false; btn.textContent = oldTxt;
+
+      if (error) {
+        console.error(error);
+        alert('Save failed: ' + error.message);
+      } else {
+        alert('✅ Saved');
+      }
+    }
+    // 绑定点击事件
+    document.getElementById('save-bank-btn').onclick = saveBankInfo;
+
+   /* ===== WinGo 控制：保存开奖结果 0–9（不结算） ===== */
+const wingoIstNowEl   = document.getElementById('wingo-ist-now');
+const wingoPrevEl     = document.getElementById('wingo-prev');
+const wingoCurrEl     = document.getElementById('wingo-curr');
+const wingoNextEl     = document.getElementById('wingo-next');
+const wingoRoundInput = document.getElementById('wingo-round-input');
+const wingoNumInput   = document.getElementById('wingo-number-input');
+const wingoMsg        = document.getElementById('wingo-last-msg');
+
+function refreshWingoTimes(){
+  const now = getIST();
+  wingoIstNowEl.textContent = now.toISOString().replace('T',' ').slice(0,16)+' IST';
+  wingoPrevEl.textContent = previousRoundNo();
+  wingoCurrEl.textContent = currentRoundNo();
+  wingoNextEl.textContent = nextRoundNo();
+  if (!wingoRoundInput.value) wingoRoundInput.value = wingoPrevEl.textContent; // 默认上期
 }
+document.getElementById('wingo-refresh-times').onclick = refreshWingoTimes;
+document.getElementById('wingo-fill-prev').onclick = ()=>{ wingoRoundInput.value = wingoPrevEl.textContent; };
+document.getElementById('wingo-fill-curr').onclick = ()=>{ wingoRoundInput.value = wingoCurrEl.textContent; };
+document.getElementById('wingo-fill-next').onclick = ()=>{ wingoRoundInput.value = wingoNextEl.textContent; };
 
-// 绑定点击事件
-document.getElementById('save-bank-btn').onclick = saveBankInfo;
+document.getElementById('wingo-save').onclick = async ()=>{
+  const round = (wingoRoundInput.value || '').trim();
+  const n = parseInt(wingoNumInput.value);
+  if (!round) return alert('Round required');
+  if (!Number.isFinite(n) || n<0 || n>9) return alert('Result number must be 0–9');
 
-    
+  // ✅ 只保存到 rounds，标记 is_manual；不触发结算
+  const { error: upErr } = await supabase
+    .from('color2m_rounds')
+    .upsert([{ round_number: round, result_number: n, is_manual: true }]);
+  if (upErr) return alert('Save failed: ' + upErr.message);
+
+  // 友好提示：当前/下一期保存后，到点会由系统自动结算
+  const nowKey = currentRoundNo();
+  const msg =
+    Number(round) <= Number(previousRoundNo())
+      ? `✅ Saved. This (past) round will be (or has been) settled by system automatically.`
+      : `✅ Saved. System will auto-settle at the draw time.`;
+  wingoMsg.textContent = `${msg}  [${round} → ${n}]`;
+};
+
+// 初始化一次
+refreshWingoTimes();
+
+    };
   </script>
 </body>
 </html>
