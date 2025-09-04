@@ -75,7 +75,7 @@
 
     .submit{display:flex;gap:10px;margin-top:10px}
     .submit .btn{flex:1;padding:12px 16px;font-size:14px;border-radius:12px}
-    .note{font-size:12px;color:var(--muted);margin-top:6px}
+    .note{font-size:12px;color:#5a79ad;margin-top:6px}
 
     /* tabs + table */
     .tabs{display:flex;gap:8px;margin-top:12px}
@@ -194,14 +194,15 @@
     const PERIOD_SEC = 120;       // 2-minute rounds
     const CLOSE_SEC  = 30;        // close 30s before next round
     const ODDS = { color:{green:2, red:2, violet:4.5}, number:9, size:{big:2, small:2} };
-    const POLL_MS = 1500;         // NEW: 缩短轮询
+    const POLL_MS = 1000;         // 兜底轮询更快
 
     /* ===================== STATE ===================== */
     let currentUser = null;
     let userBalance = 0;
     let selection = null;          // { kind:'color'|'number'|'size', value:string|number }
     let betMultiplier = 1;
-    let lastPeriodRendered = null; // NEW: 切期立即刷新
+    let lastPeriodRendered = null;
+    let serverPrevRound = null;    // 服务器权威上一期（防止本机时钟漂移）
 
     /* ===================== TIME (IST, match DB) ===================== */
     const IST_OFFSET_MIN = 330; // 5.5 hours
@@ -226,6 +227,32 @@
     };
     const displayRoundNumber = () => roundKeyIST(bucketStartIST()); // match DB exactly
 
+    // === Server authoritative round anchor (上一期 from DB) ===
+    async function refreshServerPrevRound(){
+      try{
+        const { data, error } = await supabase.rpc('color2m_prev_round_ist');
+        if(!error && data){ serverPrevRound = String(data); }
+      }catch(_){}
+    }
+    function roundToUtcViewMs(round){
+      if(!round || round.length!==12) return 0;
+      const y=+round.slice(0,4), m=+round.slice(4,6)-1, d=+round.slice(6,8),
+            hh=+round.slice(8,10), mi=+round.slice(10,12);
+      return Date.UTC(y,m,d,hh,mi);
+    }
+    function secondsToNextCutover(){
+      if (serverPrevRound){
+        // 当前期结束 = 上一期开始 + 4 分钟
+        const nextChangeMs = roundToUtcViewMs(serverPrevRound) + 4*60*1000;
+        return Math.max(0, Math.floor((nextChangeMs - istNowUtcView().getTime())/1000));
+      }
+      return secsToNextBucket(); // 兜底
+    }
+    function isPastRound(roundNumber){
+      if (serverPrevRound) return String(roundNumber) <= serverPrevRound;
+      return String(roundNumber) < String(displayRoundNumber());
+    }
+
     /* ===================== RULES ===================== */
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
     const bigSmall = (n) => (n>=5? 'Big' : 'Small');
@@ -244,7 +271,7 @@
         emailEl.textContent = currentUser.email;
         btn.textContent = 'Sign out';
         await refreshBalance();
-        setupRealtimeForMyBets();           // NEW: 注单更新→自动更新余额
+        setupRealtimeForMyBets();           // 注单变化 → 自动更新余额/我的下注
       } else {
         emailEl.textContent = 'Guest';
         btn.textContent = 'Sign in';
@@ -304,17 +331,22 @@
     function renderTimer(){
       const period = displayRoundNumber();
       periodEl.textContent = period;
-      if (period !== lastPeriodRendered){   // NEW: 切期立刻刷新
+
+      if (period !== lastPeriodRendered){
         lastPeriodRendered = period;
-        fetchGameHistory();
+        fetchGameHistory();        // 切期立刻刷新
+        refreshServerPrevRound();  // 同步服务器锚点
       }
-      const s = secsToNextBucket(); const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(s%60).padStart(2,'0');
+
+      const s = secondsToNextCutover();
+      const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(s%60).padStart(2,'0');
       const ds = timerEl.querySelectorAll('.digit'); const digits=[...m+ss];
       ds[0].textContent=digits[0]; ds[1].textContent=digits[1]; ds[2].textContent=digits[2]; ds[3].textContent=digits[3];
       updateNote();
     }
     function updateNote(){
-      const s = secsToNextBucket(); const closed = s <= CLOSE_SEC; const note = qs('#note');
+      const s = secondsToNextCutover();
+      const closed = s <= CLOSE_SEC; const note = qs('#note');
       if(closed) note.textContent = `Betting closed. Wait for next draw.`; else note.textContent = `Bets close ${CLOSE_SEC}s before draw. Current round only.`;
       qs('#btnPlace').disabled = closed;
     }
@@ -330,32 +362,43 @@
     function renderEmptyState(has){ emptyGame.style.display = has? 'none':'block'; }
 
     async function fetchGameHistory(){
-      const { data, error } = await supabase.from('color2m_rounds')
-        .select('round_number,result_number')
-        .order('round_number',{ascending:false}).limit(10);
+      let q = supabase.from('color2m_rounds')
+                      .select('round_number,result_number')
+                      .order('round_number',{ascending:false})
+                      .limit(25);
+      if (serverPrevRound) q = q.lte('round_number', serverPrevRound);
+      const { data, error } = await q;
       if(error){ console.error(error); return; }
-      renderEmptyState(data.length>0);
-      recentWrap.innerHTML=''; data.slice(0,5).reverse().forEach(r=>addBall(r.result_number));
-      tbodyGame.innerHTML=''; data.reverse().forEach(r=>pushGameRow(r.round_number, r.result_number));
+
+      const past = (data || []).filter(r => isPastRound(r.round_number)).slice(0,10);
+
+      renderEmptyState(past.length>0);
+      recentWrap.innerHTML='';
+      past.slice(0,5).reverse().forEach(r=>addBall(r.result_number));
+
+      tbodyGame.innerHTML='';
+      past.reverse().forEach(r=>pushGameRow(r.round_number, r.result_number));
     }
 
-    // NEW: Realtime - 既监听 INSERT 又监听 UPDATE（人工改结果是 UPDATE）
+    // Realtime: 监听 INSERT/UPDATE，但忽略“当前/未来期”
     (function setupRealtimeRounds(){
       try{
         const ch = supabase.channel('color2m_rounds_changes');
         ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_rounds'}, payload => {
-          const r = payload.new; addBall(r.result_number); pushGameRow(r.round_number, r.result_number); refreshBalance();
+          const r = payload.new;
+          if (!isPastRound(r.round_number)) return;
+          addBall(r.result_number); pushGameRow(r.round_number, r.result_number); refreshBalance();
         });
-        ch.on('postgres_changes', {event:'UPDATE', schema:'public', table:'color2m_rounds'}, _payload => {
-          // 更新时直接全量刷新，避免重复项
-          fetchGameHistory();
-          refreshBalance();
+        ch.on('postgres_changes', {event:'UPDATE', schema:'public', table:'color2m_rounds'}, payload => {
+          const r = payload.new;
+          if (!isPastRound(r.round_number)) return;
+          fetchGameHistory(); refreshBalance();
         });
         ch.subscribe();
       }catch(e){ console.warn('Realtime not enabled', e); }
     })();
 
-    // NEW: 缩短轮询，作为 Realtime 的兜底
+    // 兜底轮询
     setInterval(fetchGameHistory, POLL_MS); fetchGameHistory();
 
     /* ===================== TABS ===================== */
@@ -386,7 +429,7 @@
       });
     }
 
-    // NEW: 监听“我的下注”变化 → 自动刷新余额 & 我的下注
+    // 监听“我的下注”变化 → 自动刷新余额 & 我的下注
     function setupRealtimeForMyBets(){
       if(!currentUser) return;
       try{
@@ -410,7 +453,7 @@
 
     qs('#btnPlace').addEventListener('click', async ()=>{
       if(!currentUser){ toast('Please sign in first'); return; }
-      const s = secsToNextBucket(); if(s <= CLOSE_SEC){ toast('Betting closed for this round'); return; }
+      const s = secondsToNextCutover(); if(s <= CLOSE_SEC){ toast('Betting closed for this round'); return; }
       if(!selection){ toast('Select a color / number / size'); return; }
 
       const amt = Number(qs('#amount').value || 0);
@@ -437,6 +480,8 @@
 
     /* ===================== INIT ===================== */
     await loadUser();
+    await refreshServerPrevRound();
+    setInterval(refreshServerPrevRound, 10000); // 每 10s 与服务器校准一次
   </script>
 </body>
 </html>
