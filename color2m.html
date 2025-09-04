@@ -75,7 +75,7 @@
 
     .submit{display:flex;gap:10px;margin-top:10px}
     .submit .btn{flex:1;padding:12px 16px;font-size:14px;border-radius:12px}
-    .note{font-size:12px;color:var(--muted);margin-top:6px}
+    .note{font-size:12px;color:#526a95;margin-top:6px}
 
     /* tabs + table */
     .tabs{display:flex;gap:8px;margin-top:12px}
@@ -227,6 +227,11 @@
     };
     const displayRoundNumber = () => roundKeyIST(bucketStartIST()); // match DB exactly
 
+    /* === 新增：上一期期号 & 是否已到开奖时间的判断（防止提前显示） === */
+    const previousRoundNumberIST = () =>
+      roundKeyIST(new Date(bucketStartIST().getTime() - PERIOD_SEC * 1000));
+    const isPastRound = (roundNo) => String(roundNo) <= previousRoundNumberIST();
+
     /* ===================== RULES ===================== */
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
     const bigSmall = (n) => (n>=5? 'Big' : 'Small');
@@ -336,7 +341,13 @@
     function renderEmptyState(has){ emptyGame.style.display = has? 'none':'block'; }
 
     async function fetchGameHistory(){
-      const { data, error } = await supabase.from('color2m_rounds').select('round_number,result_number').order('round_number',{ascending:false}).limit(10);
+      const cutoff = previousRoundNumberIST(); // 只显示 ≤ 上一期
+      const { data, error } = await supabase
+        .from('color2m_rounds')
+        .select('round_number,result_number')
+        .lte('round_number', cutoff)
+        .order('round_number',{ascending:false})
+        .limit(10);
       if(error){ console.error(error); return; }
       renderEmptyState(data.length>0);
       recentWrap.innerHTML=''; data.slice(0,5).reverse().forEach(r=>addBall(r.result_number));
@@ -345,8 +356,12 @@
 
     try{
       const ch = supabase.channel('color2m_rounds_changes');
-      ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_rounds'}, payload => {
-        const r = payload.new; addBall(r.result_number); pushGameRow(r.round_number, r.result_number); refreshBalance();
+      ch.on('postgres_changes', {event:'*', schema:'public', table:'color2m_rounds'}, payload => {
+        const r = payload.new;
+        if(!r) return;
+        // 忽略当前/未来期，只在已到开奖时间时渲染
+        if (!isPastRound(r.round_number)) return;
+        addBall(r.result_number); pushGameRow(r.round_number, r.result_number); refreshBalance();
       }).subscribe();
     }catch(e){ console.warn('Realtime not enabled', e); }
 
