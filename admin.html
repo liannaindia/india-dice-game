@@ -72,7 +72,7 @@
         <button data-tab="bets">📜 Today’s Bets (IST)</button>
         <button data-tab="manual">🎯 Manual Result (Old Dice)</button>
         <button data-tab="wheel">🎡 Wheel Control</button>
-        <!-- ✅ 新增：Wingo 控制 -->
+        <!-- 新增 WinGo 控制 -->
         <button data-tab="wingo">🎯 Wingo Control</button>
         <button data-tab="users">👥 Users</button>
       </div>
@@ -112,7 +112,7 @@
         </div>
       </section>
 
-      <!-- Bets (合并多游戏) -->
+      <!-- Bets -->
       <section id="tab-bets" class="tab hidden">
         <div class="card">
           <h3>📜 Today’s Bets (IST)</h3>
@@ -165,35 +165,30 @@
         </div>
       </section>
 
-     <!-- Wingo Control -->
-<section id="tab-wingo" class="tab hidden">
-  <div class="card">
-    <h3>🎯 WinGo — Manual Result (Save Only)</h3>
-    <div class="toolbar">
-      <span class="pill gray">IST Now: <span id="wingo-ist-now" class="mono">—</span></span>
-      <span class="pill">Prev: <code id="wingo-prev" class="mono">—</code></span>
-      <span class="pill">Curr: <code id="wingo-curr" class="mono">—</code></span>
-      <span class="pill">Next: <code id="wingo-next" class="mono">—</code></span>
-      <button id="wingo-refresh-times" style="width:auto">Refresh</button>
-    </div>
-
-    <div class="row" style="margin-top:10px">
-      <input id="wingo-round-input" class="mono" placeholder="Round Number (e.g. 202508081430)"/>
-      <input id="wingo-number-input" type="number" min="0" max="9" placeholder="Result Number (0–9)"/>
-    </div>
-
-    <div class="btn-group">
-      <button id="wingo-fill-prev" style="width:auto">⬅️ Fill Prev</button>
-      <button id="wingo-fill-curr" style="width:auto">🕒 Fill Curr</button>
-      <button id="wingo-fill-next" style="width:auto">➡️ Fill Next</button>
-      <!-- 只保存，不结算 -->
-      <button id="wingo-save" style="width:auto;background:#16a34a">💾 Save</button>
-    </div>
-
-    <div id="wingo-last-msg" class="muted" style="margin-top:8px"></div>
-  </div>
-</section>
-
+      <!-- Wingo Control（只保存结果） -->
+      <section id="tab-wingo" class="tab hidden">
+        <div class="card">
+          <h3>🎯 WinGo — Manual Result (Save Only)</h3>
+          <div class="toolbar">
+            <span class="pill gray">IST Now: <span id="wingo-ist-now" class="mono">—</span></span>
+            <span class="pill">Prev: <code id="wingo-prev" class="mono">—</code></span>
+            <span class="pill">Curr: <code id="wingo-curr" class="mono">—</code></span>
+            <span class="pill">Next: <code id="wingo-next" class="mono">—</code></span>
+            <button id="wingo-refresh-times" style="width:auto">Refresh</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <input id="wingo-round-input" class="mono" placeholder="Round Number (e.g. 202508081430)"/>
+            <input id="wingo-number-input" type="number" min="0" max="9" placeholder="Result Number (0–9)"/>
+          </div>
+          <div class="btn-group">
+            <button id="wingo-fill-prev" style="width:auto">⬅️ Fill Prev</button>
+            <button id="wingo-fill-curr" style="width:auto">🕒 Fill Curr</button>
+            <button id="wingo-fill-next" style="width:auto">➡️ Fill Next</button>
+            <button id="wingo-save" style="width:auto;background:#16a34a">💾 Save</button>
+          </div>
+          <div id="wingo-last-msg" class="muted" style="margin-top:8px"></div>
+        </div>
+      </section>
 
       <!-- Users -->
       <section id="tab-users" class="tab hidden">
@@ -212,29 +207,27 @@
   <script type="module">
     import { supabase } from './supabase-config-admin.js';
 
-    const ADMIN_EMAIL = 'admin@gmail.com'; // 仅允许此邮箱
+    const ADMIN_EMAIL = 'admin@gmail.com';
 
     const loginSection = document.getElementById('login-section');
     const adminLayout  = document.getElementById('admin-layout');
 
-    // ===== 显示/隐藏 + 首次初始化（NEW）
     function showLogin(){ loginSection.classList.remove('hidden'); adminLayout.classList.add('hidden'); }
     function showAdmin(){ loginSection.classList.add('hidden'); adminLayout.classList.remove('hidden'); }
     let appInited = false;
     function ensureInitOnce(){ if (appInited) return; appInited = true; initTabs(); loadAll(); }
     const isAdminSession = (s)=> s?.user?.email === ADMIN_EMAIL;
 
-    // ===== 页面加载：恢复会话（NEW）
+    // boot + session listener
     (async function boot(){
       const { data:{ session } } = await supabase.auth.getSession();
       if (isAdminSession(session)){ showAdmin(); ensureInitOnce(); } else { showLogin(); }
     })();
-    // ===== 监听会话变化（NEW）
     supabase.auth.onAuthStateChange((_event, session)=>{
       if (isAdminSession(session)){ showAdmin(); ensureInitOnce(); } else { showLogin(); }
     });
 
-    // ===== 登录按钮（原逻辑，配合上面的监听）
+    // login
     document.getElementById('login-btn').onclick = async () => {
       const email = (document.getElementById('email').value || '').trim();
       const password = document.getElementById('password').value;
@@ -244,7 +237,6 @@
         await supabase.auth.signOut();
         alert('Not authorized'); return;
       }
-      // 登录后 UI 会被 onAuthStateChange 自动切换
     };
 
     function initTabs(){
@@ -258,10 +250,10 @@
           document.getElementById('tab-' + tab).classList.remove('hidden');
           if (tab==='recharge') loadRechargeRequests();
           if (tab==='withdraw') loadWithdrawRequests();
-          if (tab==='bets')     loadTodayBets();   // 合并多表
+          if (tab==='bets')     loadTodayBets();
           if (tab==='users')    loadUsers();
           if (tab==='wheel')    refreshWheelTimes();
-          if (tab==='wingo')    refreshWingoTimes(); // ✅ 新增
+          if (tab==='wingo')    refreshWingoTimes();
         };
       });
     }
@@ -279,10 +271,10 @@
       loadWithdrawRequests();
       loadTodayBets();
       refreshWheelTimes();
-      refreshWingoTimes(); // 初次也刷新
+      refreshWingoTimes();
     }
 
-    // ===== 充值 / 提现（保持你的逻辑不变）
+    // Recharge
     async function loadRechargeRequests() {
       const container = document.getElementById('recharge-requests');
       const { data, error } = await supabase.from('recharge_requests').select('*').order('created_at', { ascending: false });
@@ -321,6 +313,7 @@
       alert('Recharge rejected.'); loadRechargeRequests();
     };
 
+    // Withdraw
     async function loadWithdrawRequests() {
       const container = document.getElementById('withdraw-requests');
       const { data, error } = await supabase
@@ -408,7 +401,6 @@
       const emailFilter = (document.getElementById('bet-email-filter').value || '').trim().toLowerCase();
       const { startUtcIso, endUtcIso } = getISTDayRangeUTCISO();
 
-      // ✅ 现在拉取四张表
       const [diceRes, abRes, wheelRes, wingoRes] = await Promise.all([
         supabase.from('bets').select('created_at, email, user_id, round_number, bet_type, choice, amount, odds, status, payout')
                  .gte('created_at', startUtcIso).lt('created_at', endUtcIso)
@@ -419,7 +411,6 @@
         supabase.from('wheel_bets').select('created_at, email, user_id, round_number, bet_type, pick, multiplier, amount, status, payout')
                  .gte('created_at', startUtcIso).lt('created_at', endUtcIso)
                  .order('created_at', { ascending: false }).limit(1000),
-        // WinGo（color2m）
         supabase.from('color2m_bets').select('created_at, email, user_id, round_number, bet_type, choice, amount, odds, status, payout')
                  .gte('created_at', startUtcIso).lt('created_at', endUtcIso)
                  .order('created_at', { ascending: false }).limit(1000)
@@ -434,7 +425,6 @@
       if (wheelRes.error) console.warn('wheel_bets error:', wheelRes.error.message);
       if (wingoRes.error) console.warn('color2m_bets error:', wingoRes.error.message);
 
-      // 2) 补齐 email
       const missingIds = new Set();
       [...dice, ...ab, ...wheel, ...wingo].forEach(r=>{
         if (!r?.email && r?.user_id) missingIds.add(r.user_id);
@@ -446,7 +436,6 @@
       }
       const getEmail = (row)=> row.email || userMap[row.user_id] || row.user_id || '-';
 
-      // 3) 统一结构
       const rows = [];
 
       // Dice
@@ -456,17 +445,8 @@
         const betText = b.bet_type === 'number'
           ? `Number ${b.choice ?? '-'}`
           : (b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)');
-        rows.push({
-          game: 'Dice',
-          email,
-          round: b.round_number || '-',
-          bet: betText,
-          amount: Number(b.amount||0),
-          odds: Number(b.odds||0),
-          status: b.status || '-',
-          payout: Number(b.payout||0),
-          ts: b.created_at
-        });
+        rows.push({ game:'Dice', email, round:b.round_number||'-', bet:betText,
+          amount:Number(b.amount||0), odds:Number(b.odds||0), status:b.status||'-', payout:Number(b.payout||0), ts:b.created_at });
       }
 
       // Andar Bahar
@@ -475,17 +455,8 @@
         if (emailFilter && !String(email).toLowerCase().includes(emailFilter)) continue;
         const side = (b.side||'').toLowerCase();
         const label = side==='andar' ? 'Andar' : side==='bahar' ? 'Bahar' : (b.side||'-');
-        rows.push({
-          game: 'AB',
-          email,
-          round: b.round_number || '-',
-          bet: label,
-          amount: Number(b.amount||0),
-          odds: Number(b.odds||0),
-          status: b.status || '-',
-          payout: Number(b.payout||0),
-          ts: b.created_at
-        });
+        rows.push({ game:'AB', email, round:b.round_number||'-', bet:label,
+          amount:Number(b.amount||0), odds:Number(b.odds||0), status:b.status||'-', payout:Number(b.payout||0), ts:b.created_at });
       }
 
       // Mini Wheel
@@ -493,51 +464,28 @@
         const email = getEmail(b);
         if (emailFilter && !String(email).toLowerCase().includes(emailFilter)) continue;
         let betText;
-        if (b.bet_type === 'range') {
-          betText = Number(b.pick)===0 ? 'Small 3–10' : 'Big 11–18';
-        } else if (b.bet_type === 'number') {
-          betText = `Number ${b.pick ?? '-'}`;
-        } else {
-          betText = `${b.bet_type||'-'} ${b.pick??''}`.trim();
-        }
-        rows.push({
-          game: 'Mini Wheel',
-          email,
-          round: b.round_number || '-',
-          bet: betText,
-          amount: Number(b.amount||0),
-          odds: Number(b.multiplier||0), // Wheel 用 multiplier
-          status: b.status || '-',
-          payout: Number(b.payout||0),
-          ts: b.created_at
-        });
+        if (b.bet_type === 'range')       betText = Number(b.pick)===0 ? 'Small 3–10' : 'Big 11–18';
+        else if (b.bet_type === 'number') betText = `Number ${b.pick ?? '-'}`;
+        else                              betText = `${b.bet_type||'-'} ${b.pick??''}`.trim();
+        rows.push({ game:'Mini Wheel', email, round:b.round_number||'-', bet:betText,
+          amount:Number(b.amount||0), odds:Number(b.multiplier||0), status:b.status||'-', payout:Number(b.payout||0), ts:b.created_at });
       }
 
-      // ✅ WinGo (color2m)
+      // WinGo
       for (const b of wingo){
         const email = getEmail(b);
         if (emailFilter && !String(email).toLowerCase().includes(emailFilter)) continue;
         const kind = (b.bet_type||'').toLowerCase();
         let betText = '-';
-        if (kind === 'number') betText = `Number ${b.choice ?? '-'}`;
-        else if (kind === 'color') betText = String(b.choice||'-').replace(/^[a-z]/, s=>s.toUpperCase());
-        else if (kind === 'size')  betText = String(b.choice||'-').toLowerCase()==='big' ? 'Big' : 'Small';
-        rows.push({
-          game: 'WinGo',
-          email,
-          round: b.round_number || '-',
-          bet: betText,
-          amount: Number(b.amount||0),
-          odds: Number(b.odds||0),
-          status: b.status || '-',
-          payout: Number(b.payout||0),
-          ts: b.created_at
-        });
+        if (kind==='number') betText=`Number ${b.choice ?? '-'}`;
+        else if (kind==='color') betText=String(b.choice||'-').replace(/^[a-z]/, s=>s.toUpperCase());
+        else if (kind==='size')  betText=String(b.choice||'-').toLowerCase()==='big' ? 'Big' : 'Small';
+        rows.push({ game:'WinGo', email, round:b.round_number||'-', bet:betText,
+          amount:Number(b.amount||0), odds:Number(b.odds||0), status:b.status||'-', payout:Number(b.payout||0), ts:b.created_at });
       }
 
       if (!rows.length) { container.textContent = 'No bets today.'; return; }
 
-      // 4) 渲染（时间倒序）
       rows.sort((a,b)=> a.ts>b.ts ? -1 : 1);
       const htmlRows = rows.map(r=>`
         <tr>
@@ -569,7 +517,7 @@
     }
     document.getElementById('bets-reload').onclick = loadTodayBets;
 
-    // ===== 旧骰子：手动出结果（保持你的逻辑）
+    // 旧骰子手动结果
     document.getElementById('set-result-btn').onclick = async () => {
       const round = document.getElementById('manual-round').value.trim();
       const result = parseInt(document.getElementById('manual-result').value);
@@ -590,7 +538,7 @@
       }
     };
 
-    // ===== Wheel 控制（保留）
+    // Wheel 工具 & 控制
     const W_NUMBERS = Array.from({length:16}, (_,i)=>i+3);
     const W_ODDS = new Map([[3,180],[18,180],[4,60],[17,60],[5,30],[16,30],[6,18],[15,18],[7,12],[14,12],[8,9],[13,9],[9,8],[12,8],[10,7],[11,7]]);
     function getIST(){ const now=new Date(); const utc=now.getTime()+now.getTimezoneOffset()*60000; return new Date(utc+5.5*3600*1000); }
@@ -648,7 +596,7 @@
       alert(`✅ Saved: ${round} → ${n} (×${mult})`);
     };
 
-    // ===== Users（保持不变）
+    // Users
     async function loadUsers(){
       const container = document.getElementById('users-table');
       const emailFilter = (document.getElementById('users-email-filter').value || '').trim();
@@ -725,30 +673,25 @@
 
       alert('Updated.'); loadUsers();
     };
+
     window.adjustTurnover = async (user_id) => {
-      // 1) 读入增减数：正数=增加，负数=减少
       let val = prompt('Enter turnover delta (positive = increase, negative = decrease):');
-      if (val === null) return; // 用户取消
+      if (val === null) return;
       const delta = parseFloat(val);
       if (!Number.isFinite(delta) || delta === 0) return alert('Invalid number');
 
-      // 2) 读取当前 turnover_remaining
       const { data: urow, error: rerr } = await supabase
         .from('users').select('turnover_remaining').eq('id', user_id).single();
       if (rerr) return alert('Load user failed: ' + rerr.message);
 
       const curr = Number(urow?.turnover_remaining || 0);
       let next = curr + delta;
-
-      // 3) 不允许为负
       if (next < 0) next = 0;
 
-      // 4) 二次确认
       if (!confirm(`Confirm update turnover:\n\nCurrent: ₹${curr.toFixed(2)}\nDelta: ${delta > 0 ? '+' : ''}${delta}\nNew: ₹${next.toFixed(2)}`)) {
         return;
       }
 
-      // 5) 更新
       const { error: uperr } = await supabase
         .from('users').update({ turnover_remaining: next }).eq('id', user_id);
       if (uperr) return alert('Update failed: ' + uperr.message);
@@ -767,7 +710,7 @@
       alert('VIP updated.'); loadUsers();
     };
 
-    // ===== Bank Info 保存（新增）=====
+    // Bank Info 保存
     async function saveBankInfo(){
       const btn = document.getElementById('save-bank-btn');
       const name   = (document.getElementById('name').value   || '').trim();
@@ -778,12 +721,11 @@
 
       btn.disabled = true; const oldTxt = btn.textContent; btn.textContent = 'Saving...';
 
-      // 约定 bank_info 只有一条记录，主键 id=1
       const payload = { id: 1, name, ac, ifsc, upi, crypto_address: crypto };
 
       const { error } = await supabase
         .from('bank_info')
-        .upsert([payload]); // 如果没有就插入，有就更新
+        .upsert([payload]);
 
       btn.disabled = false; btn.textContent = oldTxt;
 
@@ -794,56 +736,51 @@
         alert('✅ Saved');
       }
     }
-    // 绑定点击事件
     document.getElementById('save-bank-btn').onclick = saveBankInfo;
 
-   /* ===== WinGo 控制：保存开奖结果 0–9（不结算） ===== */
-const wingoIstNowEl   = document.getElementById('wingo-ist-now');
-const wingoPrevEl     = document.getElementById('wingo-prev');
-const wingoCurrEl     = document.getElementById('wingo-curr');
-const wingoNextEl     = document.getElementById('wingo-next');
-const wingoRoundInput = document.getElementById('wingo-round-input');
-const wingoNumInput   = document.getElementById('wingo-number-input');
-const wingoMsg        = document.getElementById('wingo-last-msg');
+    /* ===== WinGo 控制：只保存开奖结果 0–9（不结算） ===== */
+    const wingoIstNowEl   = document.getElementById('wingo-ist-now');
+    const wingoPrevEl     = document.getElementById('wingo-prev');
+    const wingoCurrEl     = document.getElementById('wingo-curr');
+    const wingoNextEl     = document.getElementById('wingo-next');
+    const wingoRoundInput = document.getElementById('wingo-round-input');
+    const wingoNumInput   = document.getElementById('wingo-number-input');
+    const wingoMsg        = document.getElementById('wingo-last-msg');
 
-function refreshWingoTimes(){
-  const now = getIST();
-  wingoIstNowEl.textContent = now.toISOString().replace('T',' ').slice(0,16)+' IST';
-  wingoPrevEl.textContent = previousRoundNo();
-  wingoCurrEl.textContent = currentRoundNo();
-  wingoNextEl.textContent = nextRoundNo();
-  if (!wingoRoundInput.value) wingoRoundInput.value = wingoPrevEl.textContent; // 默认上期
-}
-document.getElementById('wingo-refresh-times').onclick = refreshWingoTimes;
-document.getElementById('wingo-fill-prev').onclick = ()=>{ wingoRoundInput.value = wingoPrevEl.textContent; };
-document.getElementById('wingo-fill-curr').onclick = ()=>{ wingoRoundInput.value = wingoCurrEl.textContent; };
-document.getElementById('wingo-fill-next').onclick = ()=>{ wingoRoundInput.value = wingoNextEl.textContent; };
+    function refreshWingoTimes(){
+      const now = getIST();
+      wingoIstNowEl.textContent = now.toISOString().replace('T',' ').slice(0,16)+' IST';
+      wingoPrevEl.textContent = previousRoundNo();
+      wingoCurrEl.textContent = currentRoundNo();
+      wingoNextEl.textContent = nextRoundNo();
+      if (!wingoRoundInput.value) wingoRoundInput.value = wingoPrevEl.textContent;
+    }
+    document.getElementById('wingo-refresh-times').onclick = refreshWingoTimes;
+    document.getElementById('wingo-fill-prev').onclick = ()=>{ wingoRoundInput.value = wingoPrevEl.textContent; };
+    document.getElementById('wingo-fill-curr').onclick = ()=>{ wingoRoundInput.value = wingoCurrEl.textContent; };
+    document.getElementById('wingo-fill-next').onclick = ()=>{ wingoRoundInput.value = wingoNextEl.textContent; };
 
-document.getElementById('wingo-save').onclick = async ()=>{
-  const round = (wingoRoundInput.value || '').trim();
-  const n = parseInt(wingoNumInput.value);
-  if (!round) return alert('Round required');
-  if (!Number.isFinite(n) || n<0 || n>9) return alert('Result number must be 0–9');
+    document.getElementById('wingo-save').onclick = async ()=>{
+      const round = (wingoRoundInput.value || '').trim();
+      const n = parseInt(wingoNumInput.value);
+      if (!round) return alert('Round required');
+      if (!Number.isFinite(n) || n<0 || n>9) return alert('Result number must be 0–9');
 
-  // ✅ 只保存到 rounds，标记 is_manual；不触发结算
-  const { error: upErr } = await supabase
-    .from('color2m_rounds')
-    .upsert([{ round_number: round, result_number: n, is_manual: true }]);
-  if (upErr) return alert('Save failed: ' + upErr.message);
+      const { error: upErr } = await supabase
+        .from('color2m_rounds')
+        .upsert([{ round_number: round, result_number: n, is_manual: true }]);
+      if (upErr) return alert('Save failed: ' + upErr.message);
 
-  // 友好提示：当前/下一期保存后，到点会由系统自动结算
-  const nowKey = currentRoundNo();
-  const msg =
-    Number(round) <= Number(previousRoundNo())
-      ? `✅ Saved. This (past) round will be (or has been) settled by system automatically.`
-      : `✅ Saved. System will auto-settle at the draw time.`;
-  wingoMsg.textContent = `${msg}  [${round} → ${n}]`;
-};
-
-// 初始化一次
-refreshWingoTimes();
-
+      const msg =
+        Number(round) <= Number(previousRoundNo())
+          ? `✅ Saved. (Past round) System auto-settlement may run immediately or on next tick.`
+          : `✅ Saved. System will auto-settle at the draw time.`;
+      wingoMsg.textContent = `${msg}  [${round} → ${n}]`;
     };
+
+    // 初始化一些默认
+    refreshWheelTimes();
+    refreshWingoTimes();
   </script>
 </body>
 </html>
