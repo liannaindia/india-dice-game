@@ -241,17 +241,16 @@
       return Date.UTC(y,m,d,hh,mi);
     }
     function secondsToNextCutover(){
-      if (serverPrevRound){
-        // 当前期结束 = 上一期开始 + 4 分钟
-        const nextChangeMs = roundToUtcViewMs(serverPrevRound) + 4*60*1000;
-        return Math.max(0, Math.floor((nextChangeMs - istNowUtcView().getTime())/1000));
-      }
-      return secsToNextBucket(); // 兜底
-    }
-    function isPastRound(roundNumber){
-      if (serverPrevRound) return String(roundNumber) <= serverPrevRound;
-      return String(roundNumber) < String(displayRoundNumber());
-    }
+  if (serverPrevRound){
+    // 当前期开始 = 上一期开始 + 2 分钟
+    const currentStartMs = roundToUtcViewMs(serverPrevRound) + 2*60*1000;
+    // 当前期结束 = 当前期开始 + 2 分钟
+    const nextChangeMs   = currentStartMs + 2*60*1000;   // ← 这里原来是 +4 分钟，导致跳 2:01/2:02
+    return Math.max(0, Math.floor((nextChangeMs - istNowUtcView().getTime())/1000));
+  }
+  return secsToNextBucket(); // 兜底
+}
+
 
     /* ===================== RULES ===================== */
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
