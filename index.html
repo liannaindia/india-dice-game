@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>India Game Lobby</title>
+  <title>Ganeshcasino · Lobby</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <!-- Supabase config（保持不变） -->
   <script type="module" src="./supabase-config.js"></script>
+
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-  
+
   <!-- PWA manifest -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0b1220">
@@ -17,295 +21,319 @@
   <meta name="apple-mobile-web-app-title" content="Ganeshcasino">
   <link rel="apple-touch-icon" href="/icons/apple-icon-180.png">
 
-  <!-- 注册 Service Worker -->
+  <!-- Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js');
-      });
+      addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
     }
   </script>
 
   <style>
-    /* ========= Brand + Festive Palette ========= */
+    /* ================= Brand System (Dark + Neon) ================= */
     :root{
-      --bg:#fff8ef; --card:#ffffff; --text:#0f172a; --muted:#6b7280;
-      --line:#efe6d6; --primary:#ff6f00; --primary-press:#e65f00;
-      --green:#16a34a; --blue:#2563eb; --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08);
-      --saffron:#ff9933; --lotus:#ff4d6d; --marigold:#ffb703; --deep-red:#9d0208; --royal:#6a2c70;
-      --gold:#d4af37; --gold-2:#f6e27a;
+      --bg-0:#070b16; --bg-1:#0b1220; --bg-2:#0c1628;
+      --glass:#0f1627cc;               /* glass card */
+      --text:#e6edf7; --muted:#8ea0bf; --line:#26324a;
+      --gold:#f4d26b; --gold-2:#ffd984; --gold-3:#f3b44b;
+      --primary:#7c5cff; --primary-2:#5d2df6;
+      --accent:#00e5ff; --accent-2:#00bcd4;
+      --danger:#ff5d6c; --success:#22c55e;
+      --radius:18px; --shadow:0 20px 60px rgba(0,0,0,.35);
       --safe-b: env(safe-area-inset-bottom, 0px);
       --safe-t: env(safe-area-inset-top, 0px);
     }
+
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial; color:var(--text);
-      /* 背景 */
       background:
-        radial-gradient(1200px 520px at 120% -10%, #ffe7c6 0%, transparent 60%),
-        radial-gradient(1200px 520px at -20% 0%, #ffe1e8 0%, transparent 55%),
-        linear-gradient(180deg,#fff8ef 0%,#fff 30%,#fff8ef 100%);
+        radial-gradient(1000px 420px at 80% -20%, #1a2455 0%, transparent 60%),
+        radial-gradient(900px 420px at 10% -10%, #0a1e3a 0%, transparent 60%),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1) 30%, var(--bg-2) 100%);
+      overflow-x:hidden;
     }
+    /* 星点/散景 */
     body::before{
-      content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
-      background-image:
-        radial-gradient(circle at 20px 20px, rgba(212,175,55,0.14) 2px, transparent 2.2px),
-        radial-gradient(circle at 60px 60px, rgba(246,226,122,0.14) 2px, transparent 2.2px);
-      background-size:80px 80px, 80px 80px;
-      mix-blend-mode:multiply;
+      content:""; position:fixed; inset:-20% -10%; z-index:-1; opacity:.65; pointer-events:none;
+      background:
+        radial-gradient(3px 3px at 12% 14%, #ffffff22 50%, transparent 60%) repeat,
+        radial-gradient(6px 6px at 60% 18%, #ffffff18 50%, transparent 60%) repeat,
+        radial-gradient(2px 2px at 80% 30%, #ffffff12 50%, transparent 60%) repeat;
+      background-size:120px 120px, 180px 180px, 140px 140px;
+      filter:saturate(120%) blur(.2px);
     }
 
-    /* ====== NAV ====== */
+    /* ================= Top Nav ================= */
     .nav{
-      position:sticky; top:0; z-index:50; backdrop-filter:saturate(160%) blur(10px);
-      background:rgba(255,248,239,.9); border-bottom:1px solid var(--line);
-      padding-top: var(--safe-t);
+      position:sticky; top:0; z-index:50;
+      backdrop-filter:saturate(170%) blur(12px);
+      background:linear-gradient(180deg,#0d1323cc,#0d132399);
+      border-bottom:1px solid #162036;
+      padding-top:var(--safe-t);
     }
     .nav-inner{
-      max-width:1080px; margin:0 auto; padding:10px 12px;
-      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      max-width:1200px; margin:0 auto; padding:10px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
     }
-    .brand{display:flex; align-items:center; gap:8px; font-weight:800; font-size:clamp(14px, 2.6vw, 18px);}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
     .logo{
-      width:34px;height:34px;border-radius:12px;display:grid;place-items:center;
-      border:1px solid #ffd7aa; background:
-      radial-gradient(120% 120% at 0% 0%, #fff 0%, #fff7e3 60%, #ffe6b3 100%);
-      box-shadow:inset 0 1px 0 #fff, 0 6px 14px rgba(0,0,0,.06);
-      position:relative; overflow:hidden;
+      width:40px;height:40px;border-radius:12px; position:relative; display:grid; place-items:center;
+      background:radial-gradient(circle at 30% 30%, #fff 0, #ffe6a6 40%, #f0b84e 70%, #7a4e0a 100%);
+      box-shadow:inset 0 1px 0 #fff9, 0 12px 26px rgba(0,0,0,.35);
+      border:1px solid #e6b95a55; overflow:hidden;
     }
     .logo::after{
-      content:""; position:absolute; left:-5%; top:-5%; width:110%; height:110%;
-      background:
-        conic-gradient(from 0deg at 50% 60%, rgba(255,157,0,.15), transparent 60%),
-        conic-gradient(from 120deg at 50% 60%, rgba(255,0,98,.12), transparent 60%),
-        conic-gradient(from 240deg at 50% 60%, rgba(255,193,7,.12), transparent 60%);
-      mix-blend-mode:multiply;
+      content:""; position:absolute; inset:-40% -40%;
+      background:conic-gradient(from 0deg, #ffd36a22, #ff5ea855, #6f75ff44, #27e7ff55, #ffd36a22);
+      mix-blend-mode:screen; animation:spin 7s linear infinite;
     }
-    .actions{display:flex;gap:6px;flex-wrap:nowrap}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .brand-name{font-size:clamp(14px, 2.8vw, 18px)}
+    .actions{display:flex;gap:8px;flex-wrap:nowrap}
     .btn{
-      display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 12px;
-      border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700;
-      font-size:clamp(12px, 2.7vw, 14px);
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 14px;
+      border-radius:12px;border:1px solid #26324a;background:#111a2f;color:var(--text);
+      cursor:pointer;font-weight:700;font-size:14px; transition:all .18s ease;
     }
-    .btn.primary{background:var(--primary);color:#fff;border:0}
-    .btn.primary:active{background:var(--primary-press)}
-    .btn.ghost{background:#fff}
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{
+      border:0;color:#0b1220;background:linear-gradient(180deg, var(--gold), var(--gold-3));
+      box-shadow:0 10px 24px #ffcc5588;
+    }
+    .btn.ghost{background:#0f1627;border-color:#22304a}
     a.btn{text-decoration:none;color:inherit}
 
-    /* ====== HERO ====== */
-    .hero{max-width:1080px;margin:8px auto 0;padding:0 12px}
+    /* ================= Hero ================= */
+    .hero{max-width:1200px;margin:10px auto 0;padding:0 14px}
     .hero-banner{
-      position:relative;border-radius:18px;border:1px solid var(--line);overflow:hidden;
+      position:relative;border-radius:22px;overflow:hidden;
+      border:1px solid #2a3754; box-shadow:var(--shadow);
       background:
-        radial-gradient(1200px 420px at -10% 0%, rgba(255,230,179,.6) 0%, transparent 60%),
-        linear-gradient(90deg, #fff, #fff9f1 40%, #fff);
-      box-shadow:var(--shadow);
-      display:grid; grid-template-columns:1fr; gap:0; align-items:center;
+        radial-gradient(1200px 420px at 0% 0%, #1a2550 0%, transparent 60%),
+        radial-gradient(900px 380px at 100% 0%, #0e2c4c 0%, transparent 60%),
+        linear-gradient(120deg,#0f1830,#0b1427 40%, #0b1324);
+      display:grid; grid-template-columns:1.05fr .95fr; gap:0; align-items:center;
     }
-    /* ≥820px 才并排 */
-    @media(min-width:820px){
-      .hero-banner{grid-template-columns:1.1fr .9fr; gap:10px;}
+    @media(max-width:860px){ .hero-banner{grid-template-columns:1fr} }
+    .hero-copy{padding:18px 18px 16px 18px}
+    .hero-title{
+      font-weight:900; line-height:1.2; letter-spacing:.2px;
+      font-size:clamp(20px, 5vw, 34px);
+      background:linear-gradient(180deg,#fff,#dbe7ff);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      text-shadow:0 0 0 #fff0, 0 24px 60px #0008;
     }
-    .hero-copy{padding:16px 14px 14px 14px}
-    .hero-title{font-weight:800; font-size:clamp(18px, 5vw, 26px); line-height:1.25}
-    .hero-sub{color:var(--muted); margin-top:6px; font-size:clamp(12px, 3.8vw, 14px)}
-    .hero-badges{margin-top:10px; display:flex; gap:6px; flex-wrap:wrap}
-    .hb{padding:6px 10px; border-radius:999px; border:1px solid #ffe0b6; background:#fff7ec; font-weight:700; font-size:12px; color:#7a4300}
+    .hero-sub{color:var(--muted); margin-top:6px; font-size:clamp(12px, 3.6vw, 15px)}
+    .hero-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .pill{
+      padding:8px 12px;border-radius:999px;border:1px solid #374564;background:#121c33cc;
+      color:#c9d6f2;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:8px
+    }
 
-    .hero-art{position:relative; min-height:160px}
-    @media(min-width:820px){ .hero-art{min-height:180px} }
-    .ganesh-wrap{position:absolute; inset:0; display:grid; place-items:center; opacity:.92; filter:drop-shadow(0 14px 24px rgba(0,0,0,.12));}
-    .ganesh{width:min(260px, 80%); height:auto}
-    @media(min-width:820px){ .ganesh{width:min(320px,80%)} }
-    .coin{position:absolute; width:12px; height:12px; border-radius:50%;
-      background: radial-gradient(circle at 35% 35%, #fff6c2 0%, #f6e27a 40%, #d4af37 70%, #a9801a 100%);
-      box-shadow:0 2px 4px rgba(0,0,0,.15); animation:fall 7s linear infinite; opacity:.85;}
-    @keyframes fall{ 0%{ transform:translateY(-36px) translateX(0) rotate(0) } 100%{ transform:translateY(220px) translateX(32px) rotate(420deg) } }
-    .coin.c1{left:12%; top:0; animation-delay:.2s}
-    .coin.c2{left:26%; top:-8px; animation-delay:1.2s}
-    .coin.c3{left:70%; top:-12px; animation-delay:.8s}
-    .coin.c4{left:86%; top:4px; animation-delay:2.1s}
+    .hero-art{position:relative; min-height:220px; padding:10px}
+    .glow{
+      position:absolute; inset:-40% -20%; pointer-events:none; z-index:0;
+      background:radial-gradient(60% 60% at 60% 30%, #6d75ff33, transparent 60%),
+                 radial-gradient(60% 60% at 30% 60%, #00e5ff22, transparent 60%);
+      filter:blur(28px);
+    }
+    .ganesh-wrap{position:relative; z-index:1; display:grid; place-items:center; filter:drop-shadow(0 16px 32px #0009)}
+    .ganesh{width:min(360px, 86%); height:auto; opacity:.96; stroke:#ffc86d}
+    .coins{position:absolute; inset:0; pointer-events:none; z-index:2}
+    .coin{
+      position:absolute; width:14px; height:14px; border-radius:50%;
+      background:radial-gradient(circle at 35% 35%, #fff6c2 0, #ffe07a 40%, #d8a937 72%, #8a640f 100%);
+      box-shadow:0 2px 6px rgba(0,0,0,.35); opacity:.9; animation:fall 7.2s linear infinite;
+    }
+    @keyframes fall{0%{transform:translateY(-40px) translateX(0) rotate(0)} 100%{transform:translateY(280px) translateX(40px) rotate(520deg)}}
+    .coin.c1{left:12%; top:-6px;  animation-delay:.2s}
+    .coin.c2{left:28%; top:-16px; animation-delay:1.1s}
+    .coin.c3{left:70%; top:-14px; animation-delay:.8s}
+    .coin.c4{left:86%; top:2px;   animation-delay:2.2s}
 
-    /* ====== CONTAINERS ====== */
-    .wrap{max-width:1080px;margin:0 auto;padding:12px}
+    /* ================= Containers / Cards ================= */
+    .wrap{max-width:1200px;margin:0 auto;padding:14px}
     .card{
-      background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
-      position:relative;
+      background:linear-gradient(180deg,#0c1427ed,#0b1324ef);
+      border:1px solid #2a3754;border-radius:var(--radius);box-shadow:var(--shadow);position:relative; overflow:hidden;
     }
     .card::after{
       content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
-      background:linear-gradient(120deg, transparent 10%, rgba(212,175,55,.35) 50%, transparent 90%);
+      background:linear-gradient(120deg, transparent 10%, #ffd36a33 50%, transparent 90%);
       mask:linear-gradient(#000,#000) padding-box, linear-gradient(#000,#000);
       -webkit-mask-composite: xor; mask-composite: exclude;
     }
-    .inner{padding:14px}
+    .inner{padding:16px}
 
-    .user{display:grid;grid-template-columns:1fr;gap:10px;align-items:center}
-    @media(min-width:560px){ .user{grid-template-columns:1fr auto} }
+    /* ================= User block ================= */
+    .user{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+    @media(max-width:560px){ .user{grid-template-columns:1fr} }
     .hello{font-size:12px;color:var(--muted)}
-    .balance{font-weight:800;color:var(--green);font-size:clamp(18px, 5.2vw, 22px);display:flex;align-items:center;gap:8px}
-    .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .balance-row{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+    .balance-tag{
+      display:inline-flex;align-items:center;gap:6px;
+      background:linear-gradient(180deg,#071021,#0c1428); border:1px solid #2a3754;
+      padding:10px 12px;border-radius:12px; font-weight:800; color:#b7f0c7;
+      box-shadow:inset 0 -1px 0 #0006, 0 8px 24px #0006;
+    }
+    .vip-badge{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;
+      background:linear-gradient(180deg,#ffd36a,#f3b44b); color:#2d1e00;font-weight:900;
+      box-shadow:0 6px 16px #ffca5f55; border:0;
+    }
+    .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
-    /* ====== Game Grid 响应式 ====== */
-    .games{display:grid;gap:12px;grid-template-columns:1fr}
-    @media(min-width:480px){ .games{grid-template-columns:repeat(2,1fr)} }
-    @media(min-width:900px){ .games{grid-template-columns:repeat(3,1fr)} }
+    /* ================= Game Grid ================= */
+    .games{display:grid;gap:14px;grid-template-columns:1fr}
+    @media(min-width:560px){ .games{grid-template-columns:repeat(2,1fr)} }
+    @media(min-width:980px){ .games{grid-template-columns:repeat(3,1fr)} }
 
     .game{
-      display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;
-      background:linear-gradient(180deg,#ffffff,#fffef9);border:1px solid var(--line);
-      transition:transform .15s ease, box-shadow .15s ease; position:relative; overflow:hidden;
+      display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:16px;
+      background:linear-gradient(180deg,#0f182f,#0d152a); border:1px solid #283759;
+      transition:transform .18s ease, box-shadow .18s ease; position:relative; overflow:hidden; min-height:172px;
     }
+    .game:hover{ transform:translateY(-2px); box-shadow:0 18px 42px rgba(0,0,0,.35); }
     .game::before{
-      content:""; position:absolute; right:-18px; top:-18px; width:120px; height:120px; opacity:.12;
+      content:""; position:absolute; right:-16px; top:-16px; width:140px; height:140px; opacity:.16; border-radius:50%;
       background:
-        radial-gradient(circle at 50% 70%, var(--lotus) 0 18%, transparent 18.5% 100%),
-        radial-gradient(circle at 18% 56%, var(--saffron) 0 18%, transparent 18.5% 100%),
-        radial-gradient(circle at 82% 56%, var(--marigold) 0 18%, transparent 18.5% 100%);
-      filter:saturate(1.1);
-      border-radius:50%;
+        radial-gradient(circle at 50% 70%, #7c5cff 0 18%, transparent 18.5% 100%),
+        radial-gradient(circle at 18% 56%, #00e5ff 0 18%, transparent 18.5% 100%),
+        radial-gradient(circle at 82% 56%, #ffd36a 0 18%, transparent 18.5% 100%);
+      filter:saturate(1.15);
     }
-    .game:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.06); }
+    .thumb{height:98px;border-radius:12px;position:relative;overflow:hidden;border:1px solid #2a3754;display:grid;place-items:center}
+    .thumb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg,#ffffff05,#ffffff00); pointer-events:none}
+    .thumb.wingo{background:radial-gradient(120% 120% at 0% 0%, #182a48 0, #0e1c33 60%, #0b1424 100%)}
+    .thumb.wheel{background:radial-gradient(120% 120% at 0% 0%, #202a5a 0, #101c37 60%, #0b1424 100%)}
+    .thumb.dice{ background:radial-gradient(120% 120% at 0% 0%, #2a2155 0, #131b35 60%, #0b1424 100%) }
+    .thumb.ab  { background:radial-gradient(120% 120% at 0% 0%, #3c1b24 0, #1a1633 60%, #0b1424 100%) }
 
-    .thumb{
-      height:100px;border-radius:12px;
-      background:radial-gradient(120% 120% at 0% 0%, #fff 0%, #fff7e3 60%, #ffe6b3 100%);
-      border:1px solid #ffe4c7;display:grid;place-items:center;font-size:42px; position:relative; overflow:hidden;
+    /* svg/emoji 装饰 */
+    .chip3d{
+      width:84px;height:84px;border-radius:50%;
+      background:
+        radial-gradient(circle at 50% 55%, #fff 0 12px, transparent 12px),
+        conic-gradient(from 0deg, #00e5ff 0 20%, transparent 20% 40%, #ffd36a 40% 60%, transparent 60% 80%, #7c5cff 80% 100%),
+        radial-gradient(circle at 50% 50%, #051022 0, #0b172d 55%, #18294a 70%, #090f1d 100%);
+      box-shadow:inset 0 0 0 6px #09152d, inset 0 0 30px #0006, 0 16px 28px #0008;
+      transform:rotate(20deg);
     }
-    @media(min-width:560px){ .thumb{height:120px; font-size:46px} }
-
-    .thumb.wheel::after{
-      content:""; position:absolute; width:78px; height:78px; border-radius:50%;
-      border:8px solid #fff; box-shadow:inset 0 0 0 10px #ffbe0b, inset 0 0 0 18px #fb5607, inset 0 0 0 26px #8338ec;
-    }
-    .thumb.dice::after{
-      content:""; position:absolute; width:70px; height:70px; border-radius:10px; background:#fff;
-      box-shadow:0 8px 16px rgba(0,0,0,.15); transform:rotate(15deg);
+    .dice3d{
+      width:74px;height:74px;border-radius:12px;background:#fff;
+      box-shadow:0 16px 26px #0005; transform:rotate(15deg);
       background-image:
-        radial-gradient(circle at 50% 50%, #000 0 6px, transparent 6.2px),
-        radial-gradient(circle at 25% 25%, #000 0 6px, transparent 6.2px),
-        radial-gradient(circle at 75% 75%, #000 0 6px, transparent 6.2px);
+        radial-gradient(circle at 50% 50%, #000 0 7px, transparent 7.2px),
+        radial-gradient(circle at 22% 22%, #000 0 7px, transparent 7.2px),
+        radial-gradient(circle at 78% 78%, #000 0 7px, transparent 7.2px);
       background-repeat:no-repeat; background-position:center, 22% 22%, 78% 78%;
     }
-    .thumb.ab::after{
-      content:""; position:absolute; width:88px; height:60px; border-radius:8px; background:linear-gradient(45deg,#c1121f,#780000);
-      box-shadow:0 8px 16px rgba(0,0,0,.15);
-      -webkit-mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
-      mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
-      padding:8px; border:6px solid #ffd7aa;
+    .wheel3d{
+      width:90px;height:90px;border-radius:50%;
+      border:10px solid #0b1424; box-shadow:inset 0 0 0 10px #ffd36a, inset 0 0 0 20px #ff7b2e, inset 0 0 0 30px #7c5cff, 0 16px 26px #0006;
     }
-    .title{font-weight:800; font-size:clamp(14px, 3.8vw, 16px)}
-    .desc{color:var(--muted);font-size:clamp(12px, 3.6vw, 13px)}
+    .ab3d{
+      width:94px;height:66px;border-radius:10px; background:linear-gradient(45deg,#e23e54,#8c1730);
+      box-shadow:0 16px 26px #0006; border:6px solid #ffd36a;
+    }
+
+    .title{font-weight:800; font-size:16px}
+    .desc{color:#a9b7d4;font-size:13px}
     .game .btn{width:100%; margin-top:auto; height:42px}
 
-    /* ====== Modal / Form ====== */
-    .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.35);z-index:100}
+    /* ================= Modals (glass) ================= */
+    .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#020a1bb3;backdrop-filter:blur(8px);z-index:100}
     .modal{
-      width:100vw; max-width:720px; margin:0 0; background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);
-      max-height:92vh; display:flex; flex-direction:column; overflow:hidden;
+      width:100vw; max-width:760px; margin:0; background:linear-gradient(180deg,#0d1427,#0b1324);
+      border-radius:22px;border:1px solid #2a3754;box-shadow:var(--shadow); max-height:92vh; display:flex;flex-direction:column; overflow:hidden;
     }
-    .modal header{padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800}
-    .modal .body{padding:14px; overflow:auto}
-    .modal footer{display:flex;gap:10px;padding:10px 14px;border-top:1px solid var(--line); justify-content:flex-end; padding-bottom:calc(10px + var(--safe-b))}
-    .form{display:grid;gap:10px}
-    .row{display:grid;grid-template-columns:1fr;gap:10px}
-    @media(min-width:560px){ .row{grid-template-columns:1fr 1fr} }
+    .modal header{padding:14px 16px;border-bottom:1px solid #22304a;font-weight:800;background:#0e172ccc}
+    .modal .body{padding:16px; overflow:auto}
+    .modal footer{display:flex;gap:10px;padding:12px 16px;border-top:1px solid #22304a; justify-content:flex-end; padding-bottom:calc(12px + var(--safe-b))}
     input{
-      width:100%;height:44px;border-radius:12px;border:1px solid var(--line);padding:0 12px;
-      font-size:15px; -webkit-tap-highlight-color: transparent;
+      width:100%;height:46px;border-radius:12px;border:1px solid #253453;background:#0d162b;color:#d8e4ff;padding:0 12px;font-size:15px;
     }
-    .muted{color:var(--muted)}
-    .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed var(--line);border-radius:12px}
-    .kv .k{color:var(--muted)} .kv .v{font-weight:700}
-
     table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid var(--line);font-size:14px}
-    th{background:#fafafa;text-align:left}
-    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
-    .tag.pending{background:#fff7ed;color:#b45309;border-color:#fed7aa}
-    .tag.approved{background:#ecfdf5;color:#065f46;border-color:#bbf7d0}
-    .tag.rejected{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+    th,td{padding:10px;border-bottom:1px solid #203355;font-size:14px}
+    th{background:#0e172c;text-align:left}
 
-    /* VIP 徽章 */
-    .vip-badge{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
-      color:#b45309;font-weight:700;font-size:12px
-    }
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #203355}
+    .tag.pending{background:#2b1b00;color:#ffb74d;border-color:#5a3b00}
+    .tag.approved{background:#062b1a;color:#6be1a3;border-color:#144e36}
+    .tag.rejected{background:#3b0a12;color:#ff97a1;border-color:#6b0e1b}
 
-    /* ==== Deposit Channels ==== */
+    /* Deposit panes */
     .channel-switch{display:flex;gap:8px;margin-bottom:12px; overflow:auto; padding-bottom:2px}
     .channel-btn{
-      padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fafafa;
-      cursor:pointer;font-weight:700; flex:0 0 auto;
+      padding:10px 14px;border:1px solid #253453;border-radius:12px;background:#0d162b;color:#d8e4ff;cursor:pointer;font-weight:700; flex:0 0 auto;
     }
-    .channel-btn.active{background:#fff;border-color:#ffddbc;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+    .channel-btn.active{background:#101b35; box-shadow:0 10px 22px #0005; border-color:#394c77}
     .dep-pane{display:none}
     .dep-pane.active{display:block}
-    .addr-row{display:flex;gap:8px}
-    .addr-row input{flex:1}
-    .qr-hint{font-size:12px;color:var(--muted)}
+    .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed #2a3a60;border-radius:12px;background:#0c1427}
+    .kv .k{color:#9bb0d8} .kv .v{font-weight:800}
 
-    /* ====== Floating Buttons：安装 & 油灯 安全区避让 ====== */
+    /* Floating buttons */
     #installAppBtn{
-      position:fixed; right:12px; bottom:calc(14px + var(--safe-b)); z-index:9999;
+      position:fixed; right:14px; bottom:calc(16px + var(--safe-b)); z-index:9999;
       padding:12px 14px; border:0; border-radius:12px;
-      background:#22d3ee; color:#0b1220; font-weight:900;
-      box-shadow:0 8px 24px #22d3ee55; font-size:14px;
+      background:linear-gradient(180deg,#00e5ff,#00c3e2); color:#03202a; font-weight:900;
+      box-shadow:0 10px 30px #00e5ff66; font-size:14px;
     }
+
+    /* Diya (good luck) */
     .diya{
-      position:fixed; left:12px; bottom:calc(14px + var(--safe-b)); width:50px; height:50px; z-index:20;
-      border-radius:14px; background:radial-gradient(circle at 50% 60%, #ffe7b3, #ffc46b);
-      border:1px solid #ffd99e; box-shadow:0 8px 22px rgba(255,140,0,.25);
-      display:grid; place-items:center;
+      position:fixed; left:14px; bottom:calc(16px + var(--safe-b)); width:54px; height:54px; z-index:20;
+      border-radius:16px; background:radial-gradient(circle at 50% 60%, #ffdf9a, #ffb94f);
+      border:1px solid #fbd27a; box-shadow:0 12px 28px rgba(255,140,0,.25); display:grid; place-items:center;
     }
     .flame{
       width:16px; height:24px; border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
       background:radial-gradient(circle at 50% 20%, #fff 0, #ffe082 40%, #ff8f00 70%, transparent 72%);
-      animation:flicker 1.6s ease-in-out infinite;
-      filter:drop-shadow(0 0 12px rgba(255,159,0,.6));
+      animation:flicker 1.6s ease-in-out infinite; filter:drop-shadow(0 0 12px rgba(255,159,0,.6));
     }
-    @keyframes flicker{ 0%,100%{ transform:translateY(0) scale(1) } 50%{ transform:translateY(-1px) scale(1.04) } }
+    @keyframes flicker{0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-1px) scale(1.04)}}
   </style>
 </head>
 <body>
 
-<button id="installAppBtn" aria-label="Install Ganeshcasino">Install Ganeshcasino</button>
+  <!-- Install PWA -->
+  <button id="installAppBtn" aria-label="Install Ganeshcasino">Install Ganeshcasino</button>
+  <script>
+    const btn = document.getElementById('installAppBtn');
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+    btn.addEventListener('click', async () => {
+      const ua = navigator.userAgent.toLowerCase();
+      const isIOS = /iphone|ipad|ipod/.test(ua);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (deferredPrompt) {
+        btn.disabled = true;
+        try { deferredPrompt.prompt(); await deferredPrompt.userChoice; }
+        finally { deferredPrompt = null; btn.disabled = false; }
+        return;
+      }
+      if (isIOS && isSafari) {
+        alert('On iPhone:\n1) Open this site in Safari\n2) Tap the Share button (⬆️)\n3) Choose "Add to Home Screen"');
+      } else if (isIOS) {
+        alert('To install on iPhone, open this site in Safari, then use "Add to Home Screen".');
+      } else {
+        alert('Use your browser menu → "Add to Home screen" or "Install app".');
+      }
+    });
+  </script>
 
-<script>
-  const btn = document.getElementById('installAppBtn');
-  let deferredPrompt = null;
-  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
-  btn.addEventListener('click', async () => {
-    const ua = navigator.userAgent.toLowerCase();
-    const isIOS = /iphone|ipad|ipod/.test(ua);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (deferredPrompt) {
-      btn.disabled = true;
-      try { deferredPrompt.prompt(); await deferredPrompt.userChoice; }
-      finally { deferredPrompt = null; btn.disabled = false; }
-      return;
-    }
-    if (isIOS && isSafari) {
-      alert('On iPhone:\n1) Open this site in Safari\n2) Tap the Share button (⬆️)\n3) Choose "Add to Home Screen"');
-    } else if (isIOS && !isSafari) {
-      alert('To install on iPhone, open this site in Safari, then use "Add to Home Screen".');
-    } else {
-      alert('If no install panel appears, use your browser menu and choose "Add to Home screen" or "Install app". If you already installed, open it from your home screen.');
-    }
-  });
-</script>
-
+  <!-- NAV -->
   <div class="nav">
     <div class="nav-inner">
       <div class="brand">
         <div class="logo">🪔</div>
-        <div>Ganeshcasino Game</div>
+        <div class="brand-name">Ganeshcasino</div>
       </div>
       <div class="actions">
         <a id="cs-link" class="btn ghost" href="https://t.me/customerservice7777777" target="_blank">💬 Customer Service</a>
-        <button id="open-login" class="btn">Login / Signup</button>
+        <button id="open-login" class="btn primary">Login / Signup</button>
         <button id="logout-btn" class="btn ghost" style="display:none">Logout</button>
       </div>
     </div>
@@ -315,17 +343,18 @@
   <section class="hero">
     <div class="hero-banner">
       <div class="hero-copy">
-        <div class="hero-title">Blessings of Lakshmi & Lord Ganesha</div>
-        <div class="hero-sub">Join the festive lobby—lucky lotus, shining coins, and thrilling Indian-style games.</div>
-        <div class="hero-badges">
-          <span class="hb">🪷 Auspicious Lotus</span>
-          <span class="hb">🪙 Golden Coins</span>
-          <span class="hb">🐘 Ganesh Fortune</span>
+        <div class="hero-title">Play Smart. Win Bright.</div>
+        <div class="hero-sub">Premium Indian-style games with lightning results and instant balance updates.</div>
+        <div class="hero-cta">
+          <span class="pill">✅ Fast settlement</span>
+          <span class="pill">🔒 Secure wallet</span>
+          <span class="pill">🕒 24/7 support</span>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">
+        <div class="glow"></div>
         <div class="ganesh-wrap">
-          <svg class="ganesh" viewBox="0 0 512 512" fill="none" stroke="#a15b00" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="ganesh" viewBox="0 0 512 512" fill="none" stroke="#ffc86d" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
             <path d="M256 60c-40 0-72 32-72 72 0 24 12 46 30 59-21 8-46 25-46 61 0 43 34 78 88 78s88-35 88-78c0-36-25-53-46-61 18-13 30-35 30-59 0-40-32-72-72-72z"/>
             <path d="M168 195c-45 16-72 52-72 98 0 62 54 112 160 112s160-50 160-112c0-46-27-82-72-98"/>
             <path d="M168 195c10-16 34-36 56-40"/>
@@ -334,14 +363,17 @@
             <path d="M140 372c22 16 64 34 116 34s94-18 116-34"/>
             <path d="M256 60V36M212 68l-8-20M300 68l8-20"/>
           </svg>
+          <div class="coins">
+            <div class="coin c1"></div><div class="coin c2"></div><div class="coin c3"></div><div class="coin c4"></div>
+          </div>
         </div>
-        <div class="coin c1"></div><div class="coin c2"></div><div class="coin c3"></div><div class="coin c4"></div>
       </div>
     </div>
   </section>
 
+  <!-- CONTENT -->
   <div class="wrap">
-    <!-- 用户卡 -->
+    <!-- User Card -->
     <div class="card">
       <div class="inner user">
         <div>
@@ -354,57 +386,57 @@
             <button id="open-chpass" class="btn ghost">Change Password</button>
           </div>
         </div>
-        <div class="balance">
-          ₹<span id="balance">0</span>
+        <div class="balance-row">
+          <span class="balance-tag">₹<span id="balance">0</span></span>
           <span id="vip-badge" class="vip-badge" title="VIP Level">VIP 0</span>
         </div>
       </div>
     </div>
 
-    <!-- 游戏区 -->
-    <div class="card" style="margin-top:12px">
+    <!-- Games -->
+    <div class="card" style="margin-top:14px">
       <div class="inner">
         <div style="font-weight:800;margin-bottom:8px">🎮 Select a Game</div>
 
-     <div class="game">
-  <div class="thumb wingo">🟢🟣🔴</div>
-  <div class="title">WinGo 2 minutes</div>
-  <div class="desc">Pick Green/Red/Violet, Big/Small, or 0–9. Draw every 2 minutes (IST).</div>
-  <a class="btn primary" href="./color2m.html">Play</a>
-</div> 
-
-        
-
-        <div class="games">
-
-          <div class="game">
-          <div class="thumb wheel">🎡</div>
-          <div class="title">Mini Wheel</div>
-          <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
-          <a class="btn primary" href="./mini-wheel.html">Play</a>
+        <!-- WinGo 突出卡片 -->
+        <div class="game" style="border-color:#3e2f6b;background:linear-gradient(180deg,#111538,#0e122f)">
+          <div class="thumb wingo"><div class="chip3d"></div></div>
+          <div class="title">WinGo · 2 minutes</div>
+          <div class="desc">Pick Green/Red/Violet, Big/Small, or 0–9. Draw every 2 minutes (IST).</div>
+          <a class="btn primary" href="./color2m.html">Play</a>
         </div>
+
+        <div class="games" style="margin-top:14px">
           <div class="game">
-            <div class="thumb dice">🎲</div>
+            <div class="thumb wheel"><div class="wheel3d"></div></div>
+            <div class="title">Mini Wheel</div>
+            <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
+            <a class="btn primary" href="./mini-wheel.html">Play</a>
+          </div>
+
+          <div class="game">
+            <div class="thumb dice"><div class="dice3d"></div></div>
             <div class="title">Lucky Dice</div>
             <div class="desc">Bet on Big/Small or exact number. Results every minute (IST).</div>
             <a class="btn primary" href="./dice.html">Play</a>
           </div>
 
           <div class="game">
-            <div class="thumb ab">🃏</div>
+            <div class="thumb ab"><div class="ab3d"></div></div>
             <div class="title">Andar Bahar</div>
             <div class="desc">Bet on Andar or Bahar. Result every minute (IST).</div>
             <a class="btn primary" href="./ab.html">Play</a>
           </div>
 
           <div class="game">
-            <div class="thumb">🧧</div>
+            <div class="thumb"><div class="chip3d" style="filter:hue-rotate(120deg)"></div></div>
             <div class="title">Coming Soon</div>
             <div class="desc">More India-style games are on the way.</div>
             <button class="btn" disabled>Stay tuned</button>
           </div>
+
           <div class="game">
-            <div class="thumb">💎</div>
+            <div class="thumb"><div class="chip3d" style="filter:hue-rotate(220deg)"></div></div>
             <div class="title">Coming Soon</div>
             <div class="desc">Unlock new experiences for your players.</div>
             <button class="btn" disabled>Stay tuned</button>
@@ -414,10 +446,12 @@
     </div>
   </div>
 
-  <!-- 浮动油灯 -->
+  <!-- Diya -->
   <div class="diya" title="Good luck"><div class="flame"></div></div>
 
-  <!-- 登录 Modal -->
+  <!-- ===== Modals (IDs 保持不变) ===== -->
+
+  <!-- Login Modal -->
   <div id="login-modal" class="modal-bg">
     <div class="modal">
       <header>Login / Signup</header>
@@ -436,17 +470,18 @@
     </div>
   </div>
 
-  <!-- 存款 Modal -->
+  <!-- Deposit Modal -->
   <div id="dep-modal" class="modal-bg">
     <div class="modal">
       <header>Deposit</header>
       <div class="body">
         <div class="channel-switch">
           <button id="btn-inr"  class="channel-btn active">INR · UPI / Bank</button>
-          <button id="btn-usdt" class="channel-btn">USDT · Crypto·1USDT=100rs</button>
+          <button id="btn-usdt" class="channel-btn">USDT · TRC20 · 1USDT=100rs</button>
         </div>
+
         <div id="pane-inr" class="dep-pane active">
-          <div class="muted" style="margin-bottom:8px">Please transfer to the account below, then submit UTR and amount.</div>
+          <div class="muted" style="margin-bottom:8px">Transfer to the account below, then submit UTR and amount.</div>
           <div id="dep-bank" class="form" style="margin-bottom:8px">
             <div class="kv"><div class="k">Name</div><div class="v">—</div></div>
             <div class="kv"><div class="k">AC</div><div class="v">—</div></div>
@@ -461,12 +496,11 @@
 
         <div id="pane-usdt" class="dep-pane">
           <div class="form">
-            <div class="muted" style="margin-bottom:6px">USDT (TRC20) Deposit Address-1USDT=100rs</div>
-            <div class="addr-row">
-              <input id="usdt-address" type="text" readonly placeholder="Loading address…" />
-              <button id="copy-usdt" class="btn">Copy</button>
+            <div class="muted" style="margin-bottom:6px">USDT (TRC20) Deposit Address · 1USDT=100rs</div>
+            <div class="kv"><div class="k">Address</div><div class="v" style="max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><input id="usdt-address" type="text" readonly placeholder="Loading address…" /></div></div>
+            <div class="channel-switch" style="margin:8px 0 0 0">
+              <button id="copy-usdt" class="btn">Copy Address</button>
             </div>
-            <div class="qr-hint">* Network is fixed to TRC20. Deposits on other chains will be lost.1USDT=100rs</div>
             <input id="usdt-txid" type="text" placeholder="TXID / Transaction Hash" />
             <input id="usdt-amount" type="number" min="0.01" step="0.01" placeholder="Amount (USDT)" />
           </div>
@@ -479,22 +513,22 @@
     </div>
   </div>
 
-  <!-- 提款 Modal -->
+  <!-- Withdraw Modal -->
   <div id="wd-modal" class="modal-bg">
     <div class="modal">
       <header>Withdraw</header>
       <div class="body">
         <div class="form">
           <div class="kv" id="rollover-kv"><div class="k">Rollover Needed</div><div class="v" id="rollover-val">0.00</div></div>
-          <div class="row">
+          <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <input id="w-name" placeholder="Your Name" />
             <input id="w-ac" placeholder="AC Number" />
           </div>
-          <div class="row">
+          <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <input id="w-ifsc" placeholder="IFSC Code" />
             <input id="w-upi" placeholder="UPI ID (optional)" />
           </div>
-          <div class="row">
+          <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <input id="wd-amount" type="number" min="1" placeholder="Amount ₹" />
             <button id="wd-save" class="btn">Save Profile</button>
           </div>
@@ -508,7 +542,7 @@
     </div>
   </div>
 
-  <!-- 记录 Modal -->
+  <!-- History Modal -->
   <div id="history-modal" class="modal-bg">
     <div class="modal">
       <header>My Records (Last 3 Days)</header>
@@ -544,7 +578,7 @@
     </div>
   </div>
 
-  <!-- 修改密码 Modal -->
+  <!-- Change Password Modal -->
   <div id="chpass-modal" class="modal-bg">
     <div class="modal">
       <header>Change Password</header>
@@ -563,6 +597,7 @@
     </div>
   </div>
 
+  <!-- ===== 逻辑：保持你的原生 JS 行为不变（只移植 UI） ===== -->
   <script type="module">
     import { supabase } from './supabase-config.js';
 
@@ -588,7 +623,7 @@
           loginEmail = $('login-email'), loginPass = $('login-pass');
 
     const depModal = $('dep-modal'), depCancel = $('dep-cancel'), depSubmit = $('dep-submit'),
-          depUtr = $('dep-utr'), depAmount = $('dep-amount'), depBank = $('dep-bank');
+          depUtr = $('dep-utr'), depAmount = $('dep-amount');
 
     const wdModal = $('wd-modal'), wdCancel = $('wd-cancel'), wdSubmit = $('wd-submit'),
           wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
@@ -647,22 +682,10 @@
     openChpass.onclick = ()=> show(chpassModal, true);
     chpassCancel.onclick = ()=> show(chpassModal, false);
 
-    btnINR.onclick = ()=>{
-      depChannel = 'inr';
-      btnINR.classList.add('active'); btnUSDT.classList.remove('active');
-      paneINR.classList.add('active'); paneUSDT.classList.remove('active');
-    };
-    btnUSDT.onclick = ()=>{
-      depChannel = 'usdt';
-      btnUSDT.classList.add('active'); btnINR.classList.remove('active');
-      paneUSDT.classList.add('active'); paneINR.classList.remove('active');
-    };
+    btnINR.onclick = ()=>{ depChannel='inr'; btnINR.classList.add('active'); btnUSDT.classList.remove('active'); paneINR.classList.add('active'); paneUSDT.classList.remove('active'); };
+    btnUSDT.onclick = ()=>{ depChannel='usdt'; btnUSDT.classList.add('active'); btnINR.classList.remove('active'); paneUSDT.classList.add('active'); paneINR.classList.remove('active'); };
 
-    usdtCopy.onclick = async ()=>{
-      try{
-        if(usdtAddr.value){ await navigator.clipboard.writeText(usdtAddr.value); toast('Address copied'); }
-      }catch{ toast('Copy failed'); }
-    };
+    usdtCopy.onclick = async ()=>{ try{ if(usdtAddr.value){ await navigator.clipboard.writeText(usdtAddr.value); toast('Address copied'); } }catch{ toast('Copy failed'); } };
 
     let currentUser = null;
     function setAuthUI(loggedIn){
@@ -725,7 +748,7 @@
       $('w-ifsc').value = data?.ifsc || '';
       $('w-upi').value  = data?.upi || '';
       $('wd-amount').value = '';
-      $('rollover-val').textContent = fmt2(data?.turnover_remaining);
+      $('rollover-val').textContent = Number(data?.turnover_remaining||0).toFixed(2);
     }
 
     depSubmit.onclick = async ()=>{
@@ -738,9 +761,9 @@
           if(!utr || !amountInr || amountInr <= 0) return toast('Enter UTR & amount');
           utrStr = `[INR] ${utr}`; amtNum = amountInr;
         } else {
-          const addr = String(usdtAddr.value||'').trim();
-          const txid = String(usdtTxid.value||'').trim();
-          const amt  = Number(usdtAmount.value);
+          const addr = String(($('usdt-address')?.value)||'').trim();
+          const txid = String(($('usdt-txid')?.value)||'').trim();
+          const amt  = Number(($('usdt-amount')?.value));
           if(!addr) return toast('No TRC20 address configured');
           if(!txid) return toast('Enter transaction hash (TXID)');
           if(!amt || amt <= 0) return toast('Enter USDT amount');
@@ -751,7 +774,8 @@
         }]);
         if (error) return toast('Submit failed: ' + error.message);
         $('dep-utr').value=''; $('dep-amount').value='';
-        usdtTxid.value=''; usdtAmount.value='';
+        if ($('usdt-txid')) $('usdt-txid').value='';
+        if ($('usdt-amount')) $('usdt-amount').value='';
         show(depModal,false);
         toast('✅ Recharge request submitted.');
         if (historyModal.style.display === 'flex') await loadRecentRecords();
@@ -798,7 +822,7 @@
         .order('created_at', { ascending: false }).limit(100);
       if (depErr) {
         depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">Load failed: ${depErr.message}</td></tr>`;
-      } else if (!dep || dep.length === 0){
+      } else if (!dep?.length){
         depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
       } else {
         depositsTbody.innerHTML = dep.map(r => `
@@ -816,7 +840,7 @@
         .order('created_at', { ascending: false }).limit(100);
       if (wdErr) {
         withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">Load failed: ${wdErr.message}</td></tr>`;
-      } else if (!wd || wd.length === 0){
+      } else if (!wd?.length){
         withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
       } else {
         withdrawalsTbody.innerHTML = wd.map(r => `
@@ -847,6 +871,7 @@
       }catch(e){ toast('Update failed: ' + (e?.message || e)); }
     };
 
+    // boot
     (async ()=>{
       const { data:{ user } } = await supabase.auth.getUser();
       if (user){ currentUser=user; await afterLogin(); } else { setAuthUI(false); }
