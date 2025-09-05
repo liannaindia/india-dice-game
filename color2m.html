@@ -252,7 +252,24 @@
   }
   return secsToNextBucket(); // 兜底
 }
+// === 判断期号是否属于“过去期” ===
+// 依赖：serverPrevRound（由 RPC color2m_prev_round_ist 周期性赋值）
+//      displayRoundNumber()（你已有，用于本机当前期）
+function isPastRound(roundNumber) {
+  const rn = String(roundNumber || '');
+  if (rn.length !== 12) return false;
 
+  // 优先用服务器锚点：<= 上一期都算过去期
+  if (typeof serverPrevRound === 'string' && serverPrevRound.length === 12) {
+    return rn <= serverPrevRound;
+  }
+
+  // 兜底：与本机当前期比较
+  const current = String(displayRoundNumber());
+  return rn < current;
+}
+
+    
 
     /* ===================== RULES ===================== */
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
