@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -196,8 +196,6 @@
     const ODDS = { color:{green:2, red:2, violet:4.5}, number:9, size:{big:2, small:2} };
     const POLL_MS = 1000;         // 兜底轮询更快
 
-
-
     /* ===================== STATE ===================== */
     let currentUser = null;
     let userBalance = 0;
@@ -242,34 +240,20 @@
             hh=+round.slice(8,10), mi=+round.slice(10,12);
       return Date.UTC(y,m,d,hh,mi);
     }
+
+    /* ===================== COUNTDOWN ===================== */
     function secondsToNextCutover(){
-  if (serverPrevRound){
-    // 当前期开始 = 上一期开始 + 2 分钟
-    const currentStartMs = roundToUtcViewMs(serverPrevRound) + 2*60*1000;
-    // 当前期结束 = 当前期开始 + 2 分钟
-    const nextChangeMs   = currentStartMs + 2*60*1000;   // ← 这里原来是 +4 分钟，导致跳 2:01/2:02
-    return Math.max(0, Math.floor((nextChangeMs - istNowUtcView().getTime())/1000));
-  }
-  return secsToNextBucket(); // 兜底
-}
-// === 判断期号是否属于“过去期” ===
-// 依赖：serverPrevRound（由 RPC color2m_prev_round_ist 周期性赋值）
-//      displayRoundNumber()（你已有，用于本机当前期）
-function isPastRound(roundNumber) {
-  const rn = String(roundNumber || '');
-  if (rn.length !== 12) return false;
-
-  // 优先用服务器锚点：<= 上一期都算过去期
-  if (typeof serverPrevRound === 'string' && serverPrevRound.length === 12) {
-    return rn <= serverPrevRound;
-  }
-
-  // 兜底：与本机当前期比较
-  const current = String(displayRoundNumber());
-  return rn < current;
-}
-
-    
+      if (serverPrevRound && String(serverPrevRound).length === 12){
+        // 上一期开始 → 本期开始 → 本期结束
+        const prevStart = roundToUtcViewMs(serverPrevRound);
+        const currStart = prevStart + 2*60*1000;
+        const currEnd   = currStart + 2*60*1000;
+        const left = Math.floor((currEnd - istNowUtcView().getTime())/1000);
+        return Math.max(0, Math.min(left, 119)); // 夹在 [0,119] 防抖
+      }
+      const left = Math.floor((nextBucketIST() - istNowUtcView())/1000);
+      return Math.max(0, Math.min(left, 119));
+    }
 
     /* ===================== RULES ===================== */
     const colorOf = (n) => (n===0||n===5? 'violet' : (n%2? 'red' : 'green'));
@@ -290,7 +274,7 @@ function isPastRound(roundNumber) {
         btn.textContent = 'Sign out';
         await refreshBalance();
         setupRealtimeForMyBets();           // 注单变化 → 自动更新余额/我的下注
-        setupRealtimeForUserBalance();      // NEW: 直接监听 users 表余额变化
+        setupRealtimeForUserBalance();      // 监听 users 表余额变化
       } else {
         emailEl.textContent = 'Guest';
         btn.textContent = 'Sign in';
@@ -308,7 +292,6 @@ function isPastRound(roundNumber) {
       if(currentUser){ await supabase.auth.signOut(); location.reload(); } else { location.href = './index.html'; }
     });
 
-    // NEW: 监听 users 表当前用户行的 UPDATE，余额改动时即刻反映
     function setupRealtimeForUserBalance(){
       if(!currentUser) return;
       try{
@@ -410,7 +393,8 @@ function isPastRound(roundNumber) {
       const { data, error } = await q;
       if(error){ console.error(error); return; }
 
-      const past = (data || []).filter(r => isPastRound(r.round_number)).slice(0,10);
+      // 仅保留有开奖结果的记录
+      const past = (data || []).filter(r => r.result_number !== null).slice(0,10);
 
       renderEmptyState(past.length>0);
       recentWrap.innerHTML='';
@@ -425,22 +409,24 @@ function isPastRound(roundNumber) {
       [0,800,1600,3000,5000,8000].forEach(delay => setTimeout(()=>refreshBalance(), delay));
     }
 
-    // Realtime: 监听 INSERT/UPDATE，但忽略“当前/未来期”
+    // Realtime: 只接收“过去期且已有结果”的变更
     (function setupRealtimeRounds(){
       try{
         const ch = supabase.channel('color2m_rounds_changes');
         ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_rounds'}, payload => {
           const r = payload.new;
-          if (!isPastRound(r.round_number)) return;
+          if (r.result_number == null) return;                        // 必须有结果
+          if (serverPrevRound && r.round_number > serverPrevRound) return; // 只接收过去期
           addBall(r.result_number); pushGameRow(r.round_number, r.result_number);
-          refreshBalance();               // 原有
-          triggerQuickBalanceSweep();     // NEW: 扫频兜底
+          refreshBalance();
+          triggerQuickBalanceSweep();
         });
         ch.on('postgres_changes', {event:'UPDATE', schema:'public', table:'color2m_rounds'}, payload => {
           const r = payload.new;
-          if (!isPastRound(r.round_number)) return;
+          if (r.result_number == null) return;
+          if (serverPrevRound && r.round_number > serverPrevRound) return;
           fetchGameHistory(); refreshBalance();
-          triggerQuickBalanceSweep();     // NEW
+          triggerQuickBalanceSweep();
         });
         ch.subscribe();
       }catch(e){ console.warn('Realtime not enabled', e); }
@@ -483,9 +469,9 @@ function isPastRound(roundNumber) {
       try{
         const ch = supabase.channel(`color2m_bets_user_${currentUser.id}`);
         ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'color2m_bets', filter:`user_id=eq.${currentUser.id}`},
-          () => { fetchMyBets(); refreshBalance(); triggerQuickBalanceSweep(); }); // NEW: 扫频
+          () => { fetchMyBets(); refreshBalance(); triggerQuickBalanceSweep(); });
         ch.on('postgres_changes', {event:'UPDATE', schema:'public', table:'color2m_bets', filter:`user_id=eq.${currentUser.id}`},
-          () => { fetchMyBets(); refreshBalance(); triggerQuickBalanceSweep(); }); // NEW: 扫频
+          () => { fetchMyBets(); refreshBalance(); triggerQuickBalanceSweep(); });
         ch.subscribe();
       }catch(e){ console.warn('Realtime bets not enabled', e); }
     }
