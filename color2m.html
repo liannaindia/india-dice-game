@@ -196,16 +196,6 @@
     const ODDS = { color:{green:2, red:2, violet:4.5}, number:9, size:{big:2, small:2} };
     const POLL_MS = 1000;         // 兜底轮询更快
 
-    <script>
-  window.isPastRound = function (roundNumber) {
-    if (window.serverPrevRound) {
-      return String(roundNumber) <= window.serverPrevRound;
-    }
-    return String(roundNumber) < String(
-      window.displayRoundNumber ? window.displayRoundNumber() : ""
-    );
-  };
-</script>
 
 
     /* ===================== STATE ===================== */
