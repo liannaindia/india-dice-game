@@ -4,275 +4,276 @@
   <meta charset="UTF-8" />
   <title>India Game Lobby</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <script type="module" src="./supabase-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-  
-  <!-- PWA manifest -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0b1220">
 
-  <!-- iOS PWA -->
+  <!-- Supabase -->
+  <script type="module" src="./supabase-config.js"></script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b0f19">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ganeshcasino">
   <link rel="apple-touch-icon" href="/icons/apple-icon-180.png">
 
-  <!-- 注册 Service Worker -->
+  <!-- Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js');
-      });
+      addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
     }
   </script>
 
   <style>
-    /* ========= Brand + Festive Palette ========= */
+    /* ================= Luxe Casino Theme ================= */
     :root{
-      --bg:#fff8ef; --card:#ffffff; --text:#0f172a; --muted:#6b7280;
-      --line:#efe6d6; --primary:#ff6f00; --primary-press:#e65f00;
-      --green:#16a34a; --blue:#2563eb; --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08);
-      --saffron:#ff9933; --lotus:#ff4d6d; --marigold:#ffb703; --deep-red:#9d0208; --royal:#6a2c70;
-      --gold:#d4af37; --gold-2:#f6e27a;
+      --bg1:#0b0f19; --bg2:#11172a; --glass:rgba(17,23,42,.55);
+      --text:#e6ebff; --muted:#93a1c8; --line:rgba(255,255,255,.08);
+      --gold:#d4af37; --gold-2:#f6e27a; --amber:#ffbf69;
+      --primary:#b98900; --primary-press:#936f00; --emerald:#2dd4bf;
+      --danger:#ff4d4f; --success:#22c55e;
+      --radius:18px; --shadow:0 20px 40px rgba(0,0,0,.35);
       --safe-b: env(safe-area-inset-bottom, 0px);
       --safe-t: env(safe-area-inset-top, 0px);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial; color:var(--text);
-      /* 背景 */
+      margin:0; font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial;
+      color:var(--text);
       background:
-        radial-gradient(1200px 520px at 120% -10%, #ffe7c6 0%, transparent 60%),
-        radial-gradient(1200px 520px at -20% 0%, #ffe1e8 0%, transparent 55%),
-        linear-gradient(180deg,#fff8ef 0%,#fff 30%,#fff8ef 100%);
+        radial-gradient(1200px 600px at -10% -10%, #1a2137 0%, transparent 55%),
+        radial-gradient(1200px 600px at 110% 0%, #1a2137 0%, transparent 55%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
+      overflow-x:hidden;
     }
+    /* subtle glitter dots */
     body::before{
-      content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
+      content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
       background-image:
-        radial-gradient(circle at 20px 20px, rgba(212,175,55,0.14) 2px, transparent 2.2px),
-        radial-gradient(circle at 60px 60px, rgba(246,226,122,0.14) 2px, transparent 2.2px);
-      background-size:80px 80px, 80px 80px;
-      mix-blend-mode:multiply;
+        radial-gradient(circle at 20% 10%, rgba(246,226,122,.13) 2px, transparent 2.4px),
+        radial-gradient(circle at 70% 25%, rgba(212,175,55,.10) 2px, transparent 2.4px),
+        radial-gradient(circle at 40% 70%, rgba(255,191,105,.08) 2px, transparent 2.4px);
+      background-size:120px 120px, 160px 160px, 200px 200px;
+      mix-blend-mode:screen;
     }
 
-    /* ====== NAV ====== */
+    /* ================= Nav (Glass + Gold edge) ================= */
     .nav{
-      position:sticky; top:0; z-index:50; backdrop-filter:saturate(160%) blur(10px);
-      background:rgba(255,248,239,.9); border-bottom:1px solid var(--line);
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: saturate(160%) blur(14px);
+      background:linear-gradient(180deg, rgba(10,12,22,.85), rgba(10,12,22,.55));
+      border-bottom:1px solid var(--line);
       padding-top: var(--safe-t);
     }
     .nav-inner{
-      max-width:1080px; margin:0 auto; padding:10px 12px;
-      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      max-width:1200px; margin:0 auto; padding:12px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
     }
-    .brand{display:flex; align-items:center; gap:8px; font-weight:800; font-size:clamp(14px, 2.6vw, 18px);}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:clamp(14px, 2.6vw, 18px);}
     .logo{
-      width:34px;height:34px;border-radius:12px;display:grid;place-items:center;
-      border:1px solid #ffd7aa; background:
-      radial-gradient(120% 120% at 0% 0%, #fff 0%, #fff7e3 60%, #ffe6b3 100%);
-      box-shadow:inset 0 1px 0 #fff, 0 6px 14px rgba(0,0,0,.06);
+      width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+      border:1px solid rgba(212,175,55,.4);
+      background: radial-gradient(160% 160% at 0% 0%, #222 0%, #161a2a 60%, #101524 100%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 10px 24px rgba(0,0,0,.35);
       position:relative; overflow:hidden;
     }
     .logo::after{
-      content:""; position:absolute; left:-5%; top:-5%; width:110%; height:110%;
-      background:
-        conic-gradient(from 0deg at 50% 60%, rgba(255,157,0,.15), transparent 60%),
-        conic-gradient(from 120deg at 50% 60%, rgba(255,0,98,.12), transparent 60%),
-        conic-gradient(from 240deg at 50% 60%, rgba(255,193,7,.12), transparent 60%);
-      mix-blend-mode:multiply;
+      content:""; position:absolute; inset:-1px;
+      border-radius:12px;
+      background: conic-gradient(from 0deg, rgba(212,175,55,.0), rgba(212,175,55,.35), rgba(246,226,122,.0) 60%);
+      filter:blur(8px); mix-blend-mode:screen;
+      animation:spin 6s linear infinite;
     }
-    .actions{display:flex;gap:6px;flex-wrap:nowrap}
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+
+    .actions{display:flex;gap:8px;flex-wrap:nowrap}
     .btn{
-      display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 12px;
-      border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700;
-      font-size:clamp(12px, 2.7vw, 14px);
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 14px;
+      border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);cursor:pointer;font-weight:700;
+      font-size:clamp(12px, 2.6vw, 14px); color:var(--text);
+      transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
     }
-    .btn.primary{background:var(--primary);color:#fff;border:0}
-    .btn.primary:active{background:var(--primary-press)}
-    .btn.ghost{background:#fff}
-    a.btn{text-decoration:none;color:inherit}
+    .btn:hover{ transform:translateY(-1px); box-shadow:0 10px 20px rgba(0,0,0,.3) }
+    .btn.primary{background:linear-gradient(180deg,#caa53b,#a88315); border:0; color:#120a00}
+    .btn.primary:active{background:linear-gradient(180deg,#a88315,#7a630f)}
+    .btn.ghost{background:rgba(255,255,255,.06)}
 
-    /* ====== HERO ====== */
-    .hero{max-width:1080px;margin:8px auto 0;padding:0 12px}
+    /* ================= Hero (copy + model image) ================= */
+    .hero{max-width:1200px;margin:14px auto 0;padding:0 16px;position:relative;z-index:1}
     .hero-banner{
-      position:relative;border-radius:18px;border:1px solid var(--line);overflow:hidden;
-      background:
-        radial-gradient(1200px 420px at -10% 0%, rgba(255,230,179,.6) 0%, transparent 60%),
-        linear-gradient(90deg, #fff, #fff9f1 40%, #fff);
+      position:relative;border-radius:22px;border:1px solid rgba(212,175,55,.25);overflow:hidden;
+      background:linear-gradient(145deg, rgba(255,213,79,.08), rgba(255,255,255,.02));
       box-shadow:var(--shadow);
-      display:grid; grid-template-columns:1fr; gap:0; align-items:center;
+      display:grid; grid-template-columns:1fr; align-items:stretch;
     }
-    /* ≥820px 才并排 */
-    @media(min-width:820px){
-      .hero-banner{grid-template-columns:1.1fr .9fr; gap:10px;}
+    @media(min-width:920px){ .hero-banner{ grid-template-columns:1.1fr .9fr } }
+
+    .hero-copy{padding:22px 18px 18px 18px}
+    .hero-title{font-weight:800; font-size:clamp(20px, 5vw, 32px); line-height:1.22}
+    .hero-sub{color:var(--muted); margin-top:8px; font-size:clamp(12px, 3.4vw, 14px)}
+    .hero-badges{margin-top:12px; display:flex; gap:8px; flex-wrap:wrap}
+    .hb{
+      padding:6px 10px; border-radius:999px; font-weight:700; font-size:12px;
+      color:#130b00;
+      background:linear-gradient(180deg,#f6e27a,#d4af37); border:1px solid rgba(246,226,122,.6);
+      box-shadow:0 6px 16px rgba(212,175,55,.25);
     }
-    .hero-copy{padding:16px 14px 14px 14px}
-    .hero-title{font-weight:800; font-size:clamp(18px, 5vw, 26px); line-height:1.25}
-    .hero-sub{color:var(--muted); margin-top:6px; font-size:clamp(12px, 3.8vw, 14px)}
-    .hero-badges{margin-top:10px; display:flex; gap:6px; flex-wrap:wrap}
-    .hb{padding:6px 10px; border-radius:999px; border:1px solid #ffe0b6; background:#fff7ec; font-weight:700; font-size:12px; color:#7a4300}
 
-    .hero-art{position:relative; min-height:160px}
-    @media(min-width:820px){ .hero-art{min-height:180px} }
-    .ganesh-wrap{position:absolute; inset:0; display:grid; place-items:center; opacity:.92; filter:drop-shadow(0 14px 24px rgba(0,0,0,.12));}
-    .ganesh{width:min(260px, 80%); height:auto}
-    @media(min-width:820px){ .ganesh{width:min(320px,80%)} }
-    .coin{position:absolute; width:12px; height:12px; border-radius:50%;
-      background: radial-gradient(circle at 35% 35%, #fff6c2 0%, #f6e27a 40%, #d4af37 70%, #a9801a 100%);
-      box-shadow:0 2px 4px rgba(0,0,0,.15); animation:fall 7s linear infinite; opacity:.85;}
-    @keyframes fall{ 0%{ transform:translateY(-36px) translateX(0) rotate(0) } 100%{ transform:translateY(220px) translateX(32px) rotate(420deg) } }
-    .coin.c1{left:12%; top:0; animation-delay:.2s}
-    .coin.c2{left:26%; top:-8px; animation-delay:1.2s}
-    .coin.c3{left:70%; top:-12px; animation-delay:.8s}
-    .coin.c4{left:86%; top:4px; animation-delay:2.1s}
+    .hero-art{
+      position:relative; min-height:220px;
+      background:
+        radial-gradient(100% 120% at 80% 50%, rgba(246,226,122,.18) 0%, transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.00));
+    }
+    @media(min-width:920px){ .hero-art{min-height:280px} }
+    .hero-img{
+      position:absolute; inset:0; background:url('assets/hero-model.jpg') center/cover no-repeat;
+      filter:saturate(1.12) contrast(1.02);
+    }
+    .satin{
+      position:absolute; inset:0; pointer-events:none;
+      background: radial-gradient(60% 70% at 70% 30%, rgba(255,215,128,.22), transparent 60%),
+                  radial-gradient(50% 60% at 30% 70%, rgba(212,175,55,.16), transparent 60%);
+      mix-blend-mode:soft-light;
+    }
+    /* Falling coins for richness */
+    .coin{position:absolute; width:14px; height:14px; border-radius:50%;
+      background: radial-gradient(circle at 35% 35%, #fff6c2 0%, #f6e27a 40%, #d4af37 70%, #7d5e12 100%);
+      box-shadow:0 2px 6px rgba(0,0,0,.35); animation:fall 8s linear infinite; opacity:.85;}
+    @keyframes fall{ 0%{ transform:translateY(-36px) translateX(0) rotate(0) } 100%{ transform:translateY(280px) translateX(36px) rotate(420deg) } }
+    .coin.c1{left:8%; top:-10px; animation-delay:.2s}
+    .coin.c2{left:22%; top:-18px; animation-delay:.9s}
+    .coin.c3{left:68%; top:-16px; animation-delay:1.7s}
+    .coin.c4{left:86%; top:-4px;  animation-delay:2.6s}
 
-    /* ====== CONTAINERS ====== */
-    .wrap{max-width:1080px;margin:0 auto;padding:12px}
+    /* ================= Containers / Cards ================= */
+    .wrap{max-width:1200px;margin:0 auto;padding:16px;z-index:1;position:relative}
     .card{
-      background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
-      position:relative;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); position:relative; overflow:hidden;
     }
     .card::after{
       content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
-      background:linear-gradient(120deg, transparent 10%, rgba(212,175,55,.35) 50%, transparent 90%);
+      background:linear-gradient(120deg, transparent 15%, rgba(212,175,55,.28) 50%, transparent 85%);
       mask:linear-gradient(#000,#000) padding-box, linear-gradient(#000,#000);
       -webkit-mask-composite: xor; mask-composite: exclude;
     }
-    .inner{padding:14px}
+    .inner{padding:16px}
 
-    .user{display:grid;grid-template-columns:1fr;gap:10px;align-items:center}
+    /* user summary */
+    .user{display:grid;grid-template-columns:1fr;gap:12px;align-items:center}
     @media(min-width:560px){ .user{grid-template-columns:1fr auto} }
     .hello{font-size:12px;color:var(--muted)}
-    .balance{font-weight:800;color:var(--green);font-size:clamp(18px, 5.2vw, 22px);display:flex;align-items:center;gap:8px}
-    .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-
-    /* ====== Game Grid 响应式 ====== */
-    .games{display:grid;gap:12px;grid-template-columns:1fr}
-    @media(min-width:480px){ .games{grid-template-columns:repeat(2,1fr)} }
-    @media(min-width:900px){ .games{grid-template-columns:repeat(3,1fr)} }
-
-    .game{
-      display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;
-      background:linear-gradient(180deg,#ffffff,#fffef9);border:1px solid var(--line);
-      transition:transform .15s ease, box-shadow .15s ease; position:relative; overflow:hidden;
+    .balance{
+      font-weight:800;color:var(--emerald);
+      font-size:clamp(18px, 5.2vw, 24px);display:flex;align-items:center;gap:10px
     }
-    .game::before{
-      content:""; position:absolute; right:-18px; top:-18px; width:120px; height:120px; opacity:.12;
-      background:
-        radial-gradient(circle at 50% 70%, var(--lotus) 0 18%, transparent 18.5% 100%),
-        radial-gradient(circle at 18% 56%, var(--saffron) 0 18%, transparent 18.5% 100%),
-        radial-gradient(circle at 82% 56%, var(--marigold) 0 18%, transparent 18.5% 100%);
-      filter:saturate(1.1);
-      border-radius:50%;
-    }
-    .game:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.06); }
-
-    .thumb{
-      height:100px;border-radius:12px;
-      background:radial-gradient(120% 120% at 0% 0%, #fff 0%, #fff7e3 60%, #ffe6b3 100%);
-      border:1px solid #ffe4c7;display:grid;place-items:center;font-size:42px; position:relative; overflow:hidden;
-    }
-    @media(min-width:560px){ .thumb{height:120px; font-size:46px} }
-
-    .thumb.wheel::after{
-      content:""; position:absolute; width:78px; height:78px; border-radius:50%;
-      border:8px solid #fff; box-shadow:inset 0 0 0 10px #ffbe0b, inset 0 0 0 18px #fb5607, inset 0 0 0 26px #8338ec;
-    }
-    .thumb.dice::after{
-      content:""; position:absolute; width:70px; height:70px; border-radius:10px; background:#fff;
-      box-shadow:0 8px 16px rgba(0,0,0,.15); transform:rotate(15deg);
-      background-image:
-        radial-gradient(circle at 50% 50%, #000 0 6px, transparent 6.2px),
-        radial-gradient(circle at 25% 25%, #000 0 6px, transparent 6.2px),
-        radial-gradient(circle at 75% 75%, #000 0 6px, transparent 6.2px);
-      background-repeat:no-repeat; background-position:center, 22% 22%, 78% 78%;
-    }
-    .thumb.ab::after{
-      content:""; position:absolute; width:88px; height:60px; border-radius:8px; background:linear-gradient(45deg,#c1121f,#780000);
-      box-shadow:0 8px 16px rgba(0,0,0,.15);
-      -webkit-mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
-      mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
-      padding:8px; border:6px solid #ffd7aa;
-    }
-    .title{font-weight:800; font-size:clamp(14px, 3.8vw, 16px)}
-    .desc{color:var(--muted);font-size:clamp(12px, 3.6vw, 13px)}
-    .game .btn{width:100%; margin-top:auto; height:42px}
-
-    /* ====== Modal / Form ====== */
-    .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.35);z-index:100}
-    .modal{
-      width:100vw; max-width:720px; margin:0 0; background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);
-      max-height:92vh; display:flex; flex-direction:column; overflow:hidden;
-    }
-    .modal header{padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800}
-    .modal .body{padding:14px; overflow:auto}
-    .modal footer{display:flex;gap:10px;padding:10px 14px;border-top:1px solid var(--line); justify-content:flex-end; padding-bottom:calc(10px + var(--safe-b))}
-    .form{display:grid;gap:10px}
-    .row{display:grid;grid-template-columns:1fr;gap:10px}
-    @media(min-width:560px){ .row{grid-template-columns:1fr 1fr} }
-    input{
-      width:100%;height:44px;border-radius:12px;border:1px solid var(--line);padding:0 12px;
-      font-size:15px; -webkit-tap-highlight-color: transparent;
-    }
-    .muted{color:var(--muted)}
-    .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed var(--line);border-radius:12px}
-    .kv .k{color:var(--muted)} .kv .v{font-weight:700}
-
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid var(--line);font-size:14px}
-    th{background:#fafafa;text-align:left}
-    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
-    .tag.pending{background:#fff7ed;color:#b45309;border-color:#fed7aa}
-    .tag.approved{background:#ecfdf5;color:#065f46;border-color:#bbf7d0}
-    .tag.rejected{background:#fef2f2;color:#991b1b;border-color:#fecaca}
-
-    /* VIP 徽章 */
     .vip-badge{
       display:inline-flex;align-items:center;gap:6px;
-      padding:4px 10px;border:1px solid #ffe0b6;background:#fff7ec;border-radius:999px;
-      color:#b45309;font-weight:700;font-size:12px
+      padding:6px 10px;border:1px solid rgba(246,226,122,.45);background:linear-gradient(180deg,#2b2410,#1b160a);
+      border-radius:999px;color:#f6e27a;font-weight:800;font-size:12px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 8px 20px rgba(0,0,0,.35);
+    }
+    .quick{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+
+    /* ================= Game Grid ================= */
+    .games{display:grid;gap:14px;grid-template-columns:1fr}
+    @media(min-width:540px){ .games{grid-template-columns:repeat(2,1fr)} }
+    @media(min-width:980px){ .games{grid-template-columns:repeat(3,1fr)} }
+
+    .game{
+      display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:16px;
+      border:1px solid var(--line); background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      transition:transform .16s ease, box-shadow .16s ease; position:relative; overflow:hidden;
+    }
+    .game:hover{ transform:translateY(-3px); box-shadow:0 18px 34px rgba(0,0,0,.35) }
+
+    /* Real image thumbs */
+    .thumb{
+      height:140px;border-radius:14px; position:relative; overflow:hidden;
+      background:#0e1424; border:1px solid rgba(246,226,122,.2);
+    }
+    @media(min-width:560px){ .thumb{height:160px} }
+    .thumb::before{
+      content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(246,226,122,.08), rgba(0,0,0,.2));
+    }
+    .thumb img{width:100%; height:100%; object-fit:cover; display:block; filter:saturate(1.06) contrast(1.03)}
+
+    .title{font-weight:800; font-size:clamp(14px, 3.6vw, 16px)}
+    .desc{color:var(--muted);font-size:clamp(12px, 3.4vw, 13px)}
+    .game .btn{width:100%; margin-top:auto; height:44px}
+
+    /* tables/tags */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid var(--line);font-size:14px}
+    th{background:rgba(255,255,255,.04);text-align:left}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
+    .tag.pending{background:rgba(255,191,105,.08);color:#ffbf69;border-color:rgba(255,191,105,.35)}
+    .tag.approved{background:rgba(34,197,94,.12);color:#22c55e;border-color:rgba(34,197,94,.35)}
+    .tag.rejected{background:rgba(255,77,79,.12);color:#ff7779;border-color:rgba(255,77,79,.35)}
+
+    /* ================= Modals ================= */
+    .modal-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:100}
+    .modal{
+      width:100vw; max-width:760px; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius:22px;border:1px solid var(--line);box-shadow:var(--shadow);
+      max-height:92vh; display:flex; flex-direction:column; overflow:hidden;
+    }
+    .modal header{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:800;background:rgba(0,0,0,.16)}
+    .modal .body{padding:16px; overflow:auto}
+    .modal footer{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line); justify-content:flex-end; padding-bottom:calc(12px + var(--safe-b))}
+    .form{display:grid;gap:12px}
+    .row{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:560px){ .row{grid-template-columns:1fr 1fr} }
+    input{
+      width:100%;height:46px;border-radius:12px;border:1px solid var(--line);padding:0 12px;
+      font-size:15px; background:rgba(255,255,255,.04); color:var(--text); outline:none;
     }
 
-    /* ==== Deposit Channels ==== */
+    .kv{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px dashed var(--line);border-radius:12px}
+    .muted{color:var(--muted)}
+
+    /* Channel pills */
     .channel-switch{display:flex;gap:8px;margin-bottom:12px; overflow:auto; padding-bottom:2px}
     .channel-btn{
-      padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fafafa;
-      cursor:pointer;font-weight:700; flex:0 0 auto;
+      padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);
+      cursor:pointer;font-weight:700; flex:0 0 auto; color:var(--text)
     }
-    .channel-btn.active{background:#fff;border-color:#ffddbc;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+    .channel-btn.active{background:rgba(255,255,255,.08);border-color:rgba(246,226,122,.35);box-shadow:0 6px 14px rgba(0,0,0,.28)}
     .dep-pane{display:none}
     .dep-pane.active{display:block}
     .addr-row{display:flex;gap:8px}
     .addr-row input{flex:1}
-    .qr-hint{font-size:12px;color:var(--muted)}
 
-    /* ====== Floating Buttons：安装 & 油灯 安全区避让 ====== */
+    /* Floating: Install + Diya */
     #installAppBtn{
-      position:fixed; right:12px; bottom:calc(14px + var(--safe-b)); z-index:9999;
+      position:fixed; right:14px; bottom:calc(16px + var(--safe-b)); z-index:9999;
       padding:12px 14px; border:0; border-radius:12px;
-      background:#22d3ee; color:#0b1220; font-weight:900;
-      box-shadow:0 8px 24px #22d3ee55; font-size:14px;
+      background:linear-gradient(180deg,#31d0ff,#1aa8d6); color:#06121e; font-weight:900;
+      box-shadow:0 14px 28px rgba(49,208,255,.35); font-size:14px;
     }
     .diya{
-      position:fixed; left:12px; bottom:calc(14px + var(--safe-b)); width:50px; height:50px; z-index:20;
-      border-radius:14px; background:radial-gradient(circle at 50% 60%, #ffe7b3, #ffc46b);
-      border:1px solid #ffd99e; box-shadow:0 8px 22px rgba(255,140,0,.25);
+      position:fixed; left:14px; bottom:calc(16px + var(--safe-b)); width:54px; height:54px; z-index:20;
+      border-radius:16px; background:radial-gradient(circle at 50% 60%, #ffdf9a, #ffb74d);
+      border:1px solid rgba(246,226,122,.5); box-shadow:0 12px 28px rgba(255,183,77,.28);
       display:grid; place-items:center;
     }
     .flame{
-      width:16px; height:24px; border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+      width:18px; height:26px; border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
       background:radial-gradient(circle at 50% 20%, #fff 0, #ffe082 40%, #ff8f00 70%, transparent 72%);
       animation:flicker 1.6s ease-in-out infinite;
-      filter:drop-shadow(0 0 12px rgba(255,159,0,.6));
+      filter:drop-shadow(0 0 14px rgba(255,183,77,.7));
     }
-    @keyframes flicker{ 0%,100%{ transform:translateY(0) scale(1) } 50%{ transform:translateY(-1px) scale(1.04) } }
+    @keyframes flicker{ 0%,100%{ transform:translateY(0) scale(1) } 50%{ transform:translateY(-1px) scale(1.05) } }
   </style>
 </head>
 <body>
 
+<!-- Install PWA -->
 <button id="installAppBtn" aria-label="Install Ganeshcasino">Install Ganeshcasino</button>
-
 <script>
   const btn = document.getElementById('installAppBtn');
   let deferredPrompt = null;
@@ -297,560 +298,518 @@
   });
 </script>
 
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="brand">
-        <div class="logo">🪔</div>
-        <div>Ganeshcasino Game</div>
+<!-- ================ NAV ================= -->
+<div class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <div class="logo">🪔</div>
+      <div>Ganeshcasino Game</div>
+    </div>
+    <div class="actions">
+      <a id="cs-link" class="btn ghost" href="https://t.me/customerservice7777777" target="_blank">💬 Customer Service</a>
+      <button id="open-login" class="btn">Login / Signup</button>
+      <button id="logout-btn" class="btn ghost" style="display:none">Logout</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================ HERO ================= -->
+<section class="hero">
+  <div class="hero-banner">
+    <div class="hero-copy">
+      <div class="hero-title">Premium Indian Casino Lobby</div>
+      <div class="hero-sub">Live the luxe vibe — golden ambiance, elegant dealers, and thrilling games every minute (IST).</div>
+      <div class="hero-badges">
+        <span class="hb">🪙 VIP Rewards</span>
+        <span class="hb">🪷 Lakshmi Blessings</span>
+        <span class="hb">🐘 Ganesh Fortune</span>
       </div>
-      <div class="actions">
-        <a id="cs-link" class="btn ghost" href="https://t.me/customerservice7777777" target="_blank">💬 Customer Service</a>
-        <button id="open-login" class="btn">Login / Signup</button>
-        <button id="logout-btn" class="btn ghost" style="display:none">Logout</button>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="hero-img"></div>
+      <div class="satin"></div>
+      <div class="coin c1"></div><div class="coin c2"></div><div class="coin c3"></div><div class="coin c4"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================ USER CARD ================= -->
+<div class="wrap">
+  <div class="card">
+    <div class="inner user">
+      <div>
+        <div class="hello">Logged in as</div>
+        <div id="user-email" style="font-weight:800">—</div>
+        <div class="quick">
+          <button id="open-deposit" class="btn primary">Deposit</button>
+          <button id="open-withdraw" class="btn">Withdraw</button>
+          <button id="open-history" class="btn">My Records</button>
+          <button id="open-chpass" class="btn ghost">Change Password</button>
+        </div>
+      </div>
+      <div class="balance">
+        ₹<span id="balance">0</span>
+        <span id="vip-badge" class="vip-badge" title="VIP Level">VIP 0</span>
       </div>
     </div>
   </div>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-banner">
-      <div class="hero-copy">
-        <div class="hero-title">Blessings of Lakshmi & Lord Ganesha</div>
-        <div class="hero-sub">Join the festive lobby—lucky lotus, shining coins, and thrilling Indian-style games.</div>
-        <div class="hero-badges">
-          <span class="hb">🪷 Auspicious Lotus</span>
-          <span class="hb">🪙 Golden Coins</span>
-          <span class="hb">🐘 Ganesh Fortune</span>
-        </div>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="ganesh-wrap">
-          <svg class="ganesh" viewBox="0 0 512 512" fill="none" stroke="#a15b00" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M256 60c-40 0-72 32-72 72 0 24 12 46 30 59-21 8-46 25-46 61 0 43 34 78 88 78s88-35 88-78c0-36-25-53-46-61 18-13 30-35 30-59 0-40-32-72-72-72z"/>
-            <path d="M168 195c-45 16-72 52-72 98 0 62 54 112 160 112s160-50 160-112c0-46-27-82-72-98"/>
-            <path d="M168 195c10-16 34-36 56-40"/>
-            <path d="M344 195c-10-16-34-36-56-40"/>
-            <path d="M210 294c18 18 74 18 92 0"/>
-            <path d="M140 372c22 16 64 34 116 34s94-18 116-34"/>
-            <path d="M256 60V36M212 68l-8-20M300 68l8-20"/>
-          </svg>
-        </div>
-        <div class="coin c1"></div><div class="coin c2"></div><div class="coin c3"></div><div class="coin c4"></div>
-      </div>
-    </div>
-  </section>
+  <!-- ================ GAMES ================= -->
+  <div class="card" style="margin-top:16px">
+    <div class="inner">
+      <div style="font-weight:800;margin-bottom:10px">🎮 Select a Game</div>
 
-  <div class="wrap">
-    <!-- 用户卡 -->
-    <div class="card">
-      <div class="inner user">
-        <div>
-          <div class="hello">Logged in as</div>
-          <div id="user-email" style="font-weight:800">—</div>
-          <div class="quick">
-            <button id="open-deposit" class="btn primary">Deposit</button>
-            <button id="open-withdraw" class="btn">Withdraw</button>
-            <button id="open-history" class="btn">My Records</button>
-            <button id="open-chpass" class="btn ghost">Change Password</button>
+      <!-- 单独突出 WinGo（可替大图或保留） -->
+      <div class="game" style="margin-bottom:12px">
+        <div class="thumb wingo">
+          <img src="assets/thumb-wingo.jpg" alt="WinGo 2 Minutes" />
+        </div>
+        <div class="title">WinGo 2 minutes</div>
+        <div class="desc">Pick Green/Red/Violet, Big/Small, or 0–9. Draw every 2 minutes (IST).</div>
+        <a class="btn primary" href="./color2m.html">Play</a>
+      </div>
+
+      <div class="games">
+        <div class="game">
+          <div class="thumb wheel">
+            <img src="assets/thumb-wheel.jpg" alt="Mini Wheel" />
           </div>
-        </div>
-        <div class="balance">
-          ₹<span id="balance">0</span>
-          <span id="vip-badge" class="vip-badge" title="VIP Level">VIP 0</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 游戏区 -->
-    <div class="card" style="margin-top:12px">
-      <div class="inner">
-        <div style="font-weight:800;margin-bottom:8px">🎮 Select a Game</div>
-
-     <div class="game">
-  <div class="thumb wingo">🟢🟣🔴</div>
-  <div class="title">WinGo 2 minutes</div>
-  <div class="desc">Pick Green/Red/Violet, Big/Small, or 0–9. Draw every 2 minutes (IST).</div>
-  <a class="btn primary" href="./color2m.html">Play</a>
-</div> 
-
-        
-
-        <div class="games">
-
-          <div class="game">
-          <div class="thumb wheel">🎡</div>
           <div class="title">Mini Wheel</div>
           <div class="desc">2-minute rounds (IST). Bet Small/Big or 3–18.</div>
           <a class="btn primary" href="./mini-wheel.html">Play</a>
         </div>
-          <div class="game">
-            <div class="thumb dice">🎲</div>
-            <div class="title">Lucky Dice</div>
-            <div class="desc">Bet on Big/Small or exact number. Results every minute (IST).</div>
-            <a class="btn primary" href="./dice.html">Play</a>
-          </div>
 
-          <div class="game">
-            <div class="thumb ab">🃏</div>
-            <div class="title">Andar Bahar</div>
-            <div class="desc">Bet on Andar or Bahar. Result every minute (IST).</div>
-            <a class="btn primary" href="./ab.html">Play</a>
+        <div class="game">
+          <div class="thumb dice">
+            <img src="assets/thumb-dice.jpg" alt="Lucky Dice" />
           </div>
+          <div class="title">Lucky Dice</div>
+          <div class="desc">Bet on Big/Small or exact number. Results every minute (IST).</div>
+          <a class="btn primary" href="./dice.html">Play</a>
+        </div>
 
-          <div class="game">
-            <div class="thumb">🧧</div>
-            <div class="title">Coming Soon</div>
-            <div class="desc">More India-style games are on the way.</div>
-            <button class="btn" disabled>Stay tuned</button>
+        <div class="game">
+          <div class="thumb ab">
+            <img src="assets/thumb-ab.jpg" alt="Andar Bahar" />
           </div>
-          <div class="game">
-            <div class="thumb">💎</div>
-            <div class="title">Coming Soon</div>
-            <div class="desc">Unlock new experiences for your players.</div>
-            <button class="btn" disabled>Stay tuned</button>
+          <div class="title">Andar Bahar</div>
+          <div class="desc">Bet on Andar or Bahar. Result every minute (IST).</div>
+          <a class="btn primary" href="./ab.html">Play</a>
+        </div>
+
+        <div class="game">
+          <div class="thumb">
+            <img src="assets/thumb-coming1.jpg" alt="Coming Soon" />
           </div>
+          <div class="title">Coming Soon</div>
+          <div class="desc">More India-style games are on the way.</div>
+          <button class="btn" disabled>Stay tuned</button>
+        </div>
+
+        <div class="game">
+          <div class="thumb">
+            <img src="assets/thumb-coming2.jpg" alt="Coming Soon" />
+          </div>
+          <div class="title">Coming Soon</div>
+          <div class="desc">Unlock new experiences for your players.</div>
+          <button class="btn" disabled>Stay tuned</button>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- 浮动油灯 -->
-  <div class="diya" title="Good luck"><div class="flame"></div></div>
+<!-- Floating Diya -->
+<div class="diya" title="Good luck"><div class="flame"></div></div>
 
-  <!-- 登录 Modal -->
-  <div id="login-modal" class="modal-bg">
-    <div class="modal">
-      <header>Login / Signup</header>
-      <div class="body">
+<!-- =================== Login Modal =================== -->
+<div id="login-modal" class="modal-bg">
+  <div class="modal">
+    <header>Login / Signup</header>
+    <div class="body">
+      <div class="form">
+        <input id="login-email" type="email" placeholder="Email" />
+        <input id="login-pass" type="password" placeholder="Password" />
+        <div class="muted">New user? Click “Signup” then login.</div>
+      </div>
+    </div>
+    <footer>
+      <button id="login-cancel" class="btn">Cancel</button>
+      <button id="signup-btn" class="btn">Signup</button>
+      <button id="login-btn" class="btn primary">Login</button>
+    </footer>
+  </div>
+</div>
+
+<!-- =================== Deposit Modal =================== -->
+<div id="dep-modal" class="modal-bg">
+  <div class="modal">
+    <header>Deposit</header>
+    <div class="body">
+      <div class="channel-switch">
+        <button id="btn-inr"  class="channel-btn active">INR · UPI / Bank</button>
+        <button id="btn-usdt" class="channel-btn">USDT · Crypto·1USDT=100rs</button>
+      </div>
+      <div id="pane-inr" class="dep-pane active">
+        <div class="muted" style="margin-bottom:8px">Please transfer to the account below, then submit UTR and amount.</div>
+        <div id="dep-bank" class="form" style="margin-bottom:8px">
+          <div class="kv"><div class="k">Name</div><div class="v">—</div></div>
+          <div class="kv"><div class="k">AC</div><div class="v">—</div></div>
+          <div class="kv"><div class="k">IFSC</div><div class="v">—</div></div>
+          <div class="kv"><div class="k">UPI</div><div class="v">—</div></div>
+        </div>
         <div class="form">
-          <input id="login-email" type="email" placeholder="Email" />
-          <input id="login-pass" type="password" placeholder="Password" />
-          <div class="muted">New user? Click “Signup” then login.</div>
+          <input id="dep-utr" type="text" placeholder="UTR / Reference Number" />
+          <input id="dep-amount" type="number" min="1" placeholder="Amount ₹" />
         </div>
       </div>
-      <footer>
-        <button id="login-cancel" class="btn">Cancel</button>
-        <button id="signup-btn" class="btn">Signup</button>
-        <button id="login-btn" class="btn primary">Login</button>
-      </footer>
-    </div>
-  </div>
 
-  <!-- 存款 Modal -->
-  <div id="dep-modal" class="modal-bg">
-    <div class="modal">
-      <header>Deposit</header>
-      <div class="body">
-        <div class="channel-switch">
-          <button id="btn-inr"  class="channel-btn active">INR · UPI / Bank</button>
-          <button id="btn-usdt" class="channel-btn">USDT · Crypto·1USDT=100rs</button>
-        </div>
-        <div id="pane-inr" class="dep-pane active">
-          <div class="muted" style="margin-bottom:8px">Please transfer to the account below, then submit UTR and amount.</div>
-          <div id="dep-bank" class="form" style="margin-bottom:8px">
-            <div class="kv"><div class="k">Name</div><div class="v">—</div></div>
-            <div class="kv"><div class="k">AC</div><div class="v">—</div></div>
-            <div class="kv"><div class="k">IFSC</div><div class="v">—</div></div>
-            <div class="kv"><div class="k">UPI</div><div class="v">—</div></div>
-          </div>
-          <div class="form">
-            <input id="dep-utr" type="text" placeholder="UTR / Reference Number" />
-            <input id="dep-amount" type="number" min="1" placeholder="Amount ₹" />
-          </div>
-        </div>
-
-        <div id="pane-usdt" class="dep-pane">
-          <div class="form">
-            <div class="muted" style="margin-bottom:6px">USDT (TRC20) Deposit Address-1USDT=100rs</div>
-            <div class="addr-row">
-              <input id="usdt-address" type="text" readonly placeholder="Loading address…" />
-              <button id="copy-usdt" class="btn">Copy</button>
-            </div>
-            <div class="qr-hint">* Network is fixed to TRC20. Deposits on other chains will be lost.1USDT=100rs</div>
-            <input id="usdt-txid" type="text" placeholder="TXID / Transaction Hash" />
-            <input id="usdt-amount" type="number" min="0.01" step="0.01" placeholder="Amount (USDT)" />
-          </div>
-        </div>
-      </div>
-      <footer>
-        <button id="dep-cancel" class="btn">Cancel</button>
-        <button id="dep-submit" class="btn primary">Submit</button>
-      </footer>
-    </div>
-  </div>
-
-  <!-- 提款 Modal -->
-  <div id="wd-modal" class="modal-bg">
-    <div class="modal">
-      <header>Withdraw</header>
-      <div class="body">
+      <div id="pane-usdt" class="dep-pane">
         <div class="form">
-          <div class="kv" id="rollover-kv"><div class="k">Rollover Needed</div><div class="v" id="rollover-val">0.00</div></div>
-          <div class="row">
-            <input id="w-name" placeholder="Your Name" />
-            <input id="w-ac" placeholder="AC Number" />
+          <div class="muted" style="margin-bottom:6px">USDT (TRC20) Deposit Address-1USDT=100rs</div>
+          <div class="addr-row">
+            <input id="usdt-address" type="text" readonly placeholder="Loading address…" />
+            <button id="copy-usdt" class="btn">Copy</button>
           </div>
-          <div class="row">
-            <input id="w-ifsc" placeholder="IFSC Code" />
-            <input id="w-upi" placeholder="UPI ID (optional)" />
-          </div>
-          <div class="row">
-            <input id="wd-amount" type="number" min="1" placeholder="Amount ₹" />
-            <button id="wd-save" class="btn">Save Profile</button>
-          </div>
-          <div class="muted">Save your bank profile first if you modified it.</div>
+          <div class="muted">* Network is fixed to TRC20. Deposits on other chains will be lost.1USDT=100rs</div>
+          <input id="usdt-txid" type="text" placeholder="TXID / Transaction Hash" />
+          <input id="usdt-amount" type="number" min="0.01" step="0.01" placeholder="Amount (USDT)" />
         </div>
       </div>
-      <footer>
-        <button id="wd-cancel" class="btn">Cancel</button>
-        <button id="wd-submit" class="btn primary">Submit Withdrawal</button>
-      </footer>
     </div>
+    <footer>
+      <button id="dep-cancel" class="btn">Cancel</button>
+      <button id="dep-submit" class="btn primary">Submit</button>
+    </footer>
   </div>
+</div>
 
-  <!-- 记录 Modal -->
-  <div id="history-modal" class="modal-bg">
-    <div class="modal">
-      <header>My Records (Last 3 Days)</header>
-      <div class="body">
-        <div class="muted" style="margin-bottom:10px">Showing recent 3 days</div>
-        <div style="margin-top:12px;display:grid;grid-template-columns:1fr;gap:16px">
-          <div>
-            <div style="font-weight:700;margin:6px 0 8px 0">Deposits</div>
-            <div class="card" style="border-radius:12px">
-              <div class="inner" style="padding:0">
-                <table>
-                  <thead><tr><th>Time</th><th>UTR</th><th>Amount (₹)</th><th>Status</th></tr></thead>
-                  <tbody id="deposits-tbody"><tr><td colspan="4" class="muted" style="padding:14px">—</td></tr></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div style="font-weight:700;margin:6px 0 8px 0">Withdrawals</div>
-            <div class="card" style="border-radius:12px">
-              <div class="inner" style="padding:0">
-                <table>
-                  <thead><tr><th>Time</th><th>Amount (₹)</th><th>Status</th></tr></thead>
-                  <tbody id="withdrawals-tbody"><tr><td colspan="3" class="muted" style="padding:14px">—</td></tr></tbody>
-                </table>
-              </div>
+<!-- =================== Withdraw Modal =================== -->
+<div id="wd-modal" class="modal-bg">
+  <div class="modal">
+    <header>Withdraw</header>
+    <div class="body">
+      <div class="form">
+        <div class="kv" id="rollover-kv"><div class="k">Rollover Needed</div><div class="v" id="rollover-val">0.00</div></div>
+        <div class="row">
+          <input id="w-name" placeholder="Your Name" />
+          <input id="w-ac" placeholder="AC Number" />
+        </div>
+        <div class="row">
+          <input id="w-ifsc" placeholder="IFSC Code" />
+          <input id="w-upi" placeholder="UPI ID (optional)" />
+        </div>
+        <div class="row">
+          <input id="wd-amount" type="number" min="1" placeholder="Amount ₹" />
+          <button id="wd-save" class="btn">Save Profile</button>
+        </div>
+        <div class="muted">Save your bank profile first if you modified it.</div>
+      </div>
+    </div>
+    <footer>
+      <button id="wd-cancel" class="btn">Cancel</button>
+      <button id="wd-submit" class="btn primary">Submit Withdrawal</button>
+    </footer>
+  </div>
+</div>
+
+<!-- =================== Records Modal =================== -->
+<div id="history-modal" class="modal-bg">
+  <div class="modal">
+    <header>My Records (Last 3 Days)</header>
+    <div class="body">
+      <div class="muted" style="margin-bottom:10px">Showing recent 3 days</div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:1fr;gap:16px">
+        <div>
+          <div style="font-weight:700;margin:6px 0 8px 0">Deposits</div>
+          <div class="card" style="border-radius:12px">
+            <div class="inner" style="padding:0">
+              <table>
+                <thead><tr><th>Time</th><th>UTR</th><th>Amount (₹)</th><th>Status</th></tr></thead>
+                <tbody id="deposits-tbody"><tr><td colspan="4" class="muted" style="padding:14px">—</td></tr></tbody>
+              </table>
             </div>
           </div>
         </div>
-
-      </div>
-      <footer><button id="history-close" class="btn">Close</button></footer>
-    </div>
-  </div>
-
-  <!-- 修改密码 Modal -->
-  <div id="chpass-modal" class="modal-bg">
-    <div class="modal">
-      <header>Change Password</header>
-      <div class="body">
-        <div class="form">
-          <input id="old-pass" type="password" placeholder="Current Password" />
-          <input id="new-pass" type="password" placeholder="New Password (min 6 chars)" />
-          <input id="new-pass2" type="password" placeholder="Confirm New Password" />
-          <div class="muted">We will verify your current password before updating.</div>
+        <div>
+          <div style="font-weight:700;margin:6px 0 8px 0">Withdrawals</div>
+          <div class="card" style="border-radius:12px">
+            <div class="inner" style="padding:0">
+              <table>
+                <thead><tr><th>Time</th><th>Amount (₹)</th><th>Status</th></tr></thead>
+                <tbody id="withdrawals-tbody"><tr><td colspan="3" class="muted" style="padding:14px">—</td></tr></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
-      <footer>
-        <button id="chpass-cancel" class="btn">Cancel</button>
-        <button id="chpass-submit" class="btn primary">Update Password</button>
-      </footer>
+
     </div>
+    <footer><button id="history-close" class="btn">Close</button></footer>
   </div>
+</div>
 
-  <script type="module">
-    import { supabase } from './supabase-config.js';
+<!-- =================== Change Password Modal =================== -->
+<div id="chpass-modal" class="modal-bg">
+  <div class="modal">
+    <header>Change Password</header>
+    <div class="body">
+      <div class="form">
+        <input id="old-pass" type="password" placeholder="Current Password" />
+        <input id="new-pass" type="password" placeholder="New Password (min 6 chars)" />
+        <input id="new-pass2" type="password" placeholder="Confirm New Password" />
+        <div class="muted">We will verify your current password before updating.</div>
+      </div>
+    </div>
+    <footer>
+      <button id="chpass-cancel" class="btn">Cancel</button>
+      <button id="chpass-submit" class="btn primary">Update Password</button>
+    </footer>
+  </div>
+</div>
 
-    const $ = (id)=>document.getElementById(id);
-    const show = (el,on=true)=> el.style.display = on ? 'flex' : 'none';
-    const toast = (m)=>alert(m);
-    const fmt2 = (n)=> Number(n ?? 0).toFixed(2);
-    const fmtTime = (iso)=> {
-      try{
-        const d = new Date(iso);
-        return d.toLocaleString(undefined,{ year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-      }catch{ return iso || '—'; }
-    };
+<!-- =================== Original JS (kept) =================== -->
+<script type="module">
+  import { supabase } from './supabase-config.js';
+  const $ = (id)=>document.getElementById(id);
+  const show = (el,on=true)=> el.style.display = on ? 'flex' : 'none';
+  const toast = (m)=>alert(m);
+  const fmt2 = (n)=> Number(n ?? 0).toFixed(2);
+  const fmtTime = (iso)=> { try{ const d = new Date(iso); return d.toLocaleString(undefined,{ year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }); }catch{ return iso || '—'; } };
 
-    const openLogin = $('open-login');
-    const logoutBtn = $('logout-btn');
-    const userEmail = $('user-email');
-    const balanceEl = $('balance');
-    const vipBadge  = $('vip-badge');
+  const openLogin = $('open-login');
+  const logoutBtn = $('logout-btn');
+  const userEmail = $('user-email');
+  const balanceEl = $('balance');
+  const vipBadge  = $('vip-badge');
 
-    const loginModal = $('login-modal'), loginCancel = $('login-cancel'),
-          signupBtn = $('signup-btn'), loginBtn = $('login-btn'),
-          loginEmail = $('login-email'), loginPass = $('login-pass');
+  const loginModal = $('login-modal'), loginCancel = $('login-cancel'),
+        signupBtn = $('signup-btn'), loginBtn = $('login-btn'),
+        loginEmail = $('login-email'), loginPass = $('login-pass');
 
-    const depModal = $('dep-modal'), depCancel = $('dep-cancel'), depSubmit = $('dep-submit'),
-          depUtr = $('dep-utr'), depAmount = $('dep-amount'), depBank = $('dep-bank');
+  const depModal = $('dep-modal'), depCancel = $('dep-cancel'), depSubmit = $('dep-submit'),
+        depUtr = $('dep-utr'), depAmount = $('dep-amount'), depBank = $('dep-bank');
 
-    const wdModal = $('wd-modal'), wdCancel = $('wd-cancel'), wdSubmit = $('wd-submit'),
-          wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
-          wdAmount = $('wd-amount'), wdSave = $('wd-save'), rolloverVal = $('rollover-val');
+  const wdModal = $('wd-modal'), wdCancel = $('wd-cancel'), wdSubmit = $('wd-submit'),
+        wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
+        wdAmount = $('wd-amount'), wdSave = $('wd-save'), rolloverVal = $('rollover-val');
 
-    const historyModal = $('history-modal');
-    const historyOpen = $('open-history');
-    const historyClose = $('history-close');
-    const depositsTbody = $('deposits-tbody');
-    const withdrawalsTbody = $('withdrawals-tbody');
+  const historyModal = $('history-modal');
+  const historyOpen = $('open-history');
+  const historyClose = $('history-close');
+  const depositsTbody = $('deposits-tbody');
+  const withdrawalsTbody = $('withdrawals-tbody');
 
-    const openChpass = $('open-chpass');
-    const chpassModal = $('chpass-modal');
-    const chpassCancel = $('chpass-cancel');
-    const chpassSubmit = $('chpass-submit');
-    const oldPass = $('old-pass'), newPass = $('new-pass'), newPass2 = $('new-pass2');
+  const openChpass = $('open-chpass');
+  const chpassModal = $('chpass-modal');
+  const chpassCancel = $('chpass-cancel');
+  const chpassSubmit = $('chpass-submit');
+  const oldPass = $('old-pass'), newPass = $('new-pass'), newPass2 = $('new-pass2');
 
-    const btnINR   = $('btn-inr');
-    const btnUSDT  = $('btn-usdt');
-    const paneINR  = $('pane-inr');
-    const paneUSDT = $('pane-usdt');
-    const usdtAddr = $('usdt-address');
-    const usdtCopy = $('copy-usdt');
-    const usdtTxid = $('usdt-txid');
-    const usdtAmount = $('usdt-amount');
-    let depChannel = 'inr';
+  const btnINR   = $('btn-inr');
+  const btnUSDT  = $('btn-usdt');
+  const paneINR  = $('pane-inr');
+  const paneUSDT = $('pane-usdt');
+  const usdtAddr = $('usdt-address');
+  const usdtCopy = $('copy-usdt');
+  const usdtTxid = $('usdt-txid');
+  const usdtAmount = $('usdt-amount');
+  let depChannel = 'inr';
 
-    $('open-deposit').onclick = async ()=>{
-      depChannel = 'inr';
-      btnINR.classList.add('active'); btnUSDT.classList.remove('active');
-      paneINR.classList.add('active'); paneUSDT.classList.remove('active');
+  $('open-deposit').onclick = async ()=>{
+    depChannel = 'inr';
+    btnINR.classList.add('active'); btnUSDT.classList.remove('active');
+    paneINR.classList.add('active'); paneUSDT.classList.remove('active');
 
-      await loadBankInfoIntoDeposit();
+    await loadBankInfoIntoDeposit();
 
-      try{
-        const { data } = await supabase.from('bank_info').select('crypto_address').eq('id',1).maybeSingle();
-        usdtAddr.value = data?.crypto_address || '';
-        if(!usdtAddr.value) usdtAddr.placeholder = 'No TRC20 address configured';
-      }catch{ usdtAddr.value = ''; }
+    try{
+      const { data } = await supabase.from('bank_info').select('crypto_address').eq('id',1).maybeSingle();
+      usdtAddr.value = data?.crypto_address || '';
+      if(!usdtAddr.value) usdtAddr.placeholder = 'No TRC20 address configured';
+    }catch{ usdtAddr.value = ''; }
 
-      usdtTxid.value = '';
-      usdtAmount.value = '';
+    usdtTxid.value = '';
+    usdtAmount.value = '';
 
-      show(depModal,true);
-    };
+    show(depModal,true);
+  };
 
-    $('open-withdraw').onclick = async()=>{ await loadWithdrawProfileIntoModal(); show(wdModal,true); };
-    openLogin.onclick = ()=> show(loginModal,true);
-    loginCancel.onclick = ()=> show(loginModal,false);
-    depCancel.onclick = ()=> show(depModal,false);
-    wdCancel.onclick = ()=> show(wdModal,false);
+  $('open-withdraw').onclick = async()=>{ await loadWithdrawProfileIntoModal(); show(wdModal,true); };
+  openLogin.onclick = ()=> show(loginModal,true);
+  loginCancel.onclick = ()=> show(loginModal,false);
+  depCancel.onclick = ()=> show(depModal,false);
+  wdCancel.onclick = ()=> show(wdModal,false);
 
-    historyOpen.onclick = async ()=>{ await loadRecentRecords(); show(historyModal, true); };
-    historyClose.onclick = ()=> show(historyModal, false);
+  historyOpen.onclick = async ()=>{ await loadRecentRecords(); show(historyModal, true); };
+  historyClose.onclick = ()=> show(historyModal, false);
 
-    openChpass.onclick = ()=> show(chpassModal, true);
-    chpassCancel.onclick = ()=> show(chpassModal, false);
+  openChpass.onclick = ()=> show(chpassModal, true);
+  chpassCancel.onclick = ()=> show(chpassModal, false);
 
-    btnINR.onclick = ()=>{
-      depChannel = 'inr';
-      btnINR.classList.add('active'); btnUSDT.classList.remove('active');
-      paneINR.classList.add('active'); paneUSDT.classList.remove('active');
-    };
-    btnUSDT.onclick = ()=>{
-      depChannel = 'usdt';
-      btnUSDT.classList.add('active'); btnINR.classList.remove('active');
-      paneUSDT.classList.add('active'); paneINR.classList.remove('active');
-    };
+  btnINR.onclick = ()=>{ depChannel = 'inr'; btnINR.classList.add('active'); btnUSDT.classList.remove('active'); paneINR.classList.add('active'); paneUSDT.classList.remove('active'); };
+  btnUSDT.onclick = ()=>{ depChannel = 'usdt'; btnUSDT.classList.add('active'); btnINR.classList.remove('active'); paneUSDT.classList.add('active'); paneINR.classList.remove('active'); };
 
-    usdtCopy.onclick = async ()=>{
-      try{
-        if(usdtAddr.value){ await navigator.clipboard.writeText(usdtAddr.value); toast('Address copied'); }
-      }catch{ toast('Copy failed'); }
-    };
+  usdtCopy.onclick = async ()=>{ try{ if(usdtAddr.value){ await navigator.clipboard.writeText(usdtAddr.value); toast('Address copied'); } }catch{ toast('Copy failed'); } };
 
-    let currentUser = null;
-    function setAuthUI(loggedIn){
-      $('open-login').style.display = loggedIn ? 'none' : '';
-      logoutBtn.style.display = loggedIn ? '' : 'none';
+  let currentUser = null;
+  function setAuthUI(loggedIn){
+    $('open-login').style.display = loggedIn ? 'none' : '';
+    logoutBtn.style.display = loggedIn ? '' : 'none';
+  }
+
+  signupBtn.onclick = async ()=>{
+    const email = loginEmail.value.trim(), pass = loginPass.value;
+    if(!email || !pass) return toast('Enter email & password');
+    const { error } = await supabase.auth.signUp({ email, password: pass });
+    if (error) return toast(error.message);
+    toast('✅ Signup success. Now login.');
+  };
+  loginBtn.onclick = async ()=>{
+    const email = loginEmail.value.trim(), pass = loginPass.value;
+    if(!email || !pass) return toast('Enter email & password');
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) return toast('Login failed: ' + error.message);
+    currentUser = data.user;
+    show(loginModal,false);
+    await afterLogin();
+  };
+  logoutBtn.onclick = async ()=>{
+    await supabase.auth.signOut();
+    currentUser = null; userEmail.textContent = '—'; balanceEl.textContent = '0'; vipBadge.textContent='VIP 0'; setAuthUI(false);
+    depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>`;
+    withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>`;
+  };
+
+  async function afterLogin(){
+    setAuthUI(true);
+    userEmail.textContent = currentUser.email || '—';
+    await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+    await refreshUserSummary();
+  }
+  async function refreshUserSummary(){
+    const { data } = await supabase.from('users').select('balance, vip_level').eq('id', currentUser.id).single();
+    balanceEl.textContent = data?.balance ?? 0;
+    vipBadge.textContent = `VIP ${Number(data?.vip_level ?? 0)}`;
+  }
+
+  async function loadBankInfoIntoDeposit(){
+    const { data } = await supabase.from('bank_info').select('*').eq('id', 1).maybeSingle();
+    const items = [['Name', data?.name], ['AC', data?.ac], ['IFSC', data?.ifsc], ['UPI', data?.upi], ['Crypto', data?.crypto_address]];
+    document.getElementById('dep-bank').innerHTML = items.map(([k,v])=>`<div class="kv"><div class="k">${k}</div><div class="v">${v || '—'}</div></div>`).join('');
+  }
+
+  async function loadWithdrawProfileIntoModal(){
+    const { data } = await supabase.from('users').select('name,ac,ifsc,upi,turnover_remaining').eq('id', currentUser.id).single();
+    $('w-name').value = data?.name || '';
+    $('w-ac').value   = data?.ac || '';
+    $('w-ifsc').value = data?.ifsc || '';
+    $('w-upi').value  = data?.upi || '';
+    $('wd-amount').value = '';
+    $('rollover-val').textContent = fmt2(data?.turnover_remaining);
+  }
+
+  depSubmit.onclick = async ()=>{
+    if (!currentUser) return toast('Please login first');
+    try{
+      let utrStr = ''; let amtNum = 0;
+      if (depChannel === 'inr') {
+        const utr = $('dep-utr').value.trim();
+        const amountInr = Number($('dep-amount').value);
+        if(!utr || !amountInr || amountInr <= 0) return toast('Enter UTR & amount');
+        utrStr = `[INR] ${utr}`; amtNum = amountInr;
+      } else {
+        const addr = String(usdtAddr.value||'').trim();
+        const txid = String(usdtTxid.value||'').trim();
+        const amt  = Number(usdtAmount.value);
+        if(!addr) return toast('No TRC20 address configured');
+        if(!txid) return toast('Enter transaction hash (TXID)');
+        if(!amt || amt <= 0) return toast('Enter USDT amount');
+        utrStr = `[USDT-TRC20] ${txid}`; amtNum = amt;
+      }
+      const { error } = await supabase.from('recharge_requests').insert([{ user_id: currentUser.id, email: currentUser.email, utr: utrStr, amount: amtNum, status: 'pending' }]);
+      if (error) return toast('Submit failed: ' + error.message);
+      $('dep-utr').value=''; $('dep-amount').value=''; usdtTxid.value=''; usdtAmount.value='';
+      show(depModal,false);
+      toast('✅ Recharge request submitted.');
+      if (historyModal.style.display === 'flex') await loadRecentRecords();
+    }catch(e){ toast('Submit failed: ' + (e?.message || e)); }
+  };
+
+  $('wd-save').onclick = async ()=>{
+    if (!currentUser) return toast('Please login first');
+    const payload = { name:$('w-name').value.trim(), ac:$('w-ac').value.trim(), ifsc:$('w-ifsc').value.trim(), upi:$('w-upi').value.trim() };
+    if (!payload.name || !payload.ac || !payload.ifsc) return toast('Fill Name / AC / IFSC');
+    const { error } = await supabase.from('users').update(payload).eq('id', currentUser.id);
+    if (error) return toast('Save failed: ' + error.message);
+    toast('✅ Profile saved.');
+  };
+
+  wdSubmit.onclick = async ()=>{
+    if (!currentUser) return toast('Please login first');
+    const amount = Number($('wd-amount').value);
+    if (!amount || amount <= 0) return toast('Enter amount');
+    if (!$('w-name').value.trim() || !$('w-ac').value.trim() || !$('w-ifsc').value.trim()) {
+      return toast('Please complete withdrawal profile (Name / AC / IFSC).');
     }
-
-    signupBtn.onclick = async ()=>{
-      const email = loginEmail.value.trim(), pass = loginPass.value;
-      if(!email || !pass) return toast('Enter email & password');
-      const { error } = await supabase.auth.signUp({ email, password: pass });
-      if (error) return toast(error.message);
-      toast('✅ Signup success. Now login.');
-    };
-    loginBtn.onclick = async ()=>{
-      const email = loginEmail.value.trim(), pass = loginPass.value;
-      if(!email || !pass) return toast('Enter email & password');
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (error) return toast('Login failed: ' + error.message);
-      currentUser = data.user;
-      show(loginModal,false);
-      await afterLogin();
-    };
-    logoutBtn.onclick = async ()=>{
-      await supabase.auth.signOut();
-      currentUser = null; userEmail.textContent = '—'; balanceEl.textContent = '0'; vipBadge.textContent='VIP 0'; setAuthUI(false);
-      depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>`;
-      withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>`;
-    };
-
-    async function afterLogin(){
-      setAuthUI(true);
-      userEmail.textContent = currentUser.email || '—';
-      await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
-      await refreshUserSummary();
+    const { data: u } = await supabase.from('users').select('turnover_remaining').eq('id', currentUser.id).single();
+    const need = Number(u?.turnover_remaining || 0);
+    if (need > 0) return toast(`Rollover not met: ₹${fmt2(need)} remaining`);
+    const { error } = await supabase.rpc('request_withdraw', { _user_id: currentUser.id, _email: currentUser.email, _amount: amount });
+    if (error) {
+      if (String(error.message).includes('TURNOVER_NOT_MET')) return toast('Rollover not met. Please continue betting.');
+      return toast('Submit failed: ' + error.message);
     }
-    async function refreshUserSummary(){
-      const { data } = await supabase.from('users').select('balance, vip_level').eq('id', currentUser.id).single();
-      balanceEl.textContent = data?.balance ?? 0;
-      vipBadge.textContent = `VIP ${Number(data?.vip_level ?? 0)}`;
-    }
+    show(wdModal,false);
+    toast('✅ Withdraw request submitted.');
+    if (historyModal.style.display === 'flex') await loadRecentRecords();
+  };
 
-    async function loadBankInfoIntoDeposit(){
-      const { data } = await supabase.from('bank_info').select('*').eq('id', 1).maybeSingle();
-      const items = [
-        ['Name', data?.name], ['AC', data?.ac], ['IFSC', data?.ifsc],
-        ['UPI', data?.upi], ['Crypto', data?.crypto_address]
-      ];
-      document.getElementById('dep-bank').innerHTML = items.map(([k,v])=>`
-        <div class="kv"><div class="k">${k}</div><div class="v">${v || '—'}</div></div>
+  async function loadRecentRecords(){
+    if(!currentUser){ return; }
+    const since = new Date(Date.now() - 3*24*60*60*1000).toISOString();
+    const { data: dep, error: depErr } = await supabase
+      .from('recharge_requests').select('created_at, utr, amount, status')
+      .eq('user_id', currentUser.id).gte('created_at', since)
+      .order('created_at', { ascending: false }).limit(100);
+    if (depErr) {
+      depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">Load failed: ${depErr.message}</td></tr>`;
+    } else if (!dep || dep.length === 0){
+      depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
+    } else {
+      depositsTbody.innerHTML = dep.map(r => `
+        <tr>
+          <td>${fmtTime(r.created_at)}</td>
+          <td>${r.utr ?? '—'}</td>
+          <td>${fmt2(r.amount)}</td>
+          <td><span class="tag ${String(r.status).toLowerCase()}">${r.status}</span></td>
+        </tr>
       `).join('');
     }
-
-    async function loadWithdrawProfileIntoModal(){
-      const { data } = await supabase.from('users')
-        .select('name,ac,ifsc,upi,turnover_remaining')
-        .eq('id', currentUser.id).single();
-      $('w-name').value = data?.name || '';
-      $('w-ac').value   = data?.ac || '';
-      $('w-ifsc').value = data?.ifsc || '';
-      $('w-upi').value  = data?.upi || '';
-      $('wd-amount').value = '';
-      $('rollover-val').textContent = fmt2(data?.turnover_remaining);
+    const { data: wd, error: wdErr } = await supabase
+      .from('withdraw_requests').select('created_at, amount, status')
+      .eq('user_id', currentUser.id).gte('created_at', since)
+      .order('created_at', { ascending: false }).limit(100);
+    if (wdErr) {
+      withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">Load failed: ${wdErr.message}</td></tr>`;
+    } else if (!wd || wd.length === 0){
+      withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
+    } else {
+      withdrawalsTbody.innerHTML = wd.map(r => `
+        <tr>
+          <td>${fmtTime(r.created_at)}</td>
+          <td>${fmt2(r.amount)}</td>
+          <td><span class="tag ${String(r.status).toLowerCase()}">${r.status}</span></td>
+        </tr>
+      `).join('');
     }
+  }
 
-    depSubmit.onclick = async ()=>{
-      if (!currentUser) return toast('Please login first');
-      try{
-        let utrStr = ''; let amtNum = 0;
-        if (depChannel === 'inr') {
-          const utr = $('dep-utr').value.trim();
-          const amountInr = Number($('dep-amount').value);
-          if(!utr || !amountInr || amountInr <= 0) return toast('Enter UTR & amount');
-          utrStr = `[INR] ${utr}`; amtNum = amountInr;
-        } else {
-          const addr = String(usdtAddr.value||'').trim();
-          const txid = String(usdtTxid.value||'').trim();
-          const amt  = Number(usdtAmount.value);
-          if(!addr) return toast('No TRC20 address configured');
-          if(!txid) return toast('Enter transaction hash (TXID)');
-          if(!amt || amt <= 0) return toast('Enter USDT amount');
-          utrStr = `[USDT-TRC20] ${txid}`; amtNum = amt;
-        }
-        const { error } = await supabase.from('recharge_requests').insert([{
-          user_id: currentUser.id, email: currentUser.email, utr: utrStr, amount: amtNum, status: 'pending'
-        }]);
-        if (error) return toast('Submit failed: ' + error.message);
-        $('dep-utr').value=''; $('dep-amount').value='';
-        usdtTxid.value=''; usdtAmount.value='';
-        show(depModal,false);
-        toast('✅ Recharge request submitted.');
-        if (historyModal.style.display === 'flex') await loadRecentRecords();
-      }catch(e){ toast('Submit failed: ' + (e?.message || e)); }
-    };
+  (async ()=>{
+    const { data:{ user } } = await supabase.auth.getUser();
+    if (user){ currentUser=user; await afterLogin(); } else { setAuthUI(false); }
+  })();
+</script>
 
-    $('wd-save').onclick = async ()=>{
-      if (!currentUser) return toast('Please login first');
-      const payload = { name:$('w-name').value.trim(), ac:$('w-ac').value.trim(), ifsc:$('w-ifsc').value.trim(), upi:$('w-upi').value.trim() };
-      if (!payload.name || !payload.ac || !payload.ifsc) return toast('Fill Name / AC / IFSC');
-      const { error } = await supabase.from('users').update(payload).eq('id', currentUser.id);
-      if (error) return toast('Save failed: ' + error.message);
-      toast('✅ Profile saved.');
-    };
-
-    wdSubmit.onclick = async ()=>{
-      if (!currentUser) return toast('Please login first');
-      const amount = Number($('wd-amount').value);
-      if (!amount || amount <= 0) return toast('Enter amount');
-      if (!$('w-name').value.trim() || !$('w-ac').value.trim() || !$('w-ifsc').value.trim()) {
-        return toast('Please complete withdrawal profile (Name / AC / IFSC).');
-      }
-      const { data: u } = await supabase.from('users').select('turnover_remaining').eq('id', currentUser.id).single();
-      const need = Number(u?.turnover_remaining || 0);
-      if (need > 0) return toast(`Rollover not met: ₹${fmt2(need)} remaining`);
-      const { error } = await supabase.rpc('request_withdraw', {
-        _user_id: currentUser.id, _email: currentUser.email, _amount: amount
-      });
-      if (error) {
-        if (String(error.message).includes('TURNOVER_NOT_MET')) return toast('Rollover not met. Please continue betting.');
-        return toast('Submit failed: ' + error.message);
-      }
-      show(wdModal,false);
-      toast('✅ Withdraw request submitted.');
-      if (historyModal.style.display === 'flex') await loadRecentRecords();
-    };
-
-    async function loadRecentRecords(){
-      if(!currentUser){ return; }
-      const since = new Date(Date.now() - 3*24*60*60*1000).toISOString();
-      const { data: dep, error: depErr } = await supabase
-        .from('recharge_requests').select('created_at, utr, amount, status')
-        .eq('user_id', currentUser.id).gte('created_at', since)
-        .order('created_at', { ascending: false }).limit(100);
-      if (depErr) {
-        depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">Load failed: ${depErr.message}</td></tr>`;
-      } else if (!dep || dep.length === 0){
-        depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
-      } else {
-        depositsTbody.innerHTML = dep.map(r => `
-          <tr>
-            <td>${fmtTime(r.created_at)}</td>
-            <td>${r.utr ?? '—'}</td>
-            <td>${fmt2(r.amount)}</td>
-            <td><span class="tag ${String(r.status).toLowerCase()}">${r.status}</span></td>
-          </tr>
-        `).join('');
-      }
-      const { data: wd, error: wdErr } = await supabase
-        .from('withdraw_requests').select('created_at, amount, status')
-        .eq('user_id', currentUser.id).gte('created_at', since)
-        .order('created_at', { ascending: false }).limit(100);
-      if (wdErr) {
-        withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">Load failed: ${wdErr.message}</td></tr>`;
-      } else if (!wd || wd.length === 0){
-        withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No records in last 3 days</td></tr>`;
-      } else {
-        withdrawalsTbody.innerHTML = wd.map(r => `
-          <tr>
-            <td>${fmtTime(r.created_at)}</td>
-            <td>${fmt2(r.amount)}</td>
-            <td><span class="tag ${String(r.status).toLowerCase()}">${r.status}</span></td>
-          </tr>
-        `).join('');
-      }
-    }
-
-    chpassSubmit.onclick = async ()=>{
-      try{
-        if (!currentUser) return toast('Please login first');
-        const email = currentUser.email;
-        const oldP = $('old-pass').value, np = $('new-pass').value, np2 = $('new-pass2').value;
-        if (!oldP || !np || !np2) return toast('Fill all fields');
-        if (np.length < 6) return toast('New password must be at least 6 characters');
-        if (np !== np2) return toast('New passwords do not match');
-        const { error: reauthErr } = await supabase.auth.signInWithPassword({ email, password: oldP });
-        if (reauthErr) return toast('Current password is incorrect');
-        const { error: updErr } = await supabase.auth.updateUser({ password: np });
-        if (updErr) return toast('Update failed: ' + updErr.message);
-        $('old-pass').value = $('new-pass').value = $('new-pass2').value = '';
-        show(chpassModal, false);
-        toast('✅ Password updated');
-      }catch(e){ toast('Update failed: ' + (e?.message || e)); }
-    };
-
-    (async ()=>{
-      const { data:{ user } } = await supabase.auth.getUser();
-      if (user){ currentUser=user; await afterLogin(); } else { setAuthUI(false); }
-    })();
-  </script>
 </body>
 </html>
