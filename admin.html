@@ -560,7 +560,8 @@
           ? `Number ${b.choice ?? '-'}`
           : (b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)');
         rows.push({ game:'Dice', email, round:b.round_number||'-', bet:betText,
-          amount(Number(b.amount||0)), odds:Number(b.odds||0), status:b.status||'-', payout:Number(b.payout||0), ts:b.created_at });
+      amount: Number(b.amount||0), odds: Number(b.odds||0), status: b.status||'-', payout: Number(b.payout||0), ts: b.created_at
+ });
       }
 
       // Andar Bahar
