@@ -756,6 +756,7 @@ async function loadWithdrawRequests() {
               <button style="width:auto;background:#ef4444" onclick="adjustBalance('${u.id}', 'sub')">➖ Deduct</button>
               <button style="width:auto;background:#92400e" onclick="setVipLevel('${u.id}', ${Number(u.vip_level||0)})">⭐ Set VIP</button>
               <button style="width:auto;background:#0ea5e9" onclick="adjustTurnover('${u.id}')">🔁 Turnover +/-</button>
+              <button style="width:auto;background:#16a34a" onclick="grantBonusByEmail('${u.email || ''}')">🎁 Bonus</button>
             </div>
           </td>
         </tr>
@@ -778,6 +779,37 @@ async function loadWithdrawRequests() {
       setPageInfo('users-page-info', usersPage, count||0);
     }
     document.getElementById('users-reload').onclick = ()=>{ usersPage = 1; loadUsers(); };
+
+    window.grantBonusByEmail = async (targetEmail) => {
+  // 允许从行上带入，也允许手动输入
+  let email = (targetEmail || '').trim();
+  if (!email) {
+    email = prompt('User email to grant bonus:') || '';
+    email = email.trim();
+  }
+  if (!email) return alert('Email is required.');
+
+  let val = prompt('Bonus amount:');
+  if (val === null) return;
+  const amt = Number(val);
+  if (!amt || amt <= 0) return alert('Invalid amount');
+
+  const reason = prompt('Reason (optional):') || null;
+  const exp = prompt('Expires in days? (optional, leave blank = no expiry)');
+  let expires_at = null;
+  if (exp && !isNaN(Number(exp)) && Number(exp) > 0) {
+    const d = new Date(); d.setDate(d.getDate() + Number(exp));
+    expires_at = d.toISOString();
+  }
+
+  const { error } = await supabase
+    .from('bonuses')
+    .insert([{ email, amount: amt, reason, expires_at }]);
+
+  if (error) return alert('Create bonus failed: ' + error.message);
+  alert(`✅ Bonus created for ${email}: ₹${amt.toFixed(2)}`);
+};
+
 
     window.adjustBalance = async (user_id, action) => {
       let val = prompt(action === 'add' ? 'Enter amount to ADD:' : 'Enter amount to DEDUCT:');
