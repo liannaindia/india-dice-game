@@ -401,71 +401,76 @@
     };
 
     // Withdraw：仅用本表 email 搜索 + 分页（仍保留 users 取展示信息）
-    async function loadWithdrawRequests() {
-      const container = document.getElementById('withdraw-requests');
-      const from = (withdrawPage - 1) * PAGE_SIZE;
-      const to   = from + PAGE_SIZE - 1;
+    // ✅ 恢复原有字段：select('*')，仅新增邮箱搜索 + 20/页分页 + 超页回退
+async function loadWithdrawRequests() {
+  const container = document.getElementById('withdraw-requests');
+  const from = (withdrawPage - 1) * PAGE_SIZE;
+  const to   = from + PAGE_SIZE - 1;
 
-      let q = supabase
-        .from('withdraw_requests')
-        .select('id, amount, status, created_at, user_id, bank_account, upi, email', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+  // 原样取 withdraw_requests 全字段，按创建时间倒序；加计数与分页
+  let q = supabase
+    .from('withdraw_requests')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to);
 
-      if (withdrawQuery) q = q.ilike('email', `%${withdrawQuery}%`);
+  // 只用本表 email 做搜索（你说两张表都有 email）
+  if (withdrawQuery) {
+    q = q.ilike('email', `%${withdrawQuery}%`);
+  }
 
-      const { data, count, error, status } = await q;
+  const { data, count, error, status } = await q;
 
-      if (status === 416 || (error && error.status === 416)) {
-        if (withdrawPage > 1) { withdrawPage--; return loadWithdrawRequests(); }
-      }
-      if (error) { container.textContent = 'Failed to load'; return; }
+  // 超页（416）自动回退一页
+  if (status === 416 || (error && error.status === 416)) {
+    if (withdrawPage > 1) { withdrawPage--; return loadWithdrawRequests(); }
+  }
+  if (error) { container.textContent = 'Failed to load'; return; }
 
-      if (!data?.length) {
-        if (withdrawPage > 1) { withdrawPage--; return loadWithdrawRequests(); }
-        container.textContent = 'No withdraw requests.';
-        setPageInfo('withdraw-page-info', withdrawPage, count || 0);
-        return;
-      }
+  container.innerHTML = '';
+  if (!data?.length) {
+    container.textContent = 'No withdraw requests.';
+    setPageInfo('withdraw-page-info', withdrawPage, count || 0);
+    return;
+  }
 
-      // 展示补充（保持原有功能）：从 users 获取 name/ac/ifsc/upi
-      const userIds = [...new Set(data.map(r => r.user_id).filter(Boolean))];
-      let userMap = {};
-      if (userIds.length) {
-        const { data: users } = await supabase
-          .from('users').select('id, email, name, ac, ifsc, upi').in('id', userIds);
-        (users || []).forEach(u => { userMap[u.id] = u; });
-      }
+  // 和你原来一样：为展示补充用户资料（name/ac/ifsc/upi 等）
+  const userIds = [...new Set(data.map(r => r.user_id).filter(Boolean))];
+  let userMap = {};
+  if (userIds.length) {
+    const { data: users } = await supabase
+      .from('users').select('id, email, name, ac, ifsc, upi').in('id', userIds);
+    (users || []).forEach(u => { userMap[u.id] = u; });
+  }
 
-      container.innerHTML = '';
-      for (const item of data) {
-        const u = userMap[item.user_id] || {};
-        const emailShow = item.email || u.email || item.user_id;
-        const el = document.createElement('div');
-        el.className = 'request-box';
-        el.innerHTML = `
-          <div><b>${emailShow}</b></div>
-          <div>Amount: ₹${item.amount}</div>
-          <div>Status: ${item.status || 'pending'}</div>
-          <div class="muted" style="margin-top:6px">Saved Withdraw Info:</div>
-          <div class="mono" style="font-size:13px">
-            Name: ${u.name || '-'}<br/>
-            AC: ${u.ac || '-'}<br/>
-            IFSC: ${u.ifsc || '-'}<br/>
-            UPI: ${u.upi || item.upi || '-'}
-          </div>
-          ${
-            item.status === 'pending'
-              ? `<div class="btn-group">
-                   <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
-                   <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
-                 </div>` : ''
-          }`;
-        container.appendChild(el);
-      }
+  for (const item of data) {
+    const u = userMap[item.user_id] || {};
+    const el = document.createElement('div');
+    el.className = 'request-box';
+    el.innerHTML = `
+      <div><b>${item.email || u.email || item.user_id}</b></div>
+      <div>Amount: ₹${item.amount}</div>
+      <div>Status: ${item.status || 'pending'}</div>
+      <div class="muted" style="margin-top:6px">Saved Withdraw Info:</div>
+      <div class="mono" style="font-size:13px">
+        Name: ${u.name || '-'}<br/>
+        AC: ${u.ac || '-'}<br/>
+        IFSC: ${u.ifsc || '-'}<br/>
+        UPI: ${u.upi || item.upi || '-'}
+      </div>
+      ${
+        item.status === 'pending'
+          ? `<div class="btn-group">
+               <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
+               <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
+             </div>` : ''
+      }`;
+    container.appendChild(el);
+  }
 
-      setPageInfo('withdraw-page-info', withdrawPage, count || 0);
-    }
+  setPageInfo('withdraw-page-info', withdrawPage, count || 0);
+}
+
 
     window.handleApproveWithdraw = async (id, user_id, amount) => {
       try {
