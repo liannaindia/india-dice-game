@@ -100,20 +100,6 @@
       <section id="tab-recharge" class="tab hidden">
         <div class="card">
           <h3>💳 Recharge Requests</h3>
-
-          <!-- [ADD] 邮箱搜索 + 分页控件 -->
-          <div class="toolbar">
-            <input id="recharge-search" placeholder="Search email…" style="max-width:320px"/>
-            <button id="recharge-search-btn" style="width:auto">Search</button>
-            <span class="muted">20 / page</span>
-          </div>
-          <div class="toolbar">
-            <button id="recharge-prev" style="width:auto">Prev</button>
-            <span id="recharge-page-info" class="pill gray">Page 1</span>
-            <button id="recharge-next" style="width:auto">Next</button>
-          </div>
-          <!-- /[ADD] -->
-
           <div id="recharge-requests">Loading...</div>
         </div>
       </section>
@@ -122,20 +108,6 @@
       <section id="tab-withdraw" class="tab hidden">
         <div class="card">
           <h3>💸 Withdraw Requests</h3>
-
-          <!-- [ADD] 邮箱搜索 + 分页控件 -->
-          <div class="toolbar">
-            <input id="withdraw-search" placeholder="Search email…" style="max-width:320px"/>
-            <button id="withdraw-search-btn" style="width:auto">Search</button>
-            <span class="muted">20 / page</span>
-          </div>
-          <div class="toolbar">
-            <button id="withdraw-prev" style="width:auto">Prev</button>
-            <span id="withdraw-page-info" class="pill gray">Page 1</span>
-            <button id="withdraw-next" style="width:auto">Next</button>
-          </div>
-          <!-- /[ADD] -->
-
           <div id="withdraw-requests">Loading...</div>
         </div>
       </section>
@@ -225,15 +197,7 @@
           <div class="toolbar">
             <input id="users-email-filter" placeholder="Filter by email (optional)" style="max-width:320px"/>
             <button id="users-reload" style="width:auto">Reload</button>
-            <span class="muted">20 / page</span>
           </div>
-          <!-- [ADD] Users 分页控件 -->
-          <div class="toolbar">
-            <button id="users-prev" style="width:auto">Prev</button>
-            <span id="users-page-info" class="pill gray">Page 1</span>
-            <button id="users-next" style="width:auto">Next</button>
-          </div>
-          <!-- /[ADD] -->
           <div id="users-table" style="margin-top:8px">Loading...</div>
         </div>
       </section>
@@ -253,12 +217,6 @@
     let appInited = false;
     function ensureInitOnce(){ if (appInited) return; appInited = true; initTabs(); loadAll(); }
     const isAdminSession = (s)=> s?.user?.email === ADMIN_EMAIL;
-
-    // [ADD] 分页&搜索状态
-    const PAGE_SIZE = 20;
-    let rechargePage = 1, rechargeQuery = '';
-    let withdrawPage = 1, withdrawQuery = '';
-    let usersPage    = 1;
 
     // boot + session listener
     (async function boot(){
@@ -298,33 +256,6 @@
           if (tab==='wingo')    refreshWingoTimes();
         };
       });
-
-      // [ADD] 绑定搜索/分页事件（Recharge）
-      document.getElementById('recharge-search-btn').onclick = ()=>{ 
-        rechargeQuery = (document.getElementById('recharge-search').value||'').trim(); 
-        rechargePage = 1; loadRechargeRequests(); 
-      };
-      document.getElementById('recharge-prev').onclick = ()=>{ if (rechargePage>1){ rechargePage--; loadRechargeRequests(); } };
-      document.getElementById('recharge-next').onclick = ()=>{ rechargePage++; loadRechargeRequests(); };
-
-      // [ADD] 绑定搜索/分页事件（Withdraw）
-      document.getElementById('withdraw-search-btn').onclick = ()=>{
-        withdrawQuery = (document.getElementById('withdraw-search').value||'').trim();
-        withdrawPage = 1; loadWithdrawRequests();
-      };
-      document.getElementById('withdraw-prev').onclick = ()=>{ if (withdrawPage>1){ withdrawPage--; loadWithdrawRequests(); } };
-      document.getElementById('withdraw-next').onclick = ()=>{ withdrawPage++; loadWithdrawRequests(); };
-
-      // [ADD] Users 分页
-      document.getElementById('users-prev').onclick = ()=>{ if (usersPage>1){ usersPage--; loadUsers(); } };
-      document.getElementById('users-next').onclick = ()=>{ usersPage++; loadUsers(); };
-    }
-
-    function setPageInfo(elId, page, total){
-      const el = document.getElementById(elId);
-      if (!el) return;
-      const pages = Math.max(1, Math.ceil((total||0) / PAGE_SIZE));
-      el.textContent = `Page ${page} / ${pages} • ${total||0} rows`;
     }
 
     async function loadAll() {
@@ -343,44 +274,17 @@
       refreshWingoTimes();
     }
 
-    // Recharge — 分页 + 邮箱搜索
+    // Recharge
     async function loadRechargeRequests() {
       const container = document.getElementById('recharge-requests');
-      const from = (rechargePage-1)*PAGE_SIZE;
-      const to   = from + PAGE_SIZE - 1;
-
-      const baseSelect = rechargeQuery
-        ? 'id, user_id, amount, utr, status, created_at, email, users!inner(email)'
-        : 'id, user_id, amount, utr, status, created_at, email, users(email)';
-
-      let q = supabase.from('recharge_requests')
-        .select(baseSelect, { count:'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (rechargeQuery){
-        // 优先按 users.email 过滤（需要 inner join）
-        q = q.ilike('users.email', `%${rechargeQuery}%`);
-      }
-
-      const { data, count, error } = await q;
+      const { data, error } = await supabase.from('recharge_requests').select('*').order('created_at', { ascending: false });
       if (error) { container.textContent = 'Failed to load'; return; }
-
       container.innerHTML = '';
-      if (!data?.length){
-        // 空页回退
-        if (rechargePage>1){ rechargePage--; return loadRechargeRequests(); }
-        container.textContent = 'No recharge requests.'; 
-        setPageInfo('recharge-page-info', rechargePage, count||0);
-        return;
-      }
-
       for (const item of data) {
-        const emailShow = item.email || item.users?.email || item.user_id;
         const el = document.createElement('div');
         el.className = 'request-box';
         el.innerHTML = `
-          <b>${emailShow}</b><br/>
+          <b>${item.email || item.user_id}</b><br/>
           UTR: ${item.utr}<br/>
           Amount: ₹${item.amount}<br/>
           Status: ${item.status || 'pending'}
@@ -393,8 +297,6 @@
           }`;
         container.appendChild(el);
       }
-
-      setPageInfo('recharge-page-info', rechargePage, count||0);
     }
     window.handleApproveRecharge = async (id, user_id, amount) => {
       try {
@@ -411,44 +313,30 @@
       alert('Recharge rejected.'); loadRechargeRequests();
     };
 
-    // Withdraw — 分页 + 邮箱搜索
+    // Withdraw
     async function loadWithdrawRequests() {
       const container = document.getElementById('withdraw-requests');
-      const from = (withdrawPage-1)*PAGE_SIZE;
-      const to   = from + PAGE_SIZE - 1;
-
-      const baseSelect = withdrawQuery
-        ? 'id, amount, status, created_at, user_id, bank_account, upi, email, users!inner(email, name, ac, ifsc, upi)'
-        : 'id, amount, status, created_at, user_id, bank_account, upi, email, users(email, name, ac, ifsc, upi)';
-
-      let q = supabase
-        .from('withdraw_requests')
-        .select(baseSelect, { count:'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (withdrawQuery){
-        q = q.ilike('users.email', `%${withdrawQuery}%`);
-      }
-
-      const { data, count, error } = await q;
+      const { data, error } = await supabase
+        .from('withdraw_requests').select('*').order('created_at', { ascending: false });
       if (error) { container.textContent = 'Failed to load'; return; }
       container.innerHTML = '';
 
-      if (!data?.length){
-        if (withdrawPage>1){ withdrawPage--; return loadWithdrawRequests(); }
-        container.textContent = 'No withdraw requests.';
-        setPageInfo('withdraw-page-info', withdrawPage, count||0);
-        return;
+      if (!data?.length) { container.textContent = 'No withdraw requests.'; return; }
+
+      const userIds = [...new Set(data.map(r => r.user_id).filter(Boolean))];
+      let userMap = {};
+      if (userIds.length) {
+        const { data: users } = await supabase
+          .from('users').select('id, email, name, ac, ifsc, upi').in('id', userIds);
+        (users || []).forEach(u => { userMap[u.id] = u; });
       }
 
       for (const item of data) {
-        const u = item.users || {};
-        const emailShow = u.email || item.email || item.user_id;
+        const u = userMap[item.user_id] || {};
         const el = document.createElement('div');
         el.className = 'request-box';
         el.innerHTML = `
-          <div><b>${emailShow}</b></div>
+          <div><b>${u.email || item.email || item.user_id}</b></div>
           <div>Amount: ₹${item.amount}</div>
           <div>Status: ${item.status || 'pending'}</div>
           <div class="muted" style="margin-top:6px">Saved Withdraw Info:</div>
@@ -467,8 +355,6 @@
           }`;
         container.appendChild(el);
       }
-
-      setPageInfo('withdraw-page-info', withdrawPage, count||0);
     }
     window.handleApproveWithdraw = async (id, user_id, amount) => {
       try {
@@ -553,27 +439,15 @@
       const rows = [];
 
       // Dice
-    for (const b of dice) {
-  const email = getEmail(b);
-  if (emailFilter && !String(email).toLowerCase().includes(emailFilter)) continue;
-
-  const betText = b.bet_type === 'number'
-    ? `Number ${b.choice ?? '-'}`
-    : (b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)');
-
-  rows.push({
-    game: 'Dice',
-    email,
-    round: b.round_number || '-',
-    bet: betText,                     // ← 这一行末尾必须有逗号
-    amount: Number(b.amount || 0),
-    odds: Number(b.odds || 0),
-    status: b.status || '-',
-    payout: Number(b.payout || 0),
-    ts: b.created_at
-  });
-}
-
+      for (const b of dice){
+        const email = getEmail(b);
+        if (emailFilter && !String(email).toLowerCase().includes(emailFilter)) continue;
+        const betText = b.bet_type === 'number'
+          ? `Number ${b.choice ?? '-'}`
+          : (b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)');
+        rows.push({ game:'Dice', email, round:b.round_number||'-', bet:betText,
+          amount:Number(b.amount||0), odds:Number(b.odds||0), status:b.status||'-', payout:Number(b.payout||0), ts:b.created_at });
+      }
 
       // Andar Bahar
       for (const b of ab){
@@ -643,7 +517,7 @@
     }
     document.getElementById('bets-reload').onclick = loadTodayBets;
 
-    // 旧骰子手动结果（保持不变）
+    // 旧骰子手动结果
     document.getElementById('set-result-btn').onclick = async () => {
       const round = document.getElementById('manual-round').value.trim();
       const result = parseInt(document.getElementById('manual-result').value);
@@ -664,7 +538,7 @@
       }
     };
 
-    // Wheel 工具 & 控制（保持不变）
+    // Wheel 工具 & 控制
     const W_NUMBERS = Array.from({length:16}, (_,i)=>i+3);
     const W_ODDS = new Map([[3,180],[18,180],[4,60],[17,60],[5,30],[16,30],[6,18],[15,18],[7,12],[14,12],[8,9],[13,9],[9,8],[12,8],[10,7],[11,7]]);
     function getIST(){ const now=new Date(); const utc=now.getTime()+now.getTimezoneOffset()*60000; return new Date(utc+5.5*3600*1000); }
@@ -722,33 +596,22 @@
       alert(`✅ Saved: ${round} → ${n} (×${mult})`);
     };
 
-    // Users（隐藏 ID + 20/页分页；其余逻辑不变）
+    // Users
     async function loadUsers(){
       const container = document.getElementById('users-table');
       const emailFilter = (document.getElementById('users-email-filter').value || '').trim();
-      const from = (usersPage-1)*PAGE_SIZE;
-      const to   = from + PAGE_SIZE - 1;
-
       let q = supabase.from('users')
-        // 仍然选择 id 用于按钮操作，但不渲染显示
-        .select('id, email, balance, turnover_remaining, vip_level, name, ac, ifsc, upi', { count:'exact' })
+        .select('id, email, balance, turnover_remaining, vip_level, name, ac, ifsc, upi')
         .order('email', { ascending: true })
-        .range(from, to);
-
+        .limit(1000);
       if (emailFilter) q = q.ilike('email', `%${emailFilter}%`);
-
-      const { data, count, error } = await q;
+      const { data, error } = await q;
       if (error) { container.textContent = 'Failed to load users: ' + error.message; return; }
-      if (!data?.length) {
-        if (usersPage>1){ usersPage--; return loadUsers(); }
-        container.textContent = 'No users.'; 
-        setPageInfo('users-page-info', usersPage, count||0);
-        return;
-      }
+      if (!data?.length) { container.textContent = 'No users.'; return; }
 
-      // 隐藏 ID 列：不渲染 ID，只在按钮里使用 u.id
       const rows = data.map(u => `
         <tr>
+          <td class="mono" style="font-size:12px">${u.id}</td>
           <td>${u.email || '-'}</td>
           <td>₹${Number(u.balance||0).toFixed(2)}</td>
           <td>₹${Number(u.turnover_remaining||0).toFixed(2)}</td>
@@ -773,7 +636,7 @@
           <table>
             <thead>
               <tr>
-                <th>Email</th><th>Balance</th><th>Turnover</th><th>VIP</th>
+                <th>ID</th><th>Email</th><th>Balance</th><th>Turnover</th><th>VIP</th>
                 <th>Name</th><th>AC</th><th>IFSC</th><th>UPI</th><th>Actions</th>
               </tr>
             </thead>
@@ -781,10 +644,8 @@
           </table>
         </div>
       `;
-
-      setPageInfo('users-page-info', usersPage, count||0);
     }
-    document.getElementById('users-reload').onclick = ()=>{ usersPage = 1; loadUsers(); };
+    document.getElementById('users-reload').onclick = loadUsers;
 
     window.adjustBalance = async (user_id, action) => {
       let val = prompt(action === 'add' ? 'Enter amount to ADD:' : 'Enter amount to DEDUCT:');
@@ -849,7 +710,7 @@
       alert('VIP updated.'); loadUsers();
     };
 
-    // Bank Info 保存（保持不变）
+    // Bank Info 保存
     async function saveBankInfo(){
       const btn = document.getElementById('save-bank-btn');
       const name   = (document.getElementById('name').value   || '').trim();
