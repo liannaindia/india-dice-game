@@ -553,16 +553,27 @@
       const rows = [];
 
       // Dice
-      for (const b of dice){
-        const email = getEmail(b);
-        if (emailFilter && !String(email).toLowerCase().includes(emailFilter)) continue;
-        const betText = b.bet_type === 'number'
-          ? `Number ${b.choice ?? '-'}`
-          : (b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)');
-        rows.push({ game:'Dice', email, round:b.round_number||'-', bet:betText,
-      amount: Number(b.amount||0), odds: Number(b.odds||0), status: b.status||'-', payout: Number(b.payout||0), ts: b.created_at
- });
-      }
+    for (const b of dice) {
+  const email = getEmail(b);
+  if (emailFilter && !String(email).toLowerCase().includes(emailFilter)) continue;
+
+  const betText = b.bet_type === 'number'
+    ? `Number ${b.choice ?? '-'}`
+    : (b.bet_type === 'big' ? 'Big (4-6)' : 'Small (1-3)');
+
+  rows.push({
+    game: 'Dice',
+    email,
+    round: b.round_number || '-',
+    bet: betText,                     // ← 这一行末尾必须有逗号
+    amount: Number(b.amount || 0),
+    odds: Number(b.odds || 0),
+    status: b.status || '-',
+    payout: Number(b.payout || 0),
+    ts: b.created_at
+  });
+}
+
 
       // Andar Bahar
       for (const b of ab){
