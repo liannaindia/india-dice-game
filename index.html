@@ -352,6 +352,8 @@
             <button id="open-withdraw" class="btn">Withdraw</button>
             <button id="open-history" class="btn">My Records</button>
             <button id="open-chpass" class="btn ghost">Change Password</button>
+            <button id="open-bonus" class="btn ghost">Claim Bonus</button>
+
           </div>
         </div>
         <div class="balance">
@@ -508,6 +510,8 @@
     </div>
   </div>
 
+  
+
   <!-- 记录 Modal -->
   <div id="history-modal" class="modal-bg">
     <div class="modal">
@@ -562,6 +566,25 @@
       </footer>
     </div>
   </div>
+
+  <!-- 领取奖金 Modal -->
+<div id="bonus-modal" class="modal-bg">
+  <div class="modal">
+    <header>Claimable Bonuses</header>
+    <div class="body">
+      <div class="muted" id="bonus-email">—</div>
+      <div style="display:flex;gap:8px;align-items:center;margin:8px 0">
+        <span class="tag">Balance: ₹<b id="bonus-balance">—</b></span>
+        <button id="bonus-reload" class="btn">Reload</button>
+      </div>
+      <div id="bonus-list">Loading…</div>
+    </div>
+    <footer>
+      <button id="bonus-close" class="btn">Close</button>
+    </footer>
+  </div>
+</div>
+
 
   <script type="module">
     import { supabase } from './supabase-config.js';
@@ -851,6 +874,111 @@
       const { data:{ user } } = await supabase.auth.getUser();
       if (user){ currentUser=user; await afterLogin(); } else { setAuthUI(false); }
     })();
+    // ======== Claim Bonus (frontend) ========
+const openBonus     = $('open-bonus');
+const bonusModal    = $('bonus-modal');
+const bonusClose    = $('bonus-close');
+const bonusReload   = $('bonus-reload');
+const bonusList     = $('bonus-list');
+const bonusEmail    = $('bonus-email');
+const bonusBalance  = $('bonus-balance');
+
+// 打开弹窗
+openBonus.onclick = async ()=>{
+  if (!currentUser) return toast('Please login first');
+  bonusEmail.textContent = `Account: ${currentUser.email || '—'}`;
+  await refreshBonusBalance();
+  await loadBonuses();
+  show(bonusModal, true);
+};
+
+// 关闭/刷新
+bonusClose.onclick  = ()=> show(bonusModal, false);
+bonusReload.onclick = async ()=>{ await refreshBonusBalance(); await loadBonuses(); };
+
+// 读取余额（沿用 users 表，按 id 查，和你现有逻辑一致）
+async function refreshBonusBalance(){
+  try{
+    const { data } = await supabase
+      .from('users')
+      .select('balance')
+      .eq('id', currentUser.id)
+      .single();
+    const bal = Number(data?.balance || 0);
+    bonusBalance.textContent = fmt2(bal);
+    // 顺手同步主页余额显示
+    balanceEl.textContent = bal;
+  }catch(e){
+    bonusBalance.textContent = '—';
+    console.warn('refreshBonusBalance:', e?.message || e);
+  }
+}
+
+// 加载可领取奖金列表（RLS 已限制为本人 email）
+async function loadBonuses(){
+  bonusList.textContent = 'Loading…';
+  const { data, error } = await supabase
+    .from('bonuses')
+    .select('id, amount, reason, created_at, expires_at, status')
+    .eq('status', 'available')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error){
+    bonusList.innerHTML = `<div class="muted">Load failed: ${error.message}</div>`;
+    return;
+  }
+  if (!data?.length){
+    bonusList.innerHTML = `<div class="muted">No claimable bonuses.</div>`;
+    return;
+  }
+  bonusList.innerHTML = data.map(b => renderBonusItem(b)).join('');
+}
+
+function renderBonusItem(b){
+  const created = fmtTime(b.created_at);
+  const exp     = b.expires_at ? fmtTime(b.expires_at) : null;
+  return `
+    <div class="kv" style="gap:10px;align-items:center;margin-bottom:10px">
+      <div style="flex:1 1 auto">
+        <div><b>🎁 ₹${fmt2(b.amount)}</b></div>
+        ${b.reason ? `<div class="muted">${b.reason}</div>` : ''}
+        <div class="muted">Granted: ${created}</div>
+        ${exp ? `<div class="muted">Expire: ${exp}</div>` : ''}
+      </div>
+      <div style="flex:0 0 auto">
+        <button class="btn primary" onclick="window._claimBonus('${b.id}', this)">Claim</button>
+      </div>
+    </div>
+  `;
+}
+
+// 领取（调用数据库函数 claim_bonus，原子加余额）
+window._claimBonus = async (bonusId, btnEl)=>{
+  if (!bonusId) return;
+  const old = btnEl.textContent;
+  btnEl.disabled = true; btnEl.textContent = 'Claiming…';
+  try{
+    const { data, error } = await supabase.rpc('claim_bonus', { p_bonus_id: bonusId });
+    if (error) throw error;
+
+    const row = data?.[0];
+    if (row?.claimed){
+      toast(`✅ Claimed ₹${fmt2(row.amount)}\nNew balance: ₹${fmt2(row.new_balance)}`);
+      // 同步更新余额与列表
+      balanceEl.textContent = fmt2(row.new_balance);
+      bonusBalance.textContent = fmt2(row.new_balance);
+      await loadBonuses();
+    }else{
+      toast('This bonus cannot be claimed or has expired.');
+      await loadBonuses();
+    }
+  }catch(e){
+    toast('Claim failed: ' + (e?.message || e));
+  }finally{
+    btnEl.disabled = false; btnEl.textContent = old;
+  }
+};
+
   </script>
 </body>
 </html>
