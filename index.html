@@ -594,24 +594,35 @@
     const toast = (m)=>alert(m);
     const fmt2 = (n)=> Number(n ?? 0).toFixed(2);
     // 将任意 ISO 时间按印度时间(IST)显示
+// 强制把 ISO 时间转为印度时间（UTC+5:30）
 const fmtTime = (iso) => {
   if (!iso) return '—';
   try {
-    const d = new Date(iso);
-    const s = new Intl.DateTimeFormat('en-IN', {
-      timeZone: 'Asia/Kolkata',   // 关键：固定到 IST
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    }).format(d);
-    return String(s).replace(',', '') + ' IST';
+    let s = String(iso).trim();
+
+    // 如果没有时区信息，默认按 UTC 解析
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(s)) {
+      s += 'Z';
+    }
+
+    const d = new Date(s);
+    // 加上 5 小时 30 分钟偏移
+    const ist = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+
+    const y  = ist.getUTCFullYear();
+    const m  = String(ist.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(ist.getUTCDate()).padStart(2, '0');
+    const hh = String(ist.getUTCHours()).padStart(2, '0');
+    const mm = String(ist.getUTCMinutes()).padStart(2, '0');
+    // 如果要显示秒，取消下一行注释
+    // const ss = String(ist.getUTCSeconds()).padStart(2, '0');
+
+    return `${dd}/${m}/${y} ${hh}:${mm} IST`;
   } catch {
     return iso || '—';
   }
 };
+
 
 
     const openLogin = $('open-login');
