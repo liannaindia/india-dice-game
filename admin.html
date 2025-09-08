@@ -54,6 +54,15 @@
 
     /* 在线卡片的小绿点 */
     .dot{width:10px;height:10px;border-radius:999px;background:#22c55e;display:inline-block;margin-right:6px}
+
+    /* ===== KPI Online card ===== */
+    .kpi-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .kpi{cursor:pointer;user-select:none;background:var(--card);border:1px solid #e5e7eb;
+         border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.06);padding:14px;min-width:220px;display:flex;align-items:center;gap:12px}
+    .kpi:hover{box-shadow:0 8px 18px rgba(0,0,0,.08)}
+    .kpi .kpi-title{display:flex;align-items:center;gap:8px;font-weight:700;color:#111827}
+    .kpi .kpi-value{font-size:26px;font-weight:800;line-height:1;margin-top:6px}
+    .kpi .kpi-hint{color:var(--muted);font-size:12px;margin-top:4px}
   </style>
 </head>
 <body>
@@ -82,22 +91,22 @@
     </aside>
 
     <main class="content">
-      <!-- Online -->
-      <section id="tab-online" class="tab hidden">
-        <div class="card" id="card-online" style="cursor:pointer;display:flex;align-items:center;gap:12px">
+
+      <!-- ===== 全局在线人数 KPI（任何标签页都可见） ===== -->
+      <div class="kpi-bar">
+        <div id="kpi-online-card" class="kpi" title="点击查看在线用户">
           <img alt="online" width="36" height="36"
-            src="data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 24 24' fill='none'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-3.33 0-10 1.67-10 5v1h20v-1c0-3.33-6.67-5-10-5Z' stroke='%232468F5' stroke-width='1.5'/></svg>">
+               src="data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 24 24' fill='none'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-3.33 0-10 1.67-10 5v1h20v-1c0-3.33-6.67-5-10-5Z' stroke='%232468F5' stroke-width='1.5'/></svg>">
           <div>
-            <div style="font-size:13px;color:#8592a6;"><span class="dot"></span>在线会员 (最近2分钟)</div>
-            <div style="font-size:26px;font-weight:700;"><span id="onlineCount">0</span></div>
-            <div class="muted">点击此卡片跳转到在线列表</div>
-          </div>
-          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-            <span class="pill gray">Auto refresh</span>
-            <button id="online-refresh" style="width:auto">Refresh</button>
+            <div class="kpi-title"><span class="dot"></span>在线会员（最近2分钟）</div>
+            <div id="kpi-online-num" class="kpi-value">0</div>
+            <div class="kpi-hint">点击此卡片跳转到在线列表</div>
           </div>
         </div>
+      </div>
 
+      <!-- Online（只保留列表） -->
+      <section id="tab-online" class="tab hidden">
         <div class="card" id="online-list">
           <h3 id="online-anchor">在线用户列表</h3>
           <div class="toolbar">
@@ -131,7 +140,6 @@
       <section id="tab-recharge" class="tab hidden">
         <div class="card">
           <h3>💳 Recharge Requests</h3>
-          <!-- 搜索 + 分页 -->
           <div class="toolbar">
             <input id="recharge-search" placeholder="Search email…" style="max-width:320px"/>
             <button id="recharge-search-btn" style="width:auto">Search</button>
@@ -150,7 +158,6 @@
       <section id="tab-withdraw" class="tab hidden">
         <div class="card">
           <h3>💸 Withdraw Requests</h3>
-          <!-- 搜索 + 分页 -->
           <div class="toolbar">
             <input id="withdraw-search" placeholder="Search email…" style="max-width:320px"/>
             <button id="withdraw-search-btn" style="width:auto">Search</button>
@@ -332,15 +339,24 @@
         };
       });
 
-      // 在线：翻页与刷新
+      // 在线：翻页
       document.getElementById('online-prev').onclick = ()=>{ if (onlinePage>1){ onlinePage--; loadOnlineUsers(); } };
       document.getElementById('online-next').onclick = ()=>{ onlinePage++; loadOnlineUsers(); };
-      document.getElementById('online-refresh').onclick = ()=>{ loadOnlineCount(); loadOnlineUsers(); };
 
-      // 点击卡片跳到列表
-      document.getElementById('card-online').onclick = ()=>{
-        document.getElementById('online-anchor')?.scrollIntoView({behavior:'smooth', block:'start'});
-      };
+      // KPI 点击 → 打开 Online 标签页并滚动
+      const kpiOnline = document.getElementById('kpi-online-card');
+      if (kpiOnline){
+        kpiOnline.addEventListener('click', ()=>{
+          const btn = document.querySelector('.menu button[data-tab="online"]');
+          if (btn) btn.click();
+          setTimeout(()=> document.getElementById('online-anchor')?.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+        });
+      }
+
+      // 首次刷新 KPI，并设置定时器
+      refreshOnlineKPI();
+      setInterval(refreshOnlineKPI, 20000);
+      document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) refreshOnlineKPI(); });
 
       // Recharge 搜索/分页
       document.getElementById('recharge-search-btn').onclick = ()=>{
@@ -372,17 +388,17 @@
 
     /* ==================== Online：人数统计 + 列表 ==================== */
     async function loadOnline(){
-      await Promise.all([loadOnlineCount(), loadOnlineUsers()]);
-      // 自动刷新
-      onlineTimer = setInterval(()=>{ loadOnlineCount(); loadOnlineUsers(); }, ONLINE_REFRESH_SEC * 1000);
+      await Promise.all([refreshOnlineKPI(), loadOnlineUsers()]);
+      onlineTimer = setInterval(()=>{ refreshOnlineKPI(); loadOnlineUsers(); }, ONLINE_REFRESH_SEC * 1000);
     }
 
-    async function loadOnlineCount(){
-      const box = document.getElementById('onlineCount');
-      box.textContent = '…';
-      const { data, error } = await supabase.from('v_online_count').select('online_count').single();
-      if (error){ box.textContent = '0'; console.warn('v_online_count error:', error.message); return; }
-      box.textContent = data?.online_count ?? 0;
+    async function refreshOnlineKPI(){
+      try{
+        const { data, error } = await supabase.from('v_online_count').select('online_count').single();
+        const num = Number(error ? 0 : (data?.online_count ?? 0));
+        const kpiNum = document.getElementById('kpi-online-num');
+        if (kpiNum) kpiNum.textContent = num;
+      }catch(_e){}
     }
 
     async function loadOnlineUsers(){
@@ -826,7 +842,7 @@
       alert(`✅ Saved: ${round} → ${n} (×${mult})`);
     };
 
-    // Users（隐藏 ID + 分页 20/页；其它逻辑不变）
+    // Users（隐藏 ID + 分页 20/页）
     async function loadUsers(){
       const container = document.getElementById('users-table');
       const emailFilter = (document.getElementById('users-email-filter').value || '').trim();
