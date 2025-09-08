@@ -593,12 +593,26 @@
     const show = (el,on=true)=> el.style.display = on ? 'flex' : 'none';
     const toast = (m)=>alert(m);
     const fmt2 = (n)=> Number(n ?? 0).toFixed(2);
-    const fmtTime = (iso)=> {
-      try{
-        const d = new Date(iso);
-        return d.toLocaleString(undefined,{ year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-      }catch{ return iso || '—'; }
-    };
+    // 将任意 ISO 时间按印度时间(IST)显示
+const fmtTime = (iso) => {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    const s = new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',   // 关键：固定到 IST
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(d);
+    return String(s).replace(',', '') + ' IST';
+  } catch {
+    return iso || '—';
+  }
+};
+
 
     const openLogin = $('open-login');
     const logoutBtn = $('logout-btn');
