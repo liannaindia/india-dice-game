@@ -693,6 +693,40 @@
       logoutBtn.style.display = loggedIn ? '' : 'none';
     }
 
+    /* ========= 在线心跳 presence ========= */
+    let presenceTimer = null;
+    const HEARTBEAT_SEC = 30;
+
+    async function sendHeartbeat(user) {
+      try {
+        await supabase.from('user_presence').upsert({
+          user_id: user.id,
+          email: user.email ?? null,
+          last_seen: new Date().toISOString(),
+          user_agent: navigator.userAgent.slice(0, 300)
+        }, { onConflict: 'user_id' });
+      } catch (e) {
+        console.debug('presence heartbeat fail', e?.message || e);
+      }
+    }
+    function startPresenceHeartbeat(user){
+      stopPresenceHeartbeat();             // 防重复
+      sendHeartbeat(user);                 // 先打一枪
+      presenceTimer = setInterval(()=>sendHeartbeat(user), HEARTBEAT_SEC * 1000);
+      document.addEventListener('visibilitychange', onVisibility, { once:false });
+      function onVisibility(){ if (!document.hidden) sendHeartbeat(user); }
+      // 保存到 window 便于移除（可选）
+      window.__presenceVisibilityHandler = onVisibility;
+    }
+    function stopPresenceHeartbeat(){
+      if (presenceTimer){ clearInterval(presenceTimer); presenceTimer = null; }
+      if (window.__presenceVisibilityHandler){
+        document.removeEventListener('visibilitychange', window.__presenceVisibilityHandler);
+        window.__presenceVisibilityHandler = null;
+      }
+    }
+    /* ========= /presence ========= */
+
     signupBtn.onclick = async ()=>{
       const email = loginEmail.value.trim(), pass = loginPass.value;
       if(!email || !pass) return toast('Enter email & password');
@@ -711,6 +745,7 @@
     };
     logoutBtn.onclick = async ()=>{
       await supabase.auth.signOut();
+      stopPresenceHeartbeat();           // ⛔ 停止心跳
       currentUser = null; userEmail.textContent = '—'; balanceEl.textContent = '0'; vipBadge.textContent='VIP 0'; setAuthUI(false);
       depositsTbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px">—</td></tr>`;
       withdrawalsTbody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">—</td></tr>`;
@@ -720,6 +755,7 @@
       setAuthUI(true);
       userEmail.textContent = currentUser.email || '—';
       await supabase.from('users').upsert([{ id: currentUser.id, email: currentUser.email }]);
+      startPresenceHeartbeat(currentUser);   // ✅ 登录后启动心跳
       await refreshUserSummary();
     }
     async function refreshUserSummary(){
@@ -870,10 +906,12 @@
       }catch(e){ toast('Update failed: ' + (e?.message || e)); }
     };
 
+    // 引导：初始检查是否已登录；已登录则启动心跳
     (async ()=>{
       const { data:{ user } } = await supabase.auth.getUser();
       if (user){ currentUser=user; await afterLogin(); } else { setAuthUI(false); }
     })();
+
     // ======== Claim Bonus (frontend) ========
 const openBonus     = $('open-bonus');
 const bonusModal    = $('bonus-modal');
