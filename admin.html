@@ -51,6 +51,9 @@
     .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
     .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px;border:1px solid #e5e7eb;background:#f8fafc}
     .pill.gray{background:#f3f4f6;border-color:#e5e7eb;color:#374151}
+
+    /* 在线卡片的小绿点 */
+    .dot{width:10px;height:10px;border-radius:999px;background:#22c55e;display:inline-block;margin-right:6px}
   </style>
 </head>
 <body>
@@ -66,6 +69,7 @@
     <aside class="sidebar">
       <div class="brand">🛠️ Admin Panel</div>
       <div class="menu">
+        <button data-tab="online" class="">🟢 Online</button>
         <button data-tab="bank" class="active">🏦 Bank Info</button>
         <button data-tab="recharge">💳 Recharge Requests</button>
         <button data-tab="withdraw">💸 Withdraw Requests</button>
@@ -78,6 +82,34 @@
     </aside>
 
     <main class="content">
+      <!-- Online -->
+      <section id="tab-online" class="tab hidden">
+        <div class="card" id="card-online" style="cursor:pointer;display:flex;align-items:center;gap:12px">
+          <img alt="online" width="36" height="36"
+            src="data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 24 24' fill='none'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-3.33 0-10 1.67-10 5v1h20v-1c0-3.33-6.67-5-10-5Z' stroke='%232468F5' stroke-width='1.5'/></svg>">
+          <div>
+            <div style="font-size:13px;color:#8592a6;"><span class="dot"></span>在线会员 (最近2分钟)</div>
+            <div style="font-size:26px;font-weight:700;"><span id="onlineCount">0</span></div>
+            <div class="muted">点击此卡片跳转到在线列表</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <span class="pill gray">Auto refresh</span>
+            <button id="online-refresh" style="width:auto">Refresh</button>
+          </div>
+        </div>
+
+        <div class="card" id="online-list">
+          <h3 id="online-anchor">在线用户列表</h3>
+          <div class="toolbar">
+            <span id="online-page-info" class="pill gray">Page 1</span>
+            <button id="online-prev" style="width:auto">Prev</button>
+            <button id="online-next" style="width:auto">Next</button>
+            <span class="muted">20 / page</span>
+          </div>
+          <div id="online-users-table" style="margin-top:8px">Loading...</div>
+        </div>
+      </section>
+
       <!-- Bank -->
       <section id="tab-bank" class="tab">
         <div class="card">
@@ -251,6 +283,11 @@
     let withdrawPage = 1, withdrawQuery = '';
     let usersPage    = 1;
 
+    // 在线分页与自动刷新
+    let onlinePage   = 1;
+    let onlineTimer  = null;
+    const ONLINE_REFRESH_SEC = 15;
+
     // boot + session listener
     (async function boot(){
       const { data:{ session } } = await supabase.auth.getSession();
@@ -281,6 +318,11 @@
           const tab = btn.getAttribute('data-tab');
           document.querySelectorAll('.tab').forEach(sec=>sec.classList.add('hidden'));
           document.getElementById('tab-' + tab).classList.remove('hidden');
+
+          // 切换 Tab 时，避免重复定时器
+          if (onlineTimer){ clearInterval(onlineTimer); onlineTimer = null; }
+
+          if (tab==='online') loadOnline();
           if (tab==='recharge') loadRechargeRequests();
           if (tab==='withdraw') loadWithdrawRequests();
           if (tab==='bets')     loadTodayBets();
@@ -289,6 +331,16 @@
           if (tab==='wingo')    refreshWingoTimes();
         };
       });
+
+      // 在线：翻页与刷新
+      document.getElementById('online-prev').onclick = ()=>{ if (onlinePage>1){ onlinePage--; loadOnlineUsers(); } };
+      document.getElementById('online-next').onclick = ()=>{ onlinePage++; loadOnlineUsers(); };
+      document.getElementById('online-refresh').onclick = ()=>{ loadOnlineCount(); loadOnlineUsers(); };
+
+      // 点击卡片跳到列表
+      document.getElementById('card-online').onclick = ()=>{
+        document.getElementById('online-anchor')?.scrollIntoView({behavior:'smooth', block:'start'});
+      };
 
       // Recharge 搜索/分页
       document.getElementById('recharge-search-btn').onclick = ()=>{
@@ -317,6 +369,76 @@
       const totalPages = Math.max(1, Math.ceil((total||0) / PAGE_SIZE));
       el.textContent = `Page ${page} / ${totalPages} • ${total||0} rows`;
     }
+
+    /* ==================== Online：人数统计 + 列表 ==================== */
+    async function loadOnline(){
+      await Promise.all([loadOnlineCount(), loadOnlineUsers()]);
+      // 自动刷新
+      onlineTimer = setInterval(()=>{ loadOnlineCount(); loadOnlineUsers(); }, ONLINE_REFRESH_SEC * 1000);
+    }
+
+    async function loadOnlineCount(){
+      const box = document.getElementById('onlineCount');
+      box.textContent = '…';
+      const { data, error } = await supabase.from('v_online_count').select('online_count').single();
+      if (error){ box.textContent = '0'; console.warn('v_online_count error:', error.message); return; }
+      box.textContent = data?.online_count ?? 0;
+    }
+
+    async function loadOnlineUsers(){
+      const container = document.getElementById('online-users-table');
+      const from = (onlinePage - 1) * PAGE_SIZE;
+      const to   = from + PAGE_SIZE - 1;
+
+      const { data, count, error, status } = await supabase
+        .from('v_online_users')
+        .select('*', { count: 'exact' })
+        .range(from, to);
+
+      if (status === 416 || (error && error.status === 416)) {
+        if (onlinePage > 1) { onlinePage--; return loadOnlineUsers(); }
+      }
+      if (error){ container.textContent = 'Failed to load'; return; }
+
+      if (!data?.length){
+        container.textContent = 'No online users in last 2 minutes.';
+        setPageInfo('online-page-info', onlinePage, count || 0);
+        return;
+      }
+
+      const toIST = (iso)=>{
+        const t = Date.parse(iso||''); if (isNaN(t)) return '-';
+        const ist = new Date(t + 5.5*3600*1000);
+        const y=ist.getUTCFullYear(), m=String(ist.getUTCMonth()+1).padStart(2,'0'), d=String(ist.getUTCDate()).padStart(2,'0');
+        const hh=String(ist.getUTCHours()).padStart(2,'0'), mm=String(ist.getUTCMinutes()).padStart(2,'0'), ss=String(ist.getUTCSeconds()).padStart(2,'0');
+        return `${y}-${m}-${d} ${hh}:${mm}:${ss} IST`;
+      };
+
+      const rows = data.map(u=>`
+        <tr>
+          <td>${u.email || '-'}</td>
+          <td class="mono">${u.user_id}</td>
+          <td>${toIST(u.last_seen)}</td>
+          <td class="mono" title="${(u.user_agent||'').replace(/"/g,'&quot;')}">${(u.user_agent||'').slice(0,60)}${(u.user_agent||'').length>60?'…':''}</td>
+          <td>${u.ip || '-'}</td>
+        </tr>
+      `).join('');
+
+      container.innerHTML = `
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th><th>User ID</th><th>Last Seen</th><th>User Agent</th><th>IP</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+      setPageInfo('online-page-info', onlinePage, count || 0);
+    }
+
+    /* ==================== 你的既有逻辑（保持不变） ==================== */
 
     async function loadAll() {
       const { data } = await supabase.from('bank_info').select('*').eq('id', 1).single();
@@ -400,77 +522,69 @@
       alert('Recharge rejected.'); loadRechargeRequests();
     };
 
-    // Withdraw：仅用本表 email 搜索 + 分页（仍保留 users 取展示信息）
-    // ✅ 恢复原有字段：select('*')，仅新增邮箱搜索 + 20/页分页 + 超页回退
-async function loadWithdrawRequests() {
-  const container = document.getElementById('withdraw-requests');
-  const from = (withdrawPage - 1) * PAGE_SIZE;
-  const to   = from + PAGE_SIZE - 1;
+    // Withdraw（保持你给的版本）
+    async function loadWithdrawRequests() {
+      const container = document.getElementById('withdraw-requests');
+      const from = (withdrawPage - 1) * PAGE_SIZE;
+      const to   = from + PAGE_SIZE - 1;
 
-  // 原样取 withdraw_requests 全字段，按创建时间倒序；加计数与分页
-  let q = supabase
-    .from('withdraw_requests')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+      let q = supabase
+        .from('withdraw_requests')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-  // 只用本表 email 做搜索（你说两张表都有 email）
-  if (withdrawQuery) {
-    q = q.ilike('email', `%${withdrawQuery}%`);
-  }
+      if (withdrawQuery) q = q.ilike('email', `%${withdrawQuery}%`);
 
-  const { data, count, error, status } = await q;
+      const { data, count, error, status } = await q;
 
-  // 超页（416）自动回退一页
-  if (status === 416 || (error && error.status === 416)) {
-    if (withdrawPage > 1) { withdrawPage--; return loadWithdrawRequests(); }
-  }
-  if (error) { container.textContent = 'Failed to load'; return; }
+      if (status === 416 || (error && error.status === 416)) {
+        if (withdrawPage > 1) { withdrawPage--; return loadWithdrawRequests(); }
+      }
+      if (error) { container.textContent = 'Failed to load'; return; }
 
-  container.innerHTML = '';
-  if (!data?.length) {
-    container.textContent = 'No withdraw requests.';
-    setPageInfo('withdraw-page-info', withdrawPage, count || 0);
-    return;
-  }
+      container.innerHTML = '';
+      if (!data?.length) {
+        container.textContent = 'No withdraw requests.';
+        setPageInfo('withdraw-page-info', withdrawPage, count || 0);
+        return;
+      }
 
-  // 和你原来一样：为展示补充用户资料（name/ac/ifsc/upi 等）
-  const userIds = [...new Set(data.map(r => r.user_id).filter(Boolean))];
-  let userMap = {};
-  if (userIds.length) {
-    const { data: users } = await supabase
-      .from('users').select('id, email, name, ac, ifsc, upi').in('id', userIds);
-    (users || []).forEach(u => { userMap[u.id] = u; });
-  }
+      const userIds = [...new Set(data.map(r => r.user_id).filter(Boolean))];
+      let userMap = {};
+      if (userIds.length) {
+        const { data: users } = await supabase
+          .from('users').select('id, email, name, ac, ifsc, upi').in('id', userIds);
+        (users || []).forEach(u => { userMap[u.id] = u; });
+      }
 
-  for (const item of data) {
-    const u = userMap[item.user_id] || {};
-    const el = document.createElement('div');
-    el.className = 'request-box';
-    el.innerHTML = `
-      <div><b>${item.email || u.email || item.user_id}</b></div>
-      <div>Amount: ₹${item.amount}</div>
-      <div>Status: ${item.status || 'pending'}</div>
-      <div class="muted" style="margin-top:6px">Saved Withdraw Info:</div>
-      <div class="mono" style="font-size:13px">
-        Name: ${u.name || '-'}<br/>
-        AC: ${u.ac || '-'}<br/>
-        IFSC: ${u.ifsc || '-'}<br/>
-        UPI: ${u.upi || item.upi || '-'}
-      </div>
-      ${
-        item.status === 'pending'
-          ? `<div class="btn-group">
-               <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
-               <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
-             </div>` : ''
-      }`;
-    container.appendChild(el);
-  }
+      for (const item of data) {
+        const u = userMap[item.user_id] || {};
+        const el = document.createElement('div');
+        el.className = 'request-box';
+        el.innerHTML = `
+          <div><b>${item.email || u.email || item.user_id}</b></div>
+          <div>Amount: ₹${item.amount}</div>
+          <div>Status: ${item.status || 'pending'}</div>
+          <div class="muted" style="margin-top:6px">Saved Withdraw Info:</div>
+          <div class="mono" style="font-size:13px">
+            Name: ${u.name || '-'}<br/>
+            AC: ${u.ac || '-'}<br/>
+            IFSC: ${u.ifsc || '-'}<br/>
+            UPI: ${u.upi || item.upi || '-'}
+          </div>
+          ${
+            item.status === 'pending'
+              ? `<div class="btn-group">
+                   <button onclick="handleApproveWithdraw('${item.id}', '${item.user_id}', ${item.amount})">✅ Allow</button>
+                   <button onclick="handleRejectWithdraw('${item.id}')">❌ Reject</button>
+                 </div>` : ''
+          }`;
+        container.appendChild(el);
+      }
 
-  setPageInfo('withdraw-page-info', withdrawPage, count || 0);
-}
-
+      setPageInfo('withdraw-page-info', withdrawPage, count || 0);
+    }
 
     window.handleApproveWithdraw = async (id, user_id, amount) => {
       try {
@@ -739,7 +853,6 @@ async function loadWithdrawRequests() {
         return;
       }
 
-      // 不渲染 ID 列（但仍用于按钮操作）
       const rows = data.map(u => `
         <tr>
           <td>${u.email || '-'}</td>
@@ -781,35 +894,33 @@ async function loadWithdrawRequests() {
     document.getElementById('users-reload').onclick = ()=>{ usersPage = 1; loadUsers(); };
 
     window.grantBonusByEmail = async (targetEmail) => {
-  // 允许从行上带入，也允许手动输入
-  let email = (targetEmail || '').trim();
-  if (!email) {
-    email = prompt('User email to grant bonus:') || '';
-    email = email.trim();
-  }
-  if (!email) return alert('Email is required.');
+      let email = (targetEmail || '').trim();
+      if (!email) {
+        email = prompt('User email to grant bonus:') || '';
+        email = email.trim();
+      }
+      if (!email) return alert('Email is required.');
 
-  let val = prompt('Bonus amount:');
-  if (val === null) return;
-  const amt = Number(val);
-  if (!amt || amt <= 0) return alert('Invalid amount');
+      let val = prompt('Bonus amount:');
+      if (val === null) return;
+      const amt = Number(val);
+      if (!amt || amt <= 0) return alert('Invalid amount');
 
-  const reason = prompt('Reason (optional):') || null;
-  const exp = prompt('Expires in days? (optional, leave blank = no expiry)');
-  let expires_at = null;
-  if (exp && !isNaN(Number(exp)) && Number(exp) > 0) {
-    const d = new Date(); d.setDate(d.getDate() + Number(exp));
-    expires_at = d.toISOString();
-  }
+      const reason = prompt('Reason (optional):') || null;
+      const exp = prompt('Expires in days? (optional, leave blank = no expiry)');
+      let expires_at = null;
+      if (exp && !isNaN(Number(exp)) && Number(exp) > 0) {
+        const d = new Date(); d.setDate(d.getDate() + Number(exp));
+        expires_at = d.toISOString();
+      }
 
-  const { error } = await supabase
-    .from('bonuses')
-    .insert([{ email, amount: amt, reason, expires_at }]);
+      const { error } = await supabase
+        .from('bonuses')
+        .insert([{ email, amount: amt, reason, expires_at }]);
 
-  if (error) return alert('Create bonus failed: ' + error.message);
-  alert(`✅ Bonus created for ${email}: ₹${amt.toFixed(2)}`);
-};
-
+      if (error) return alert('Create bonus failed: ' + error.message);
+      alert(`✅ Bonus created for ${email}: ₹${amt.toFixed(2)}`);
+    };
 
     window.adjustBalance = async (user_id, action) => {
       let val = prompt(action === 'add' ? 'Enter amount to ADD:' : 'Enter amount to DEDUCT:');
