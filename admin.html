@@ -63,6 +63,13 @@
     .kpi .kpi-title{display:flex;align-items:center;gap:8px;font-weight:700;color:#111827}
     .kpi .kpi-value{font-size:26px;font-weight:800;line-height:1;margin-top:6px}
     .kpi .kpi-hint{color:var(--muted);font-size:12px;margin-top:4px}
+
+    /* === 新增：设密码弹窗样式（不影响现有） === */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:9999}
+    .modal{width:100%;max-width:420px;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:18px}
+    .modal h3{margin:0 0 8px}
+    .modal .row{gap:8px}
+    .modal .actions{display:flex;gap:10px;margin-top:12px}
   </style>
 </head>
 <body>
@@ -268,6 +275,19 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- === 新增：设密码弹窗（独立，不影响现有） === -->
+  <div id="setPwdBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <h3>🔒 Set User Password</h3>
+      <div class="muted" id="setPwdTargetInfo">—</div>
+      <input id="setPwdNew" type="password" placeholder="New password (min 6 chars)"/>
+      <div class="actions">
+        <button id="setPwdConfirm">Confirm</button>
+        <button id="setPwdCancel" style="background:#6b7280">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -886,6 +906,8 @@
               <button style="width:auto;background:#92400e" onclick="setVipLevel('${u.id}', ${Number(u.vip_level||0)})">⭐ Set VIP</button>
               <button style="width:auto;background:#0ea5e9" onclick="adjustTurnover('${u.id}')">🔁 Turnover +/-</button>
               <button style="width:auto;background:#16a34a" onclick="grantBonusByEmail('${u.email || ''}')">🎁 Bonus</button>
+              <!-- 新增：为该用户设置密码 -->
+              <button style="width:auto;background:#374151" onclick="openSetPassword('${u.id}', '${(u.email||'').replace(/'/g, '\\\'')}')">🔒 Set Pwd</button>
             </div>
           </td>
         </tr>
@@ -1000,6 +1022,32 @@
       if (error) return alert('Update failed: ' + error.message);
       alert('VIP updated.'); loadUsers();
     };
+
+    // === 新增：管理员直改密码（前端调用 Edge Function） ===
+    let _setPwdTarget = { user_id: null, email: null };
+    window.openSetPassword = (user_id, email) => {
+      _setPwdTarget = { user_id, email: email || '-' };
+      document.getElementById('setPwdTargetInfo').textContent = `Target: ${_setPwdTarget.email} (${_setPwdTarget.user_id})`;
+      document.getElementById('setPwdNew').value = '';
+      document.getElementById('setPwdBackdrop').style.display = 'flex';
+    };
+    document.getElementById('setPwdCancel').onclick = () => {
+      document.getElementById('setPwdBackdrop').style.display = 'none';
+    };
+    document.getElementById('setPwdConfirm').onclick = async () => {
+      const pwd = document.getElementById('setPwdNew').value;
+      if (!pwd || pwd.length < 6) { alert('Password too short (min 6)'); return; }
+
+      // 通过 supabase.functions.invoke 调用 Edge Function（会自动带上当前管理员会话）
+      const { data, error } = await supabase.functions.invoke('admin_set_password', {
+        body: { user_id: _setPwdTarget.user_id, new_password: pwd }
+      });
+
+      if (error) { alert('Failed: ' + (error.message || JSON.stringify(error))); return; }
+      alert('✅ Password updated.');
+      document.getElementById('setPwdBackdrop').style.display = 'none';
+    };
+    // === 新增结束 ===
 
     // Bank Info 保存
     async function saveBankInfo(){
