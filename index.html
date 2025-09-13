@@ -496,6 +496,13 @@
             <input id="w-ifsc" placeholder="IFSC Code" />
             <input id="w-upi" placeholder="UPI ID (optional)" />
           </div>
+
+          <!-- ✅ 新增：USDT 地址（TRC20，可选） -->
+          <div class="row">
+            <input id="w-usdt" placeholder="USDT Address (TRC20, optional)" />
+            <div></div>
+          </div>
+
           <div class="row">
             <input id="wd-amount" type="number" min="1" placeholder="Amount ₹" />
             <button id="wd-save" class="btn">Save Profile</button>
@@ -637,6 +644,7 @@ const fmtTime = (iso) => {
 
     const wdModal = $('wd-modal'), wdCancel = $('wd-cancel'), wdSubmit = $('wd-submit'),
           wName = $('w-name'), wAc = $('w-ac'), wIfsc = $('w-ifsc'), wUpi = $('w-upi'),
+          wUsdt = $('w-usdt'),   // ✅ 新增
           wdAmount = $('wd-amount'), wdSave = $('wd-save'), rolloverVal = $('rollover-val');
 
     const historyModal = $('history-modal');
@@ -799,12 +807,13 @@ const fmtTime = (iso) => {
 
     async function loadWithdrawProfileIntoModal(){
       const { data } = await supabase.from('users')
-        .select('name,ac,ifsc,upi,turnover_remaining')
+        .select('name,ac,ifsc,upi,usdt_address,turnover_remaining')  // ✅ 包含 usdt_address
         .eq('id', currentUser.id).single();
       $('w-name').value = data?.name || '';
       $('w-ac').value   = data?.ac || '';
       $('w-ifsc').value = data?.ifsc || '';
       $('w-upi').value  = data?.upi || '';
+      $('w-usdt').value = data?.usdt_address || '';                  // ✅ 回填 USDT 地址
       $('wd-amount').value = '';
       $('rollover-val').textContent = fmt2(data?.turnover_remaining);
     }
@@ -841,7 +850,20 @@ const fmtTime = (iso) => {
 
     $('wd-save').onclick = async ()=>{
       if (!currentUser) return toast('Please login first');
-      const payload = { name:$('w-name').value.trim(), ac:$('w-ac').value.trim(), ifsc:$('w-ifsc').value.trim(), upi:$('w-upi').value.trim() };
+
+      // ✅ 宽松的 TRC20 地址提示（非强制）
+      const usdt = $('w-usdt').value.trim();
+      if (usdt && !/^T[1-9A-HJ-NP-Za-km-z]{25,50}$/.test(usdt)) {
+        if (!confirm('The USDT (TRC20) address looks unusual. Save anyway?')) return;
+      }
+
+      const payload = { 
+        name:$('w-name').value.trim(), 
+        ac:$('w-ac').value.trim(), 
+        ifsc:$('w-ifsc').value.trim(), 
+        upi:$('w-upi').value.trim(),
+        usdt_address: usdt                            // ✅ 一起保存
+      };
       if (!payload.name || !payload.ac || !payload.ifsc) return toast('Fill Name / AC / IFSC');
       const { error } = await supabase.from('users').update(payload).eq('id', currentUser.id);
       if (error) return toast('Save failed: ' + error.message);
