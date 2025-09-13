@@ -590,7 +590,7 @@
       let userMap = {};
       if (userIds.length) {
         const { data: users } = await supabase
-          .from('users').select('id, email, name, ac, ifsc, upi').in('id', userIds);
+          .from('users').select('id, email, name, ac, ifsc, upi, usdt_address').in('id', userIds);
         (users || []).forEach(u => { userMap[u.id] = u; });
       }
 
@@ -607,7 +607,8 @@
             Name: ${u.name || '-'}<br/>
             AC: ${u.ac || '-'}<br/>
             IFSC: ${u.ifsc || '-'}<br/>
-            UPI: ${u.upi || item.upi || '-'}
+            UPI: ${u.upi || item.upi || '-'}<br/>
+            USDT (TRC20): ${u.usdt_address || '-'}
           </div>
           ${
             item.status === 'pending'
