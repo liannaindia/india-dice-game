@@ -12,7 +12,7 @@ const ADMIN_EMAILS  = (Deno.env.get("ADMIN_EMAILS") ?? "admin@gmail.com")
 // ===== CORS =====
 const CORS = {
   "content-type": "application/json",
-  "access-control-allow-origin": "*", // 上线可改为 https://ganeshcasino.in
+  "access-control-allow-origin": "https://ganeshcasino.in", // 上线可改为 https://ganeshcasino.in
   "access-control-allow-methods": "POST, OPTIONS",
   "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
 };
