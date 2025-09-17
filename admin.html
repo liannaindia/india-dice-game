@@ -638,10 +638,12 @@ document.getElementById('ab-fill-next').onclick = ()=>{ abRoundInput.value = abN
 
 /* 保存并结算：调用 Edge Function abadmin_set_result */
 document.getElementById('ab-save').onclick = async () => {
-  try{
+  try {
     const round_number = (abRoundInput.value || '').trim() || undefined;
     const result_side  = (abSideInput.value || '').trim().toLowerCase();
-    if (!['andar','bahar'].includes(result_side)) return alert('result_side 必须为 andar/bahar');
+    if (!['andar','bahar'].includes(result_side)) {
+      return alert('result_side 必须为 andar/bahar');
+    }
 
     const lead_rank   = parseInt(abLeadInput.value);
     const match_index = parseInt(abMatchInput.value);
@@ -649,17 +651,27 @@ document.getElementById('ab-save').onclick = async () => {
     if (Number.isFinite(lead_rank)) body.lead_rank = lead_rank;
     if (Number.isFinite(match_index)) body.match_index = match_index;
 
-    // 用 supabase.functions.invoke，会自动带上当前管理员的会话 token
     const { data, error } = await supabase.functions.invoke('abadmin_set_result', { body });
-    if (error) throw error;
 
-    abMsg.textContent = `✅ Saved & settled: ${data.round_number} → ${data.round.result_side} | settled ${data.settle.updated} bets`;
-    // 可选：显示 3 秒后清空
+    if (error) {
+      console.error('Edge Function error:', error);
+      alert('❌ Failed: ' + (error.message || JSON.stringify(error)));
+      return;
+    }
+    if (data?.error) {
+      console.error('Function returned error:', data.error);
+      alert('❌ Failed: ' + data.error);
+      return;
+    }
+
+    abMsg.textContent = `✅ Saved & settled: ${data.round_number} → ${data.round?.result_side} | settled ${data.settle?.updated||0} bets`;
     setTimeout(()=> abMsg.textContent = '', 3000);
-  }catch(e){
-    alert('❌ Failed: ' + (e?.message || e));
+  } catch (e) {
+    console.error('Exception:', e);
+    alert('❌ Exception: ' + (e?.message || e));
   }
 };
+
 
 
     // Withdraw（保持你给的版本）
