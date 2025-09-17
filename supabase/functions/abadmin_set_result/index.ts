@@ -4,17 +4,26 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY   = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANON_KEY      = Deno.env.get("SUPABASE_ANON_KEY")!; // 用于校验调用者身份
+const ANON_KEY      = Deno.env.get("SUPABASE_ANON_KEY")!; // 用于校验调用者身份（从前端带来的 Authorization）
 const ADMIN_EMAILS  = (Deno.env.get("ADMIN_EMAILS") ?? "admin@gmail.com")
-  .split(",").map(s => s.trim().toLowerCase()); // 多个用逗号分隔
+  .split(",").map(s => s.trim().toLowerCase());
+
+// ★ CORS：补全 supabase 必需的头
+const CORS = {
+  "content-type": "application/json",
+  "access-control-allow-origin": "*", // 上线可改成你的域名：https://indiadice.netlify.app
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
+};
 
 // 用 service-role 做数据写入
 const sbSvc = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
+type Side = "andar" | "bahar";
 type ABRound = {
   round_number: string;
   lead_rank: number | null;
-  result_side: "andar" | "bahar" | null;
+  result_side: Side | null;
   match_index: number | null;
   is_manual?: boolean | null;
 };
@@ -54,7 +63,7 @@ async function settle(round_number: string) {
     .eq("round_number", round_number)
     .single();
   if (e2) throw e2;
-  const winner = rd.result_side as "andar"|"bahar";
+  const winner = rd.result_side as Side;
 
   const updates: { id:number; status:"win"|"lose"; payout:number; settled_at:string }[] = [];
   const balanceAdd: Record<string, number> = {};
@@ -94,16 +103,12 @@ async function roundAlreadySettled(n: string) {
 }
 
 serve(async (req) => {
-  // CORS
-  const cors = {
-    "content-type": "application/json",
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "POST, OPTIONS",
-    "access-control-allow-headers": "authorization, content-type",
-  };
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  // 处理 CORS 预检
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS });
+  }
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ ok:false, error:"Method not allowed" }), { status: 405, headers: cors });
+    return new Response(JSON.stringify({ ok:false, error:"Method not allowed" }), { status: 405, headers: CORS });
   }
 
   try {
@@ -115,11 +120,11 @@ serve(async (req) => {
     });
     const { data: { user }, error: userErr } = await sbUser.auth.getUser();
     if (userErr || !user) {
-      return new Response(JSON.stringify({ ok:false, error:"Unauthorized" }), { status: 401, headers: cors });
+      return new Response(JSON.stringify({ ok:false, error:"Unauthorized" }), { status: 401, headers: CORS });
     }
     const email = (user.email ?? "").toLowerCase();
     if (!ADMIN_EMAILS.includes(email)) {
-      return new Response(JSON.stringify({ ok:false, error:"Forbidden: not admin" }), { status: 403, headers: cors });
+      return new Response(JSON.stringify({ ok:false, error:"Forbidden: not admin" }), { status: 403, headers: CORS });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -127,19 +132,19 @@ serve(async (req) => {
     const round_number: string = body.round_number ?? roundKey(prev);
     const result_side = String(body.result_side || "").toLowerCase();
     if (!["andar","bahar"].includes(result_side)) {
-      return new Response(JSON.stringify({ ok:false, error:"result_side must be 'andar' or 'bahar'" }), { status: 400, headers: cors });
+      return new Response(JSON.stringify({ ok:false, error:"result_side must be 'andar' or 'bahar'" }), { status: 400, headers: CORS });
     }
     const force: boolean = !!body.force;
 
     if (!force && (await roundAlreadySettled(round_number))) {
-      return new Response(JSON.stringify({ ok:false, error:"Round already settled. Use force=true to override." }), { status: 409, headers: cors });
+      return new Response(JSON.stringify({ ok:false, error:"Round already settled. Use force=true to override." }), { status: 409, headers: CORS });
     }
 
     const existing = await getRound(round_number);
     const payload: ABRound = {
       round_number,
-      result_side: result_side as "andar"|"bahar",
-      // 保留已有 main rank / hit 序号；如果你想必填也可以从 body 传入
+      result_side: result_side as Side,
+      // 保留已有 main rank / hit 序号；如需强制覆盖可在 body 传入
       lead_rank: typeof body.lead_rank === "number" ? body.lead_rank : (existing?.lead_rank ?? null),
       match_index: typeof body.match_index === "number" ? body.match_index : (existing?.match_index ?? null),
       is_manual: true,
@@ -147,8 +152,8 @@ serve(async (req) => {
     await upsertRound(payload);
 
     const s = await settle(round_number);
-    return new Response(JSON.stringify({ ok:true, round_number, round: payload, settle: s }), { headers: cors });
+    return new Response(JSON.stringify({ ok:true, round_number, round: payload, settle: s }), { headers: CORS });
   } catch (e) {
-    return new Response(JSON.stringify({ ok:false, error: String(e) }), { status: 500, headers: cors });
+    return new Response(JSON.stringify({ ok:false, error: String(e) }), { status: 500, headers: CORS });
   }
 });
