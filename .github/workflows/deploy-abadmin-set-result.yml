@@ -1,0 +1,38 @@
+name: Deploy abadmin_set_result
+
+on:
+  push:
+    paths:
+      - "supabase/functions/abadmin_set_result/**"
+      - ".github/workflows/deploy-abadmin-set-result.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy function
+        run: supabase functions deploy abadmin_set_result
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # 首次/有变更时设置函数 secrets（执行一次即可，安全起见放着也没问题）
+      - name: Set function secrets
+        run: |
+          supabase functions secrets set SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          supabase functions secrets set SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          supabase functions secrets set SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          supabase functions secrets set ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
