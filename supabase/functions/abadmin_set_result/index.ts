@@ -1,205 +1,176 @@
 // supabase/functions/abadmin_set_result/index.ts
+// Deno Deploy / Supabase Edge Functions
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ===== Env =====
-const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY   = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANON_KEY      = Deno.env.get("SUPABASE_ANON_KEY")!; // 用于 getUser()
-const ADMIN_EMAILS  = (Deno.env.get("ADMIN_EMAILS") ?? "admin@gmail.com")
-  .split(",").map(s => s.trim().toLowerCase());
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const ADMIN_EMAILS = (Deno.env.get("ADMIN_EMAILS") ?? "admin@gmail.com")
+  .split(",")
+  .map((s) => s.trim().toLowerCase());
+const DEBUG = (Deno.env.get("DEBUG") ?? "true").toLowerCase() === "true"; // 默认开启，排查完可关
 
 // ===== CORS =====
-const CORS = {
-  "content-type": "application/json",
-  "access-control-allow-origin": "https://ganeshcasino.in", // 上线可改为 https://ganeshcasino.in
+const CORS_HEADERS = {
+  "content-type": "application/json; charset=utf-8",
+  "access-control-allow-origin": "*",
   "access-control-allow-methods": "POST, OPTIONS",
   "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ===== Supabase (service role) =====
+// ===== Supabase Clients =====
+// service-role：读写数据库
 const sbSvc = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+// anon：仅用于 getUser(accessToken) 校验来访者身份
+const sbAnon = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
 
-// ===== Types & helpers =====
-type Side = "andar" | "bahar";
-type ABRound = {
-  round_number: string;
-  lead_rank: number | null;
-  result_side: Side | null;
-  match_index: number | null;
-  is_manual?: boolean | null;
+// ===== Helpers =====
+function json(status: number, body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS });
+}
+
+function ensureEnv() {
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push("SUPABASE_URL");
+  if (!SERVICE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!ANON_KEY) missing.push("SUPABASE_ANON_KEY");
+  if (missing.length) {
+    throw new Error(`Missing environment variables: ${missing.join(", ")}`);
+  }
+}
+
+type Payload = {
+  game?: string;                 // e.g. "ab" / "andarbahar" / 任意占位
+  round_number: string;          // 必填，如 "202509172227"
+  result_side: "andar" | "bahar"; // 必填：赢家方
+  match_index?: number | null;   // 可选：第几张中
+  force?: boolean;               // 可选：是否强制立即结算（会尝试调用存储过程）
 };
 
-function nowIST() {
-  const now = new Date();
-  return new Date(now.getTime() + now.getTimezoneOffset() * -60000 + 5.5 * 3600 * 1000);
-}
-function roundKey(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const h = String(d.getHours()).padStart(2, "0");
-  const mi = String(d.getMinutes()).padStart(2, "0");
-  return `${y}${m}${day}${h}${mi}`;
+async function getAuthUserEmail(req: Request): Promise<string | null> {
+  const auth = req.headers.get("Authorization")?.trim();
+  if (!auth?.toLowerCase().startsWith("bearer ")) return null;
+  const token = auth.slice(7);
+  const { data, error } = await sbAnon.auth.getUser(token);
+  if (error) throw new Error(`auth.getUser failed: ${error.message}`);
+  return data.user?.email?.toLowerCase() ?? null;
 }
 
-// ===== DB helpers =====
-async function getRound(n: string) {
-  const { data, error } = await sbSvc
-    .from("ab_rounds")
-    .select("round_number, lead_rank, result_side, match_index, is_manual")
-    .eq("round_number", n)
-    .maybeSingle();
-  if (error) throw error;
-  return data as ABRound | null;
-}
-
-async function upsertRound(r: ABRound) {
-  const { error } = await sbSvc.from("ab_rounds").upsert(r, { onConflict: "round_number" });
-  if (error) throw error;
-}
-
-async function roundAlreadySettled(n: string) {
-  const { count, error } = await sbSvc
-    .from("ab_bets")
-    .select("*", { count: "exact", head: true })
-    .eq("round_number", n)
-    .not("settled_at", "is", null);
-  if (error) throw error;
-  return (count ?? 0) > 0;
-}
-
-async function settle(round_number: string) {
-  const { data: bets, error: e1 } = await sbSvc
-    .from("ab_bets")
-    .select("id,user_id,amount,side,odds,status,settled_at")
-    .eq("round_number", round_number);
-  if (e1) throw e1;
-
-  const { data: rd, error: e2 } = await sbSvc
-    .from("ab_rounds")
-    .select("result_side")
-    .eq("round_number", round_number)
-    .single();
-  if (e2) throw e2;
-
-  const winner = rd.result_side as Side;
-  if (!winner) return { updated: 0 };
-
-  const updates: { id: number; status: "win" | "lose"; payout: number; settled_at: string }[] = [];
-  const balanceAdd: Record<string, number> = {};
-
-  for (const b of bets ?? []) {
-    if (b.settled_at) continue; // 已结算跳过
-
-    const win = b.side === winner;
-    const odds = Number(b.odds ?? 1.95);
-    const payout = win ? Number(b.amount) * odds : 0;
-
-    updates.push({
-      id: b.id,
-      status: win ? "win" : "lose",
-      payout,
-      settled_at: new Date().toISOString(),
-    });
-
-    if (win && payout > 0) {
-      balanceAdd[b.user_id] = (balanceAdd[b.user_id] || 0) + payout;
-    }
-  }
-
-  if (updates.length) {
-    const { error: e3 } = await sbSvc.from("ab_bets").upsert(updates);
-    if (e3) throw e3;
-  }
-
-  for (const [uid, delta] of Object.entries(balanceAdd)) {
-    const { error: e4 } = await sbSvc.rpc("increment_user_balance", {
-      _user_id: uid,
-      _delta: delta,
-    });
-    if (e4) throw e4;
-  }
-
-  return { updated: updates.length };
-}
-
-// ===== HTTP handler =====
+// ===== Main =====
 serve(async (req) => {
-  // CORS 预检
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: CORS });
-  }
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ ok: false, error: "Method not allowed" }), {
-      status: 405,
-      headers: CORS,
-    });
-  }
-
   try {
-    // 鉴权（使用调用方 JWT）
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const sbUser = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false },
-    });
-    const { data: { user }, error: userErr } = await sbUser.auth.getUser();
-    if (userErr || !user) {
-      return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
-        status: 401,
-        headers: CORS,
-      });
+    // CORS preflight
+    if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
+
+    if (req.method !== "POST") {
+      return json(405, { ok: false, error: "Method Not Allowed. Use POST." });
     }
-    const email = String(user.email || "").toLowerCase();
+
+    // 1) 环境检查
+    ensureEnv();
+
+    // 2) 身份校验（必须是管理员邮箱）
+    const email = await getAuthUserEmail(req);
+    if (!email) {
+      return json(401, { ok: false, error: "Unauthorized: missing or invalid Bearer token." });
+    }
     if (!ADMIN_EMAILS.includes(email)) {
-      return new Response(JSON.stringify({ ok: false, error: "Forbidden: not admin" }), {
-        status: 403,
-        headers: CORS,
+      return json(403, { ok: false, error: `Forbidden: ${email} is not in ADMIN_EMAILS.` });
+    }
+
+    // 3) 解析/校验 body
+    let payload: Payload;
+    try {
+      payload = await req.json();
+    } catch {
+      // 有些前端没设 content-type 或 body 为空，这里给出友好提示
+      const raw = await req.text();
+      return json(400, {
+        ok: false,
+        error: "Bad Request: body must be JSON.",
+        hint: "Set headers: {'Content-Type':'application/json'} and pass a JSON stringified body.",
+        rawReceived: raw ?? "",
       });
     }
 
-    // 读取参数
-    const body = await req.json().catch(() => ({}));
-    const prev = new Date(nowIST().getTime() - 60 * 1000);
-    const round_number: string = body.round_number ?? roundKey(prev);
-    const result_side = String(body.result_side || "").toLowerCase();
-    if (!["andar", "bahar"].includes(result_side)) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "result_side must be 'andar' or 'bahar'" }),
-        { status: 400, headers: CORS },
-      );
+    const errors: string[] = [];
+    if (!payload.round_number || typeof payload.round_number !== "string") {
+      errors.push("round_number (string) is required");
     }
-    const force: boolean = !!body.force;
+    if (payload.result_side !== "andar" && payload.result_side !== "bahar") {
+      errors.push("result_side must be 'andar' or 'bahar'");
+    }
+    if (payload.match_index != null && typeof payload.match_index !== "number") {
+      errors.push("match_index, if provided, must be a number");
+    }
+    if (errors.length) return json(400, { ok: false, error: "Invalid payload", details: errors });
 
-    if (!force && (await roundAlreadySettled(round_number))) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Round already settled. Use force=true to override." }),
-        { status: 409, headers: CORS },
-      );
+    const { round_number, result_side, match_index, force } = payload;
+
+    // 4) 写入回合结果（只负责“设置结果+标记手工”，真实结算交给触发器/存储过程）
+    // 你项目中表名可能是 ab_rounds（推荐），如不同请改这里。
+    // 字段假设：round_number(text) PK/unique, result_side(text), is_manual(boolean), match_index(int), result_set_at(timestamptz)
+    const now = new Date().toISOString();
+
+    // 4.1 若存在则更新，若不存在则插入（upsert）
+    const { data: upserted, error: upsertErr } = await sbSvc
+      .from("ab_rounds")
+      .upsert(
+        {
+          round_number,
+          result_side,
+          is_manual: true,
+          match_index: match_index ?? null,
+          result_set_at: now,
+        },
+        { onConflict: "round_number" },
+      )
+      .select("*")
+      .single();
+
+    if (upsertErr) {
+      throw new Error(`upsert ab_rounds failed: ${upsertErr.message}`);
     }
 
-    const existing = await getRound(round_number);
-    const payload: ABRound = {
-      round_number,
-      result_side: result_side as Side,
-      lead_rank: typeof body.lead_rank === "number" ? body.lead_rank : existing?.lead_rank ?? null,
-      match_index:
-        typeof body.match_index === "number" ? body.match_index : existing?.match_index ?? null,
-      is_manual: true,
-    };
+    // 5) 可选：强制结算（如果你有存储过程 ab_settle_round(round text, force boolean)）
+    let settleInfo: unknown = null;
+    if (force) {
+      const { data: rpcData, error: rpcErr } = await sbSvc.rpc("ab_settle_round", {
+        p_round_number: round_number,
+        p_force: true,
+      });
+      if (rpcErr) {
+        // 不让它 500，直接把错误返回给前端，便于你判断“存储过程是否存在/参数是否匹配”
+        settleInfo = { ok: false, rpc: "ab_settle_round", error: rpcErr.message };
+      } else {
+        settleInfo = { ok: true, rpc: "ab_settle_round", data: rpcData };
+      }
+    }
 
-    await upsertRound(payload);
-
-    const s = await settle(round_number);
-
-    return new Response(JSON.stringify({ ok: true, round_number, round: payload, settle: s }), {
-      headers: CORS,
+    return json(200, {
+      ok: true,
+      admin: email,
+      saved: {
+        round_number: upserted.round_number,
+        result_side: upserted.result_side,
+        match_index: upserted.match_index ?? null,
+        is_manual: upserted.is_manual ?? true,
+        result_set_at: upserted.result_set_at ?? now,
+      },
+      settle: settleInfo,
     });
-  } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: String(e) }), {
-      status: 500,
-      headers: CORS,
+  } catch (err) {
+    // 把错误既打印到 Supabase Logs，也返回到前端（DEBUG=true 时包含堆栈）
+    console.error("abadmin_set_result error:", err);
+    return json(500, {
+      ok: false,
+      error: (err as Error)?.message ?? String(err),
+      name: (err as Error)?.name ?? "Error",
+      stack: DEBUG ? (err as Error)?.stack ?? null : undefined,
+      hint:
+        "Check: 1) ADMIN_EMAILS includes your account 2) request body JSON 3) env secrets set 4) table/columns exist 5) optional RPC 'ab_settle_round' exists if force=true.",
     });
   }
 });
