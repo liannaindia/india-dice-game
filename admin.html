@@ -92,6 +92,7 @@
         <button data-tab="bets">📜 Today’s Bets (IST)</button>
         <button data-tab="manual">🎯 Manual Result (Old Dice)</button>
         <button data-tab="wheel">🎡 Wheel Control</button>
+        <button data-tab="ab">🃏 AB Control</button>
         <button data-tab="wingo">🎯 Wingo Control</button>
         <button data-tab="users">👥 Users</button>
       </div>
@@ -232,6 +233,47 @@
         </div>
       </section>
 
+      <!-- AB Control -->
+<section id="tab-ab" class="tab hidden">
+  <div class="card">
+    <h3>🃏 Andar Bahar — Manual Result</h3>
+
+    <div class="toolbar">
+      <span class="pill gray">IST Now: <span id="ab-ist-now" class="mono">—</span></span>
+      <span class="pill">Prev: <code id="ab-prev" class="mono">—</code></span>
+      <span class="pill">Curr: <code id="ab-curr" class="mono">—</code></span>
+      <span class="pill">Next: <code id="ab-next" class="mono">—</code></span>
+      <button id="ab-refresh-times" style="width:auto">Refresh</button>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <input id="ab-round-input" class="mono" placeholder="Round Number (e.g. 202508081430)"/>
+      <select id="ab-side-input">
+        <option value="andar">andar</option>
+        <option value="bahar">bahar</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <input id="ab-lead-rank" class="mono" placeholder="lead_rank (1–13, 可选)"/>
+      <input id="ab-match-index" class="mono" placeholder="match_index (发到第几张中, 可选)"/>
+    </div>
+
+    <div class="btn-group">
+      <button id="ab-fill-prev" style="width:auto">⬅️ Fill Prev</button>
+      <button id="ab-fill-curr" style="width:auto">🕒 Fill Curr</button>
+      <button id="ab-fill-next" style="width:auto">➡️ Fill Next</button>
+      <label style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="ab-force"/> force 覆盖已结算
+      </label>
+      <button id="ab-save" style="width:auto;background:#16a34a">💾 Save & Settle</button>
+    </div>
+
+    <div id="ab-last-msg" class="muted" style="margin-top:8px"></div>
+  </div>
+</section>
+
+
       <!-- Wingo Control（只保存结果） -->
       <section id="tab-wingo" class="tab hidden">
         <div class="card">
@@ -356,6 +398,8 @@
           if (tab==='users')    loadUsers();
           if (tab==='wheel')    refreshWheelTimes();
           if (tab==='wingo')    refreshWingoTimes();
+          if (tab==='ab')       refreshABTimes();
+
         };
       });
 
@@ -557,6 +601,66 @@
       await supabase.from('recharge_requests').update({ status: 'rejected' }).eq('id', id);
       alert('Recharge rejected.'); loadRechargeRequests();
     };
+
+    /* ========= AB（1 分钟一期，IST） ========= */
+function abRoundKey(date){
+  const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
+  const h=String(date.getHours()).padStart(2,'0'), min=String(date.getMinutes()).padStart(2,'0');
+  return `${y}${m}${d}${h}${min}`;
+}
+function abCurrentRoundNo(){ const t=getIST(); t.setSeconds(0,0); return abRoundKey(t); }
+function abPreviousRoundNo(){ const t=getIST(); t.setMinutes(t.getMinutes()-1,0,0); return abRoundKey(t); }
+function abNextRoundNo(){ const t=getIST(); t.setMinutes(t.getMinutes()+1,0,0); return abRoundKey(t); }
+
+const abIstNowEl   = document.getElementById('ab-ist-now');
+const abPrevEl     = document.getElementById('ab-prev');
+const abCurrEl     = document.getElementById('ab-curr');
+const abNextEl     = document.getElementById('ab-next');
+const abRoundInput = document.getElementById('ab-round-input');
+const abSideInput  = document.getElementById('ab-side-input');
+const abLeadInput  = document.getElementById('ab-lead-rank');
+const abMatchInput = document.getElementById('ab-match-index');
+const abForceCk    = document.getElementById('ab-force');
+const abMsg        = document.getElementById('ab-last-msg');
+
+function refreshABTimes(){
+  const now = getIST();
+  abIstNowEl.textContent = now.toISOString().replace('T',' ').slice(0,16)+' IST';
+  abPrevEl.textContent = abPreviousRoundNo();
+  abCurrEl.textContent = abCurrentRoundNo();
+  abNextEl.textContent = abNextRoundNo();
+  if (!abRoundInput.value) abRoundInput.value = abPrevEl.textContent;
+}
+document.getElementById('ab-refresh-times').onclick = refreshABTimes;
+document.getElementById('ab-fill-prev').onclick = ()=>{ abRoundInput.value = abPrevEl.textContent; };
+document.getElementById('ab-fill-curr').onclick = ()=>{ abRoundInput.value = abCurrEl.textContent; };
+document.getElementById('ab-fill-next').onclick = ()=>{ abRoundInput.value = abNextEl.textContent; };
+
+/* 保存并结算：调用 Edge Function abadmin_set_result */
+document.getElementById('ab-save').onclick = async () => {
+  try{
+    const round_number = (abRoundInput.value || '').trim() || undefined;
+    const result_side  = (abSideInput.value || '').trim().toLowerCase();
+    if (!['andar','bahar'].includes(result_side)) return alert('result_side 必须为 andar/bahar');
+
+    const lead_rank   = parseInt(abLeadInput.value);
+    const match_index = parseInt(abMatchInput.value);
+    const body = { round_number, result_side, force: !!abForceCk.checked };
+    if (Number.isFinite(lead_rank)) body.lead_rank = lead_rank;
+    if (Number.isFinite(match_index)) body.match_index = match_index;
+
+    // 用 supabase.functions.invoke，会自动带上当前管理员的会话 token
+    const { data, error } = await supabase.functions.invoke('abadmin_set_result', { body });
+    if (error) throw error;
+
+    abMsg.textContent = `✅ Saved & settled: ${data.round_number} → ${data.round.result_side} | settled ${data.settle.updated} bets`;
+    // 可选：显示 3 秒后清空
+    setTimeout(()=> abMsg.textContent = '', 3000);
+  }catch(e){
+    alert('❌ Failed: ' + (e?.message || e));
+  }
+};
+
 
     // Withdraw（保持你给的版本）
     async function loadWithdrawRequests() {
@@ -804,6 +908,8 @@
         else alert(`✅ Inserted result for ${round} = ${result}`);
       }
     };
+
+    
 
     // Wheel 工具 & 控制（原样）
     const W_NUMBERS = Array.from({length:16}, (_,i)=>i+3);
