@@ -87,16 +87,33 @@ serve(async (req) => {
 
     // 若无结果则生成/或使用手动参数
     let r = await getRound(round_number);
-    if (!r || !r.result_side || !r.lead_rank || !r.match_index){
-      r = {
-        round_number,
-        result_side: (body.result_side ?? randSide()) as "andar"|"bahar",
-        lead_rank: typeof body.lead_rank === "number" ? body.lead_rank : randRank(),
-        match_index: typeof body.match_index === "number" ? body.match_index : randHit(),
-        is_manual: !!(body.result_side || body.lead_rank || body.match_index),
-      };
-      await upsertRound(r);
-    }
+
+// 如果已有 round 且(已手动 is_manual=true 或 已有 result_side)，只补齐缺的字段，严禁改结果
+if (r && (r.is_manual || r.result_side)) {
+  const patched: ABRound = {
+    round_number,
+    result_side: r.result_side as "andar"|"bahar", // 固定不改
+    lead_rank: r.lead_rank ?? (typeof body.lead_rank === "number" ? body.lead_rank : randRank()),
+    match_index: r.match_index ?? (typeof body.match_index === "number" ? body.match_index : randHit()),
+    is_manual: r.is_manual ?? !!(body.result_side || body.lead_rank || body.match_index),
+  };
+  // 只有当补齐了新字段时才写
+  if (patched.lead_rank !== r.lead_rank || patched.match_index !== r.match_index || patched.is_manual !== r.is_manual) {
+    await upsertRound(patched);
+    r = patched;
+  }
+} else {
+  // 原逻辑（本期还不存在/没有结果）：正常生成
+  r = {
+    round_number,
+    result_side: (body.result_side ?? randSide()) as "andar"|"bahar",
+    lead_rank: typeof body.lead_rank === "number" ? body.lead_rank : randRank(),
+    match_index: typeof body.match_index === "number" ? body.match_index : randHit(),
+    is_manual: !!(body.result_side || body.lead_rank || body.match_index),
+  };
+  await upsertRound(r);
+}
+
 
     const s = await settle(round_number);
     return new Response(JSON.stringify({ ok:true, round_number, round:r, settle:s }),
