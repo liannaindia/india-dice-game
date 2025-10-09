@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>3 Dice · 2-Minute Rounds</title>
+  <style>
+    :root { --card-bg:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#f59e0b; }
+    body{margin:0;background:#0b1220;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+    .container{max-width:680px;margin:0 auto;padding:16px;}
+    .card{background:var(--card-bg);border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);margin-bottom:16px;}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{padding:10px 12px;border-radius:999px;border:1px solid #374151;background:#111827;cursor:pointer}
+    .pill.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(245,158,11,.25) inset}
+    .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+    .btn{padding:12px 16px;border:none;border-radius:12px;background:var(--accent);color:#111;font-weight:700;cursor:pointer}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .section-title{font-weight:800;margin:0 0 8px 0}
+    .muted{color:var(--muted)}
+    .dice{font-size:28px}
+    .list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto}
+    .item{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid #1f2937;border-radius:12px}
+    .badge{font-size:12px;padding:4px 8px;border-radius:8px;background:#1f2937}
+    .ok{background:#065f46;color:#d1fae5}
+    .no{background:#7f1d1d;color:#fee2e2}
+    input[type="number"]{width:100%;padding:12px;background:#0b1220;border:1px solid #374151;border-radius:12px;color:var(--text)}
+    a.back{display:inline-block;margin-bottom:8px;color:#fff;text-decoration:none}
+  </style>
+  <!-- Supabase SDK -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="./index.html">← Back to Lobby</a>
+
+    <div class="card">
+      <h2 class="section-title">3 Dice · 2-Minute Rounds</h2>
+      <div class="muted" id="roundInfo">Database-driven (pg_cron): auto create/lock/draw/settle.</div>
+      <div style="margin-top:8px" class="row">
+        <span class="badge">Round: <span id="roundKey">—</span></span>
+        <span class="badge">Status: <span id="roundStatus">—</span></span>
+        <span class="badge">To lock: <span id="countdown">—</span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">Bet</h3>
+      <div class="muted">Pick an option → enter amount → place bet</div>
+
+      <h4 style="margin-top:12px">Big / Small</h4>
+      <div class="row" id="optBigSmall"></div>
+
+      <h4 style="margin-top:12px">Odd / Even</h4>
+      <div class="row" id="optOddEven"></div>
+
+      <h4 style="margin-top:12px">Sum (4–17)</h4>
+      <div class="grid" id="optSum"></div>
+
+      <h4 style="margin-top:12px">Triples / Doubles</h4>
+      <div class="row" id="optTripDouble"></div>
+
+      <h4 style="margin-top:12px">Single (1–6)</h4>
+      <div class="row" id="optSingle"></div>
+
+      <div style="margin-top:12px" class="row">
+        <input type="number" id="betAmount" placeholder="Amount" min="1" step="1" />
+        <button class="btn" id="placeBetBtn">Place Bet</button>
+      </div>
+      <div class="muted" id="betHint"></div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">My Bets (current round)</h3>
+      <div class="list" id="myBets"></div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">Recent Results</h3>
+      <div class="list" id="history"></div>
+    </div>
+  </div>
+
+  <script>
+    // ========= 1) 替换为你的 Supabase 项目参数（仅注释中文，页面可见文本全英文） =========
+    const SUPABASE_URL  = "https://<YOUR-PROJECT-REF>.supabase.co";
+    const SUPABASE_ANON = "<YOUR-ANON-KEY>";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // ========= 2) 赔率表（与后端 three_dice_odds 对齐；single_number 实际派彩按出现次数） =========
+    const ODDS = {
+      big_small: { big: 2.0, small: 2.0 },
+      odd_even: { odd: 2.0, even: 2.0 },
+      triple_any: { any: 31.0 },
+      triple_specific: { "1":181,"2":181,"3":181,"4":181,"5":181,"6":181 },
+      double: { any:11,"1":11,"2":11,"3":11,"4":11,"5":11,"6":11 },
+      sum: { 4:50,5:18,6:14,7:12,8:8,9:6,10:6,11:6,12:6,13:8,14:12,15:14,16:18,17:50 },
+      single_number: { "1":2,"2":2,"3":2,"4":2,"5":2,"6":2 } // 占位；后端按出现次数(×1/×2/×3)
+    };
+
+    // ========= 3) DOM 引用 =========
+    const dom = {
+      roundKey: document.getElementById("roundKey"),
+      roundStatus: document.getElementById("roundStatus"),
+      countdown: document.getElementById("countdown"),
+      roundInfo: document.getElementById("roundInfo"),
+      optBigSmall: document.getElementById("optBigSmall"),
+      optOddEven: document.getElementById("optOddEven"),
+      optSum: document.getElementById("optSum"),
+      optTripDouble: document.getElementById("optTripDouble"),
+      optSingle: document.getElementById("optSingle"),
+      placeBetBtn: document.getElementById("placeBetBtn"),
+      amount: document.getElementById("betAmount"),
+      hint: document.getElementById("betHint"),
+      myBets: document.getElementById("myBets"),
+      history: document.getElementById("history"),
+    };
+
+    let selected = null; // 当前选中的下注项 {category, bet_value, odds, _el}
+
+    // ========= 4) 小工具 =========
+    function pill(label, active) {
+      const el = document.createElement("button");
+      el.className = "pill" + (active ? " active" : "");
+      el.textContent = label;
+      return el;
+    }
+    function selectOption(next) {
+      selected = next;
+      document.querySelectorAll(".pill").forEach(p=>p.classList.remove("active"));
+      next._el.classList.add("active");
+      renderHint();
+    }
+    function renderHint() {
+      if (!selected) { dom.hint.textContent = ""; return; }
+      dom.hint.textContent = `Selected: ${selected.category} / ${selected.bet_value}, odds ${selected.odds}x (incl. stake). Note: single(1–6) pays by occurrences.`;
+    }
+
+    // ========= 5) 渲染投注选项 =========
+    function renderOptions() {
+      // Big / Small
+      ["big","small"].forEach(v=>{
+        const el = pill(`${v.toUpperCase()} (${ODDS.big_small[v]}x)`);
+        const data = {category:"big_small", bet_value:v, odds:ODDS.big_small[v], _el:el};
+        el.onclick = ()=>selectOption(data);
+        dom.optBigSmall.appendChild(el);
+      });
+
+      // Odd / Even
+      ["odd","even"].forEach(v=>{
+        const el = pill(`${v.toUpperCase()} (${ODDS.odd_even[v]}x)`);
+        const data = {category:"odd_even", bet_value:v, odds:ODDS.odd_even[v], _el:el};
+        el.onclick = ()=>selectOption(data);
+        dom.optOddEven.appendChild(el);
+      });
+
+      // Sum 4..17
+      [4,5,6,7,8,9,10,11,12,13,14,15,16,17].forEach(n=>{
+        const el = pill(`${n} (${ODDS.sum[n]}x)`);
+        const data = {category:"sum", bet_value:String(n), odds:ODDS.sum[n], _el:el};
+        el.onclick = ()=>selectOption(data);
+        dom.optSum.appendChild(el);
+      });
+
+      // Triples / Doubles
+      const tAny = pill(`ANY TRIPLE (${ODDS.triple_any.any}x)`);
+      const tAnyData = {category:"triple_any", bet_value:"any", odds:ODDS.triple_any.any, _el:tAny};
+      tAny.onclick = ()=>selectOption(tAnyData);
+      dom.optTripDouble.appendChild(tAny);
+
+      [1,2,3,4,5,6].forEach(n=>{
+        const el = pill(`TRIPLE ${n}${n}${n} (${ODDS.triple_specific[n]}x)`);
+        const data = {category:"triple_specific", bet_value:String(n), odds:ODDS.triple_specific[n], _el:el};
+        el.onclick = ()=>selectOption(data);
+        dom.optTripDouble.appendChild(el);
+      });
+
+      const dAny = pill(`ANY DOUBLE (${ODDS.double.any}x)`);
+      const dAnyData = {category:"double", bet_value:"any", odds:ODDS.double.any, _el:dAny};
+      dAny.onclick = ()=>selectOption(dAnyData);
+      dom.optTripDouble.appendChild(dAny);
+
+      [1,2,3,4,5,6].forEach(n=>{
+        const el = pill(`DOUBLE ${n}${n} (${ODDS.double[n]}x)`);
+        const data = {category:"double", bet_value:String(n), odds:ODDS.double[n], _el:el};
+        el.onclick = ()=>selectOption(data);
+        dom.optTripDouble.appendChild(el);
+      });
+
+      // Single 1..6
+      [1,2,3,4,5,6].forEach(n=>{
+        const el = pill(`${n} (pays by occurrences)`);
+        const data = {category:"single_number", bet_value:String(n), odds:ODDS.single_number[n], _el:el};
+        el.onclick = ()=>selectOption(data);
+        dom.optSingle.appendChild(el);
+      });
+    }
+
+    // ========= 6) 用户 & 数据加载 =========
+    async function getSessionUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    }
+
+    async function loadCurrentRoundAndHistory() {
+      // 当前 open 且未到 lock_at 的期
+      const { data: roundsOpen } = await supabase
+        .from("three_dice_public_rounds")
+        .select("*")
+        .gt("lock_at", new Date().toISOString())
+        .eq("status","open")
+        .order("start_at", { ascending: false })
+        .limit(1);
+
+      let current = roundsOpen?.[0];
+
+      if (!current) {
+        const { data: latest } = await supabase
+          .from("three_dice_public_rounds")
+          .select("*")
+          .order("start_at",{ ascending: false })
+          .limit(1);
+        current = latest?.[0];
+      }
+
+      if (current) {
+        dom.roundKey.textContent = current.round_key;
+        dom.roundStatus.textContent = current.status;
+        const lockAt = new Date(current.lock_at);
+        startCountdown(lockAt);
+      } else {
+        dom.roundKey.textContent = "—";
+        dom.roundStatus.textContent = "—";
+        dom.countdown.textContent = "—";
+      }
+
+      // 历史最近10期
+      const { data: hist } = await supabase
+        .from("three_dice_public_rounds")
+        .select("*")
+        .order("start_at",{ ascending: false })
+        .limit(10);
+
+      dom.history.innerHTML = "";
+      (hist||[]).forEach(r=>{
+        const it = document.createElement("div");
+        it.className = "item";
+        const left = document.createElement("div");
+        left.innerHTML = `<div class="muted">${r.round_key}</div>
+          <div class="dice">🎲 ${r.d1??'-'} ${r.d2??'-'} ${r.d3??'-'} <span class="muted">SUM ${r.total??'-'}</span></div>`;
+        const right = document.createElement("span");
+        right.className = "badge";
+        right.textContent = r.status;
+        it.appendChild(left); it.appendChild(right);
+        dom.history.appendChild(it);
+      });
+
+      if (current) await loadMyBets(current.id);
+    }
+
+    function startCountdown(target) {
+      clearInterval(window.__cd);
+      function tick() {
+        const now = Date.now();
+        let s = Math.max(0, Math.floor((target - now)/1000));
+        const mm = String(Math.floor(s/60)).padStart(2,'0');
+        const ss = String(s%60).padStart(2,'0');
+        dom.countdown.textContent = `${mm}:${ss}`;
+        if (s<=0) clearInterval(window.__cd);
+      }
+      tick();
+      window.__cd = setInterval(tick, 500);
+    }
+
+    async function loadMyBets(round_id) {
+      const user = await getSessionUser();
+      if (!user) { dom.myBets.innerHTML = `<div class="muted">Sign in to view your bets.</div>`; return; }
+      const { data } = await supabase
+        .from("three_dice_bets")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("round_id", round_id)
+        .order("created_at",{ ascending:false });
+      dom.myBets.innerHTML = "";
+      (data||[]).forEach(b=>{
+        const it = document.createElement("div");
+        it.className = "item";
+        const left = document.createElement("div");
+        left.innerHTML = `<div>${b.category} / ${b.bet_value}</div>
+                          <div class="muted">Amount ${b.amount} | Odds ${b.odds}x</div>`;
+        const right = document.createElement("span");
+        right.className = "badge " + (b.status==='won'?'ok':b.status==='lost'?'no':'');
+        right.textContent = b.status;
+        it.appendChild(left); it.appendChild(right);
+        dom.myBets.appendChild(it);
+      });
+    }
+
+    // ========= 7) 下单 =========
+    async function placeBet() {
+      const user = await getSessionUser();
+      if (!user) { alert("Please sign in first."); return; }
+      if (!selected) { alert("Please select a bet option."); return; }
+      const amt = Number(dom.amount.value||0);
+      if (!(amt>0)) { alert("Enter a valid amount."); return; }
+
+      // 找到当前 open 且未锁单的期
+      const { data: r } = await supabase
+        .from("three_dice_public_rounds")
+        .select("*")
+        .gt("lock_at", new Date().toISOString())
+        .eq("status","open")
+        .order("start_at",{ ascending:false })
+        .limit(1);
+
+      const round = r?.[0];
+      if (!round) { alert("No open round available. Try again shortly."); return; }
+
+      // single_number 的赔率仅占位；实际派彩由后端按出现次数计算
+      const theOdds = selected.category==='single_number' ? 2.0 : selected.odds;
+
+      const { error } = await supabase
+        .from("three_dice_bets")
+        .insert({
+          round_id: round.id,
+          round_key: round.round_key,
+          user_id: user.id,
+          email: user.email ?? null,
+          category: selected.category,
+          bet_value: String(selected.bet_value),
+          amount: amt,
+          odds: theOdds
+        });
+
+      if (error) {
+        alert(`Failed: ${error.message}`);
+      } else {
+        dom.amount.value = "";
+        renderHint();
+        await loadMyBets(round.id);
+        alert("Bet placed!");
+      }
+    }
+
+    // ========= 8) 启动 =========
+    async function boot() {
+      renderOptions();
+      dom.placeBetBtn.onclick = placeBet;
+      await loadCurrentRoundAndHistory();
+      setInterval(loadCurrentRoundAndHistory, 5000); // 轮询刷新
+    }
+    boot();
+  </script>
+</body>
+</html>
