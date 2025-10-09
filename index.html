@@ -1073,6 +1073,31 @@ window._claimBonus = async (bonusId, btnEl)=>{
     btnEl.disabled = false; btnEl.textContent = old;
   }
 };
+    // === 需要登录再跳转的按钮拦截（.require-auth） ===
+function wireAuthRequiredLinks() {
+  document.querySelectorAll('a.require-auth')
+    .forEach(a => {
+      a.addEventListener('click', (e) => {
+        if (!currentUser) {
+          e.preventDefault();
+          show(loginModal, true);   // 弹登录
+        }
+      });
+    });
+}
+wireAuthRequiredLinks();
+
+// 若登录状态变化，也重新绑定一次（可选）
+document.addEventListener('DOMContentLoaded', wireAuthRequiredLinks);
+
+// === 可选：保护外链客服在 iOS 内置浏览器里打开新窗口 ===
+const cs = document.getElementById('cs-link');
+if (cs) {
+  cs.addEventListener('click', (e) => {
+    // 允许；如果你想在 WebView 中阻止跳走，可以在这里拦截并提示
+  });
+}
+
 
   </script>
 </body>
